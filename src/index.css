@@ -102,20 +102,23 @@ button {
   background: transparent;
 }
 
-/* ============ COMMAND HEADER ============ */
+/* ============ COMMAND HEADER (100% FIXED POSITION, ZERO SHIFT) ============ */
 .app-header {
-  min-height: 54px;
+  min-height: 48px;
   height: auto;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 196px auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  column-gap: 10px;
+  row-gap: 6px;
   padding: 6px 12px;
   background: var(--pn);
   border-bottom: 1px solid var(--bd);
   flex-shrink: 0;
   z-index: 20;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .brand-box {
@@ -123,6 +126,7 @@ button {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  min-width: 186px;
 }
 
 .brand-logo {
@@ -161,34 +165,139 @@ button {
   letter-spacing: 0.1em;
 }
 
-/* Center Action Toolbar in Header */
+/* Fixed Action Toolbar in Header — locked widths prevent horizontal jumping */
 .header-deck {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-  background: var(--p2);
-  padding: 4px 6px;
-  border-radius: 9px;
-  border: 1px solid var(--bd);
-}
-
-.header-right {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-}
-
-.export-pill-deck {
   display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 5px;
   background: var(--p2);
   padding: 3px 5px;
   border-radius: 9px;
+  border: 1px solid var(--bd);
+  justify-self: start;
+  flex-shrink: 0;
+}
+
+.header-deck .btn {
+  min-height: 29px;
+  height: 29px;
+  padding: 0 9px;
+  font-size: 10px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.header-deck .btn.icon-btn {
+  width: 29px;
+  height: 29px;
+  min-height: 29px;
+  padding: 0;
+}
+
+.header-deck .seed-btn {
+  width: 128px;
+  justify-content: center;
+}
+
+.header-deck .gen-btn {
+  width: 188px;
+  justify-content: center;
+}
+
+.header-deck .batch-btn {
+  width: 108px;
+  justify-content: center;
+}
+
+.header-deck .stat-badge {
+  width: 146px;
+  height: 29px;
+  justify-content: center;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.header-right {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-self: end;
+  gap: 5px;
+  min-width: 0;
+}
+
+.header-right .btn {
+  min-height: 29px;
+  height: 29px;
+  padding: 0 9px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.header-right .btn.icon-btn {
+  width: 29px;
+  height: 29px;
+  min-height: 29px;
+  padding: 0;
+}
+
+.export-pill-deck {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  background: var(--p2);
+  padding: 3px 5px;
+  border-radius: 9px;
   border: 1px solid var(--ac);
   box-shadow: 0 2px 12px var(--ac-s);
+  flex-shrink: 0;
+}
+
+/* Below 1660px, permanently lock into 2 stationary rows so buttons NEVER jump between side and center */
+@media (max-width: 1660px) {
+  .app-header {
+    grid-template-columns: 196px 1fr;
+    row-gap: 6px;
+    padding: 6px 12px;
+  }
+
+  .header-deck {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  .header-right {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .export-pill-deck {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 920px) {
+  .app-header {
+    grid-template-columns: 1fr;
+  }
+
+  .header-deck {
+    grid-column: 1;
+    grid-row: 2;
+    flex-wrap: wrap;
+  }
+
+  .header-right {
+    grid-column: 1;
+    grid-row: 3;
+  }
 }
 
 /* ============ BUTTONS ============ */

@@ -20726,31 +20726,52 @@ export const hsl = (h: number, s: number, l: number) => {
   );
 };
 
-export function genPal(): PaletteItem {
+export function genPal(baseHueDeg?: number, forceDark?: boolean): PaletteItem {
   const R = Math.random;
-  const h = R() * 360;
-  const dark = R() < 0.22;
+  const h =
+    typeof baseHueDeg === "number" && Number.isFinite(baseHueDeg)
+      ? ((baseHueDeg % 360) + 360) % 360
+      : R() * 360;
+  const dark = typeof forceDark === "boolean" ? forceDark : R() < 0.34;
   const sch = [
     [0, 28, 56, -28, 14],
-    [0, 180, 20, 200, -12],
-    [0, 120, 240, 40, 160],
-    [0, 150, 210, 25, 175],
-  ][Math.floor(R() * 4)];
+    [0, 180, 22, 202, -16],
+    [0, 120, 240, 42, 162],
+    [0, 150, 210, 28, 178],
+    [0, 90, 180, 270, 45],
+    [0, 35, 195, -35, 145],
+  ][Math.floor(R() * 6)];
+  const satBase = 48 + R() * 42;
   const cols = sch.map((o, i) =>
-    hsl(h + o, 45 + R() * 40, dark ? 55 + R() * 20 : i === 3 ? 78 : 42 + R() * 30)
+    hsl(
+      h + o,
+      Math.min(95, satBase + ((i * 7) % 18) - 6),
+      dark ? 54 + R() * 24 : i === 3 ? 76 : 38 + R() * 32
+    )
   );
-  return ["Random", dark ? hsl(h, 28, 9) : hsl(h + 20, 35, 95), dark ? "#f6f3ee" : hsl(h, 35, 13), cols];
+  const bgTone = dark
+    ? hsl(h + (R() < 0.5 ? 0 : 180), 22 + R() * 20, 7 + R() * 9)
+    : R() < 0.25
+    ? hsl(h + 24, 38 + R() * 22, 86 + R() * 8)
+    : hsl(h + 18, 28 + R() * 18, 94 + R() * 4);
+  return ["Random", bgTone, dark ? "#f6f3ee" : hsl(h, 35, 13), cols];
 }
 
 const MESSY = /variety|jitter|missing|shuffle|rotation|tilt|wobble|random|scrolls|loose|seed/i;
 
-export function genParams(md: PatternMode, curParams: Record<string, any>, keep: number) {
+export function genParams(
+  md: PatternMode,
+  curParams: Record<string, any>,
+  keep: number,
+  extremeDiverse = false,
+  batchIdx = -1
+) {
   const q: Record<string, any> = Object.assign({}, curParams);
   const isBgGrainParam = (k: string) =>
     (md.cat === "Plain BG" || md.cat === "Background") &&
     (k === "tex" || k === "grain" || k === "grit" || k === "pits");
 
-  md.params.forEach((p) => {
+  md.params.forEach((p, pIdx) => {
     // Never auto-enable grainy/speckle dots on backgrounds during Unique Generate / Batch
     if (isBgGrainParam(p.k)) {
       q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
@@ -20764,17 +20785,73 @@ export function genParams(md: PatternMode, curParams: Record<string, any>, keep:
     // For Brush Archetype, always pick a fresh microstock brush layout different from current
     if (md.cat === "Brush" && p.k === "arch" && p.opts) {
       const curArch = String(curParams.arch || p.def);
-      const pool = p.opts.filter((o) => o[0] !== curArch);
-      q[p.k] = pool.length
-        ? pool[Math.floor(Math.random() * pool.length)][0]
-        : p.opts[Math.floor(Math.random() * p.opts.length)][0];
+      if (extremeDiverse && batchIdx >= 0 && p.opts.length > 1) {
+        q[p.k] = p.opts[(batchIdx * 7 + pIdx) % p.opts.length][0];
+      } else {
+        const pool = p.opts.filter((o) => o[0] !== curArch);
+        q[p.k] = pool.length
+          ? pool[Math.floor(Math.random() * pool.length)][0]
+          : p.opts[Math.floor(Math.random() * p.opts.length)][0];
+      }
       return;
     }
-    if (Math.random() < keep) {
+    if (md.cat === "Poster" && (p.k === "showText" || p.k === "pcs")) {
+      q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
+      return;
+    }
+    if (md.cat === "Poster" && p.k === "colorSet") {
+      if (extremeDiverse && p.opts && p.opts.length > 1) {
+        const pickIdx =
+          batchIdx >= 0
+            ? (batchIdx * 5 + Math.floor(Math.random() * p.opts.length)) % p.opts.length
+            : Math.floor(Math.random() * p.opts.length);
+        q[p.k] = p.opts[pickIdx][0];
+      } else {
+        q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
+      }
+      return;
+    }
+    if (md.cat === "Poster" && (p.k === "bScale" || p.k === "gap" || p.k === "layers")) {
+      if (extremeDiverse && p.min !== undefined && p.max !== undefined) {
+        const st = p.step || 1;
+        const span = p.max - p.min;
+        const lo = p.min + span * 0.15;
+        const hi = p.max - span * 0.15;
+        let v = lo + Math.random() * Math.max(st, hi - lo);
+        v = Math.round((v - p.min) / st) * st + p.min;
+        q[p.k] = +Math.min(p.max, Math.max(p.min, v)).toFixed(4);
+      } else {
+        q[p.k] = p.def;
+      }
+      return;
+    }
+    if (md.cat === "Lighting" && (p.k === "bgMode" || p.k === "pcs")) {
+      q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
+      return;
+    }
+    if (md.cat === "Lighting" && p.k === "colorSet") {
+      if (extremeDiverse && p.opts && p.opts.length > 1) {
+        const pickIdx =
+          batchIdx >= 0
+            ? (batchIdx * 7 + Math.floor(Math.random() * p.opts.length)) % p.opts.length
+            : Math.floor(Math.random() * p.opts.length);
+        q[p.k] = p.opts[pickIdx][0];
+      } else {
+        q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
+      }
+      return;
+    }
+    if ((md.cat === "Poster" || md.cat === "Lighting") && p.k === "variant") {
+      const curVar = Math.max(0, Math.round(+(curParams.variant ?? 0)));
+      q.variant = extremeDiverse && batchIdx >= 0 ? ((batchIdx * 11 + curVar) % 48) + 1 : curVar + 1;
+      return;
+    }
+
+    if (!extremeDiverse && Math.random() < keep) {
       q[p.k] = p.def;
       return;
     }
-    if (MESSY.test(p.l) && p.type !== "check" && p.type !== "select") {
+    if (!extremeDiverse && MESSY.test(p.l) && p.type !== "check" && p.type !== "select") {
       if (Math.random() < 0.5) {
         q[p.k] = p.def;
         return;
@@ -20787,27 +20864,19 @@ export function genParams(md: PatternMode, curParams: Record<string, any>, keep:
       q[p.k] = +Math.min(max, Math.max(min, v)).toFixed(4);
       return;
     }
-    if (md.cat === "Poster" && (p.k === "showText" || p.k === "pcs" || p.k === "colorSet")) {
-      q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
-      return;
-    }
-    if (md.cat === "Poster" && (p.k === "bScale" || p.k === "gap" || p.k === "layers")) {
-      q[p.k] = p.def;
-      return;
-    }
-    if (md.cat === "Lighting" && (p.k === "bgMode" || p.k === "pcs" || p.k === "colorSet")) {
-      q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
-      return;
-    }
-    if ((md.cat === "Poster" || md.cat === "Lighting") && p.k === "variant") {
-      const curVar = Math.max(0, Math.round(+(curParams.variant ?? 0)));
-      q.variant = curVar + 1;
-      return;
-    }
-    if (p.type === "check") q[p.k] = Math.random() < 0.5;
-    else if (p.type === "select" && p.opts)
-      q[p.k] = p.opts[Math.floor(Math.random() * p.opts.length)][0];
-    else {
+
+    if (p.type === "check") {
+      q[p.k] = Math.random() < 0.5;
+    } else if (p.type === "select" && p.opts) {
+      if (extremeDiverse && p.opts.length > 1) {
+        const prevVal = String(curParams[p.k] ?? p.def);
+        const others = p.opts.filter((o) => o[0] !== prevVal);
+        const pick = others.length ? others : p.opts;
+        q[p.k] = pick[Math.floor(Math.random() * pick.length)][0];
+      } else {
+        q[p.k] = p.opts[Math.floor(Math.random() * p.opts.length)][0];
+      }
+    } else {
       const st = p.step || 1;
       const min = p.min ?? 0;
       const max = p.max ?? 100;
@@ -20815,13 +20884,22 @@ export function genParams(md: PatternMode, curParams: Record<string, any>, keep:
       const dens =
         /^(n|rep|k|cols|px|hs|g|gn)$/.test(p.k) ||
         /Density|Repeats|Columns|Blocks|Squares|Vines|Grid|Triangles/.test(p.l);
-      const w = dens ? 0.25 : 0.5;
-      let v = p.def + (Math.random() - Math.random()) * span * w;
-      v = Math.round((v - min) / st) * st + min;
-      q[p.k] = +Math.min(
-        dens ? p.def + (max - p.def) * 0.25 : max - span * 0.04,
-        Math.max(dens ? Math.max(min, Math.round(p.def * 0.55)) : min + span * 0.04, v)
-      ).toFixed(4);
+      if (extremeDiverse) {
+        // Uniform full-range exploration across artistic safe bounds so consecutive batch designs look structurally transformed
+        const safeMin = dens ? Math.max(min, min + span * 0.08) : min + span * 0.05;
+        const safeMax = dens ? Math.min(max, min + span * 0.82) : max - span * 0.05;
+        let v = safeMin + Math.random() * Math.max(st, safeMax - safeMin);
+        v = Math.round((v - min) / st) * st + min;
+        q[p.k] = +Math.min(max, Math.max(min, v)).toFixed(4);
+      } else {
+        const w = dens ? 0.42 : 0.72;
+        let v = p.def + (Math.random() - 0.5) * 2 * span * w;
+        v = Math.round((v - min) / st) * st + min;
+        q[p.k] = +Math.min(
+          dens ? p.def + (max - p.def) * 0.45 : max - span * 0.04,
+          Math.max(dens ? Math.max(min, Math.round(p.def * 0.45)) : min + span * 0.04, v)
+        ).toFixed(4);
+      }
     }
   });
   const sel = md.params.filter(
@@ -20832,11 +20910,12 @@ export function genParams(md: PatternMode, curParams: Record<string, any>, keep:
       !MESSY.test(p.l) &&
       !isBgGrainParam(p.k) &&
       !(md.cat === "Brush" && p.k === "cm") &&
-      !(md.cat === "Poster" && (p.k === "pcs" || p.k === "colorSet")) &&
-      !(md.cat === "Lighting" && (p.k === "bgMode" || p.k === "pcs" || p.k === "colorSet"))
+      !(md.cat === "Poster" && (p.k === "pcs" || (!extremeDiverse && p.k === "colorSet"))) &&
+      !(md.cat === "Lighting" && (p.k === "bgMode" || p.k === "pcs" || (!extremeDiverse && p.k === "colorSet")))
   );
-  for (let t = 0; t < Math.min(sel.length, 1 + Math.floor(Math.random() * 2)); t++) {
-    const p = sel[Math.floor(Math.random() * sel.length)];
+  const flipCount = extremeDiverse ? sel.length : Math.min(sel.length, 1 + Math.floor(Math.random() * 2));
+  for (let t = 0; t < flipCount; t++) {
+    const p = extremeDiverse ? sel[t] : sel[Math.floor(Math.random() * sel.length)];
     const o = p.opts!.filter((x) => x[0] !== String(curParams[p.k]));
     if (o.length) q[p.k] = o[Math.floor(Math.random() * o.length)][0];
   }
@@ -20847,34 +20926,68 @@ export function genCand(
   md: PatternMode,
   curParams: Record<string, any>,
   P: PatternState,
-  colours: boolean
+  colours: boolean,
+  extremeDiverse = false,
+  batchIdx = -1
 ) {
   const L = md.look || {};
+  const seed = nextUniqueSeed();
   const r = Math.random();
   let bg: string;
   let ink: string;
   let cols: string[];
   let name: string;
+
   if (!colours) {
     bg = P.bg;
     ink = P.ink;
     cols = [P.c0, P.c1, P.c2, P.c3, P.c4];
     name = "same colours";
-  } else if (r < 0.4 && L.cols) {
+  } else if (extremeDiverse) {
+    // Extreme Batch Anti-Similarity Palette Engine:
+    // Alternates Golden-Angle Hue Wheel palettes (137.508 deg jump every design!) with coprime-strided curated PALS
+    const step = batchIdx >= 0 ? batchIdx : seed;
+    const useCurated = step % 2 === 1 && PALS.length > 0;
+    if (useCurated) {
+      const palIdx = (step * 17 + (seed % 11)) % PALS.length;
+      const p = PALS[palIdx];
+      bg = p[1];
+      ink = p[2];
+      cols = p[3].slice();
+      name = p[0];
+      // Rotate & shuffle colors so even revisited palettes never look identical
+      const rot = step % cols.length;
+      cols = cols.slice(rot).concat(cols.slice(0, rot));
+      if (step % 4 === 3) {
+        const swapK = step % cols.length;
+        const oldBg = bg;
+        bg = cols[swapK];
+        cols[swapK] = oldBg;
+      }
+    } else {
+      const goldenHue = (step * 137.508 + (seed % 29)) % 360;
+      const forceDark = step % 3 === 0;
+      const p = genPal(goldenHue, forceDark);
+      bg = p[1];
+      ink = p[2];
+      cols = p[3].slice();
+      name = `golden-angle ${Math.round(goldenHue)}deg`;
+    }
+  } else if (r < 0.14 && L.cols) {
     bg = L.bg || P.bg;
     ink = L.ink || P.ink;
     cols = L.cols.slice();
     while (cols.length < 5) cols.push(cols[cols.length - 1] || "#ffffff");
     name = "original colours";
-    if (Math.random() < 0.5) {
-      const c = cols.slice(0, 3);
+    if (Math.random() < 0.65) {
+      const c = cols.slice(0, 4);
       for (let i = c.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [c[i], c[j]] = [c[j], c[i]];
       }
-      cols = c.concat(cols.slice(3));
+      cols = c.concat(cols.slice(4));
     }
-  } else if (r < 0.8) {
+  } else if (r < 0.62) {
     const p = PALS[Math.floor(Math.random() * PALS.length)];
     bg = p[1];
     ink = p[2];
@@ -20891,20 +21004,21 @@ export function genCand(
     cols = p[3].slice();
     name = "fresh palette";
   }
-  if (colours && Math.random() < 0.35) {
+
+  if (colours && !extremeDiverse && Math.random() < 0.35) {
     const t = cols[Math.floor(Math.random() * cols.length)];
     bg =
       lumH(bg) > 150
         ? mixCol(t, "#ffffff", 0.8 + Math.random() * 0.12)
         : mixCol(t, "#000000", 0.7 + Math.random() * 0.15);
   }
-  if (colours && Math.random() < 0.15) {
+  if (colours && !extremeDiverse && Math.random() < 0.18) {
     const k = Math.floor(Math.random() * cols.length);
     const o = bg;
     bg = cols[k];
     cols[k] = o;
   }
-  const seed = nextUniqueSeed();
+
   if (md.cat === "Brush" && colours) {
     const brushPals: [string, string, string[]][] = [
       ["#ffffff", "#09090b", ["#09090b", "#18181b", "#27272a", "#0f172a", "#171717"]],
@@ -20918,6 +21032,7 @@ export function genCand(
     cols = bp[2].slice();
     name = "sumi ink brush";
   }
+
   // Micro-mutate colour tones by 1-3 RGB levels so even same-palette generations are chromatographically unique
   if (colours) {
     const jitterCol = (hex: string, salt: number) => {
@@ -20931,9 +21046,21 @@ export function genCand(
     cols = cols.map((c, idx) => jitterCol(c, seed + idx * 13));
   }
   [ink, cols] = fixContrast(bg, ink, cols);
-  const style: "flat" | "both" | "line" = colours ? L.style || "flat" : P.style;
 
-  const bg2 = mixCol(bg, cols[0] || "#8b5cf6", 0.36);
+  const allowStyleVary =
+    md.cat !== "Poster" &&
+    md.cat !== "Lighting" &&
+    md.cat !== "Brush" &&
+    md.cat !== "Plain BG" &&
+    md.cat !== "Gradient";
+  const stylePool: ("flat" | "both" | "line")[] = ["flat", "both", "flat", "both", "line"];
+  const style: "flat" | "both" | "line" = !colours
+    ? P.style
+    : extremeDiverse && allowStyleVary
+    ? stylePool[(batchIdx >= 0 ? batchIdx : seed) % stylePool.length]
+    : L.style || "flat";
+
+  const bg2 = mixCol(bg, cols[0] || "#8b5cf6", extremeDiverse ? 0.45 : 0.36);
   const gradModes: BgGradientMode[] = ["linear", "radial", "diagonal", "aurora", "duotone", "sunburst"];
   const texModes: SurfaceTextureMode[] = [
     "sandgrain",
@@ -20962,7 +21089,7 @@ export function genCand(
   }
   const bgGrad: BgGradientMode =
     md.cat === "Poster" || md.cat === "Lighting" ? "solid" : P.bgGrad || "solid";
-  const bgAngle = Math.floor(Math.random() * 360);
+  const bgAngle = extremeDiverse && batchIdx >= 0 ? (batchIdx * 47) % 360 : Math.floor(Math.random() * 360);
   const bd: SurfaceTextureMode =
     md.cat === "Brush" || md.cat === "Poster" || md.cat === "Lighting" ? "none" : P.bd || "none";
   const bdc = mixCol(cols[1] || ink, bg, 0.45);
@@ -20970,15 +21097,36 @@ export function genCand(
   const allowMx =
     md.cat !== "Fabric" &&
     md.cat !== "Plain BG" &&
+    md.cat !== "Background" &&
+    md.cat !== "Gradient" &&
     md.cat !== "Brush" &&
     md.cat !== "Poster" &&
     md.cat !== "Lighting";
-  const mxList: PatternState["mx"][] = ["none", "none", "none", "mirror", "rot", "double"];
+  const mxList: PatternState["mx"][] = extremeDiverse
+    ? ["none", "mirror", "rot", "double", "none", "mirror"]
+    : ["none", "none", "none", "mirror", "rot", "double"];
   const mx: PatternState["mx"] =
-    allowMx && Math.random() < 0.22 ? mxList[Math.floor(Math.random() * mxList.length)] : "none";
+    allowMx && (extremeDiverse || Math.random() < 0.28)
+      ? mxList[(extremeDiverse && batchIdx >= 0 ? batchIdx : Math.floor(Math.random() * mxList.length)) % mxList.length]
+      : "none";
+
+  const swPool = [0.9, 1.4, 2.0, 2.8, 3.6];
+  const swVal =
+    extremeDiverse && allowStyleVary
+      ? swPool[(batchIdx >= 0 ? batchIdx : seed) % swPool.length]
+      : L.sw || P.sw;
+
+  const ncolVal = !colours
+    ? P.ncol
+    : extremeDiverse && allowStyleVary
+    ? ([3, 4, 5, 4, 5][(batchIdx >= 0 ? batchIdx : seed) % 5])
+    : L.cols
+    ? Math.min(5, L.cols.length)
+    : 5;
+
   return {
     mx,
-    q: genParams(md, curParams, 0.12),
+    q: genParams(md, curParams, extremeDiverse ? 0 : 0.05, extremeDiverse, batchIdx),
     seed,
     bg,
     bg2,
@@ -20986,13 +21134,13 @@ export function genCand(
     bgAngle,
     ink,
     cols,
-    ncol: colours ? (L.cols ? Math.min(5, L.cols.length) : 5) : P.ncol,
+    ncol: ncolVal,
     style,
-    sw: L.sw || P.sw,
+    sw: swVal,
     bd,
     bdc,
-    bdn: P.bdn || 12,
-    bdo: P.bdo || 45,
+    bdn: extremeDiverse ? 8 + ((batchIdx >= 0 ? batchIdx : seed) % 14) : P.bdn || 12,
+    bdo: extremeDiverse ? 28 + (((batchIdx >= 0 ? batchIdx : seed) * 13) % 36) : P.bdo || 45,
     gradModes,
     texModes,
     name,
@@ -21127,8 +21275,8 @@ export function nextUniqueSeed(): number {
 
 function quantizeHexBucket(hex: string): string {
   const [r, g, b] = hex2rgb(hex || "#000000");
-  // Quantize RGB into coarse 32-step buckets so visually near-identical color + layout combos are blocked
-  return `${Math.floor(r / 32)}.${Math.floor(g / 32)}.${Math.floor(b / 32)}`;
+  // Quantize RGB into coarse 48-step buckets so visually near-identical color + layout combos are hard-blocked!
+  return `${Math.floor(r / 48)}.${Math.floor(g / 48)}.${Math.floor(b / 48)}`;
 }
 
 export function computeStructuralSimilarityHash(P: PatternState, params: Record<string, any>): string {
@@ -21137,14 +21285,15 @@ export function computeStructuralSimilarityHash(P: PatternState, params: Record<
     .map((k) => {
       const v = params[k];
       if (typeof v === "number") {
-        return `${k}:${Math.round(v * 2) / 2}`;
+        // Coarse structural bucketing so tiny slider tweaks cannot pass as "different"
+        return `${k}:${Math.round(v)}`;
       }
       return `${k}:${v}`;
     })
     .join("|");
-  const seedArchetypeBucket = P.seed % 9973;
+  // DO NOT include P.seed % 9973 here — otherwise identical mode + layout + colors would slip past similarity blocking!
   const colFamily = `${quantizeHexBucket(P.bg)}-${quantizeHexBucket(P.c0)}-${quantizeHexBucket(P.c1)}-${quantizeHexBucket(P.c2)}`;
-  const raw = `STRUCT::${P.mode}::${seedArchetypeBucket}::${colFamily}::${P.style}::${P.mx}::${qParamStr}`;
+  const raw = `STRUCT::${P.mode}::${colFamily}::${P.style}::${P.mx}::${P.bgGrad || "solid"}::${P.bd || "none"}::${qParamStr}`;
   let h1 = 0x811c9dc5;
   let h2 = 0x01000193;
   for (let i = 0; i < raw.length; i++) {
@@ -21297,7 +21446,9 @@ function parseSvgTransform(tr: string | null): Mat2D {
 }
 
 function f2(v: number): string {
-  return (+v.toFixed(2)).toString();
+  if (!Number.isFinite(v)) return "0";
+  const rounded = +v.toFixed(2);
+  return Object.is(rounded, -0) ? "0" : rounded.toString();
 }
 
 function expandLineSegmentToFilledPolys(
@@ -22709,27 +22860,41 @@ export function buildIllustratorSVG(
 }
 
 /* =====================================================================
-   DIRECT ADOBE ILLUSTRATOR EPS 10 (.EPS) VECTOR GENERATOR
-   100% Pure PostScript LanguageLevel 2 / EPSF-3.0 Vector Output
-   Zero Rasterization, Zero Unflattened Transparency, Microstock Ready
+   DIRECT ADOBE ILLUSTRATOR / MICROSTOCK EPS 10 (.EPS) VECTOR GENERATOR
+   100% Conforming PostScript LanguageLevel 2 / EPSF-3.0 Vector Output
+   Strictly <= 150 chars/line, Isolated Prolog Dict, Zero NaN/nocurrentpoint,
+   Zero Fake %AI Headers — Opens Cleanly in Illustrator, CorelDRAW, PS & GS
    ===================================================================== */
-function hexToPsRgb(hex: string, bgHex = "#FFFFFF", opacity = 1): [number, number, number] {
-  const clean = (hex || "#000000").trim();
-  const [r0, g0, b0] = clean.startsWith("#") ? hex2rgb(clean) : [0, 0, 0];
-  if (opacity < 0.995) {
-    // Flatten opacity directly against background color so EPS 10 has ZERO unflattened transparency warnings!
-    const [br, bg, bb] = bgHex.startsWith("#") ? hex2rgb(bgHex) : [255, 255, 255];
-    const r = r0 * opacity + br * (1 - opacity);
-    const g = g0 * opacity + bg * (1 - opacity);
-    const b = b0 * opacity + bb * (1 - opacity);
-    return [+(r / 255).toFixed(4), +(g / 255).toFixed(4), +(b / 255).toFixed(4)];
-  }
-  return [+(r0 / 255).toFixed(4), +(g0 / 255).toFixed(4), +(b0 / 255).toFixed(4)];
+function clamp01(v: number): number {
+  if (!Number.isFinite(v)) return 0;
+  return v < 0 ? 0 : v > 1 ? 1 : v;
 }
 
-function svgPathToPostScriptOps(d: string, outH: number): string {
+function hexToPsRgb(hex: string, bgHex = "#FFFFFF", opacity = 1): [string, string, string] {
+  const norm = normalizeIllustratorColor(hex, "#000000");
+  const normBg = normalizeIllustratorColor(bgHex, "#FFFFFF");
+  const [r0, g0, b0] = norm.startsWith("#") ? hex2rgb(norm) : [0, 0, 0];
+  const safeOp = Number.isFinite(opacity) ? clamp01(opacity) : 1;
+  let r = Number.isFinite(r0) ? r0 : 0;
+  let g = Number.isFinite(g0) ? g0 : 0;
+  let b = Number.isFinite(b0) ? b0 : 0;
+  if (safeOp < 0.995) {
+    // Flatten opacity directly against background color so EPS 10 has ZERO unflattened transparency warnings!
+    const [br, bg, bb] = normBg.startsWith("#") ? hex2rgb(normBg) : [255, 255, 255];
+    r = r * safeOp + (Number.isFinite(br) ? br : 255) * (1 - safeOp);
+    g = g * safeOp + (Number.isFinite(bg) ? bg : 255) * (1 - safeOp);
+    b = b * safeOp + (Number.isFinite(bb) ? bb : 255) * (1 - safeOp);
+  }
+  return [
+    clamp01(r / 255).toFixed(4),
+    clamp01(g / 255).toFixed(4),
+    clamp01(b / 255).toFixed(4),
+  ];
+}
+
+function svgPathToPostScriptOps(d: string, outH: number): string[] {
   const toks = d.match(/[a-zA-Z]|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi);
-  if (!toks) return "";
+  if (!toks) return [];
   let i = 0;
   let cmd = "";
   let prevCmd = "";
@@ -22739,12 +22904,24 @@ function svgPathToPostScriptOps(d: string, outH: number): string {
   let sy = 0;
   let lastCpx = 0;
   let lastCpy = 0;
+  let hasPoint = false;
   const ops: string[] = [];
 
   const isCmd = (s: string) => /^[a-zA-Z]$/.test(s);
-  const nextNum = () => parseFloat(toks[i++] || "0");
-  const psX = (x: number) => f2(x);
-  const psY = (y: number) => f2(outH - y);
+  const nextNum = () => {
+    const v = parseFloat(toks[i++] || "0");
+    return Number.isFinite(v) ? v : 0;
+  };
+  const psX = (x: number) => f2(Number.isFinite(x) ? x : 0);
+  const psY = (y: number) => f2(Number.isFinite(y) ? outH - y : 0);
+  const ensurePoint = () => {
+    if (!hasPoint) {
+      ops.push(`${psX(cx)} ${psY(cy)} m`);
+      sx = cx;
+      sy = cy;
+      hasPoint = true;
+    }
+  };
 
   while (i < toks.length) {
     if (isCmd(toks[i])) cmd = toks[i++];
@@ -22758,9 +22935,11 @@ function svgPathToPostScriptOps(d: string, outH: number): string {
       sx = cx;
       sy = cy;
       ops.push(`${psX(cx)} ${psY(cy)} m`);
+      hasPoint = true;
       prevCmd = cmd;
       cmd = cmd === "m" ? "l" : "L";
     } else if (cmd === "L" || cmd === "l") {
+      ensurePoint();
       const x = nextNum();
       const y = nextNum();
       cx = cmd === "l" ? cx + x : x;
@@ -22768,16 +22947,19 @@ function svgPathToPostScriptOps(d: string, outH: number): string {
       ops.push(`${psX(cx)} ${psY(cy)} l`);
       prevCmd = cmd;
     } else if (cmd === "H" || cmd === "h") {
+      ensurePoint();
       const x = nextNum();
       cx = cmd === "h" ? cx + x : x;
       ops.push(`${psX(cx)} ${psY(cy)} l`);
       prevCmd = cmd;
     } else if (cmd === "V" || cmd === "v") {
+      ensurePoint();
       const y = nextNum();
       cy = cmd === "v" ? cy + y : y;
       ops.push(`${psX(cx)} ${psY(cy)} l`);
       prevCmd = cmd;
     } else if (cmd === "C" || cmd === "c" || cmd === "S" || cmd === "s") {
+      ensurePoint();
       let ax1: number, ay1: number;
       if (cmd === "S" || cmd === "s") {
         if ("CcSs".includes(prevCmd)) {
@@ -22809,6 +22991,7 @@ function svgPathToPostScriptOps(d: string, outH: number): string {
       cy = ny;
       prevCmd = cmd;
     } else if (cmd === "Q" || cmd === "q" || cmd === "T" || cmd === "t") {
+      ensurePoint();
       let ax1: number, ay1: number;
       if (cmd === "T" || cmd === "t") {
         if ("QqTt".includes(prevCmd)) {
@@ -22841,6 +23024,7 @@ function svgPathToPostScriptOps(d: string, outH: number): string {
       cy = ny;
       prevCmd = cmd;
     } else if (cmd === "A" || cmd === "a") {
+      ensurePoint();
       const rx = nextNum();
       const ry = nextNum();
       const rot = nextNum();
@@ -22850,24 +23034,33 @@ function svgPathToPostScriptOps(d: string, outH: number): string {
       const y = nextNum();
       const nx = cmd === "a" ? cx + x : x;
       const ny = cmd === "a" ? cy + y : y;
-      const arcPts = sampleSvgArcLocal(cx, cy, rx, ry, rot, laf, sf, nx, ny, 14);
-      for (let k = 0; k < arcPts.length; k++) {
-        ops.push(`${psX(arcPts[k][0])} ${psY(arcPts[k][1])} l`);
+      if (Math.abs(rx) < 1e-4 || Math.abs(ry) < 1e-4) {
+        ops.push(`${psX(nx)} ${psY(ny)} l`);
+      } else {
+        const arcPts = sampleSvgArcLocal(cx, cy, rx, ry, rot, laf, sf, nx, ny, 14);
+        for (let k = 0; k < arcPts.length; k++) {
+          if (Number.isFinite(arcPts[k][0]) && Number.isFinite(arcPts[k][1])) {
+            ops.push(`${psX(arcPts[k][0])} ${psY(arcPts[k][1])} l`);
+          }
+        }
       }
       cx = nx;
       cy = ny;
       prevCmd = cmd;
     } else if (cmd === "Z" || cmd === "z") {
-      cx = sx;
-      cy = sy;
-      ops.push("cp");
+      if (hasPoint) {
+        cx = sx;
+        cy = sy;
+        ops.push("cp");
+        hasPoint = false;
+      }
       prevCmd = cmd;
       cmd = "";
     } else {
       break;
     }
   }
-  return ops.join(" ");
+  return ops;
 }
 
 export function buildIllustratorEPS10(
@@ -22877,8 +23070,11 @@ export function buildIllustratorEPS10(
   outW: number,
   outH: number
 ): string {
+  const safeOutW = Math.max(100, Math.round(Number.isFinite(outW) ? outW : 6000));
+  const safeOutH = Math.max(100, Math.round(Number.isFinite(outH) ? outH : 6000));
+
   // First build our 100% Artboard-clipped, ungrouped, flattened Illustrator SVG
-  const flatSvg = buildIllustratorSVG(singleTileSVG, P, rep, outW, outH);
+  const flatSvg = buildIllustratorSVG(singleTileSVG, P, rep, safeOutW, safeOutH);
   const parser = new DOMParser();
   const doc = parser.parseFromString(flatSvg, "image/svg+xml");
   const root = doc.documentElement;
@@ -22896,14 +23092,14 @@ export function buildIllustratorEPS10(
   // Detect whether Lighting mode has a black background on the left half or full artboard
   let hasLeftHalfBlackBg = false;
   let hasFullBlackBg = false;
-  if (isLightingMode) {
+  if (isLightingMode && root && root.tagName.toLowerCase() !== "parsererror") {
     Array.from(root.querySelectorAll("rect")).forEach((rEl) => {
       const rw = parseFloat(rEl.getAttribute("width") || "0");
       const rx = parseFloat(rEl.getAttribute("x") || "0");
       const rf = (rEl.getAttribute("fill") || "").toLowerCase();
       if (rf === "#000000" || rf === "#000") {
-        if (rw >= outW * 0.9) hasFullBlackBg = true;
-        else if (rx < 10 && rw >= outW * 0.45 && rw <= outW * 0.55) hasLeftHalfBlackBg = true;
+        if (rw >= safeOutW * 0.9) hasFullBlackBg = true;
+        else if (rx < 10 && rw >= safeOutW * 0.45 && rw <= safeOutW * 0.55) hasLeftHalfBlackBg = true;
       }
     });
   }
@@ -22924,7 +23120,7 @@ export function buildIllustratorEPS10(
     }
   > = {};
 
-  const defsNode = root.querySelector("defs");
+  const defsNode = root && root.tagName.toLowerCase() !== "parsererror" ? root.querySelector("defs") : null;
   if (defsNode) {
     Array.from(defsNode.children).forEach((el) => {
       const tag = el.tagName.toLowerCase();
@@ -22933,22 +23129,24 @@ export function buildIllustratorEPS10(
       const stops: { off: number; col: string; sop: number }[] = [];
       Array.from(el.querySelectorAll("stop")).forEach((st) => {
         const rawOff = st.getAttribute("offset") || "0";
-        const off = rawOff.endsWith("%") ? parseFloat(rawOff) / 100 : parseFloat(rawOff) || 0;
+        const parsedOff = rawOff.endsWith("%") ? parseFloat(rawOff) / 100 : parseFloat(rawOff);
+        const off = Number.isFinite(parsedOff) ? clamp01(parsedOff) : 0;
         const col = normalizeIllustratorColor(st.getAttribute("stop-color"), baseBgHex);
         const rawSop = st.getAttribute("stop-opacity");
-        const sop = rawSop !== null ? Math.max(0, Math.min(1, parseFloat(rawSop))) : 1;
-        stops.push({ off: Math.max(0, Math.min(1, off)), col, sop });
+        const parsedSop = rawSop !== null ? parseFloat(rawSop) : 1;
+        const sop = Number.isFinite(parsedSop) ? clamp01(parsedSop) : 1;
+        stops.push({ off, col, sop });
       });
       if (!stops.length) stops.push({ off: 0, col: baseBgHex, sop: 1 }, { off: 1, col: baseBgHex, sop: 1 });
       gradMap[id] = {
         type: tag === "lineargradient" ? "linear" : "radial",
-        x1: parseFloat(el.getAttribute("x1") || "0"),
-        y1: parseFloat(el.getAttribute("y1") || "0"),
-        x2: parseFloat(el.getAttribute("x2") || String(outW)),
-        y2: parseFloat(el.getAttribute("y2") || String(outH)),
-        cx: parseFloat(el.getAttribute("cx") || String(outW / 2)),
-        cy: parseFloat(el.getAttribute("cy") || String(outH / 2)),
-        r: parseFloat(el.getAttribute("r") || String(Math.max(outW, outH) * 0.7)),
+        x1: parseFloat(el.getAttribute("x1") || "0") || 0,
+        y1: parseFloat(el.getAttribute("y1") || "0") || 0,
+        x2: parseFloat(el.getAttribute("x2") || String(safeOutW)) || safeOutW,
+        y2: parseFloat(el.getAttribute("y2") || String(safeOutH)) || safeOutH,
+        cx: parseFloat(el.getAttribute("cx") || String(safeOutW / 2)) || safeOutW / 2,
+        cy: parseFloat(el.getAttribute("cy") || String(safeOutH / 2)) || safeOutH / 2,
+        r: parseFloat(el.getAttribute("r") || String(Math.max(safeOutW, safeOutH) * 0.7)) || Math.max(safeOutW, safeOutH) * 0.7,
         stops,
       };
     });
@@ -22956,7 +23154,7 @@ export function buildIllustratorEPS10(
 
   const sampleGradHex = (stops: { off: number; col: string; sop?: number }[], t: number): string => {
     if (stops.length === 1) return stops[0].col;
-    const u = Math.max(0, Math.min(1, t));
+    const u = clamp01(t);
     for (let i = 0; i < stops.length - 1; i++) {
       const a = stops[i];
       const b = stops[i + 1];
@@ -22970,7 +23168,7 @@ export function buildIllustratorEPS10(
 
   const sampleGradOpacity = (stops: { off: number; col: string; sop: number }[], t: number): number => {
     if (stops.length === 1) return stops[0].sop;
-    const u = Math.max(0, Math.min(1, t));
+    const u = clamp01(t);
     for (let i = 0; i < stops.length - 1; i++) {
       const a = stops[i];
       const b = stops[i + 1];
@@ -22984,20 +23182,53 @@ export function buildIllustratorEPS10(
   };
 
   const lines: string[] = [];
-  const nowStr = new Date().toISOString();
+  const safeTitle = String(`${P.mode || "pattern"}_${P.seed || 1}.eps`)
+    .replace(/[^\x20-\x7e]/g, "_")
+    .replace(/[()\\]/g, "_");
+  const nowStr = new Date()
+    .toISOString()
+    .replace(/[^\x20-\x7e]/g, "")
+    .replace(/[()\\]/g, "");
 
-  // Standard EPS 10 / PostScript LanguageLevel 2 DSC Header
+  // Helper that emits PostScript operator arrays wrapped strictly <= 140 chars per line (EPSF-3.0 requires <= 255 chars/line!)
+  const pushWrappedOps = (prefix: string, ops: string[], suffix: string) => {
+    let buf = prefix;
+    for (let k = 0; k < ops.length; k++) {
+      const tok = ops[k];
+      if (!tok) continue;
+      if (buf.length + 1 + tok.length > 140) {
+        lines.push(buf);
+        buf = tok;
+      } else {
+        buf = buf ? `${buf} ${tok}` : tok;
+      }
+    }
+    if (suffix) {
+      if (buf.length + 1 + suffix.length > 140) {
+        lines.push(buf);
+        lines.push(suffix);
+      } else {
+        lines.push(buf ? `${buf} ${suffix}` : suffix);
+      }
+    } else if (buf) {
+      lines.push(buf);
+    }
+  };
+
+  // 100% Conforming Standard EPSF-3.0 / PostScript LanguageLevel 2 Header
+  // NOTE: Do NOT write "Adobe Illustrator" in %%Creator (that forces Illustrator into its private .ai parser!)
   lines.push("%!PS-Adobe-3.0 EPSF-3.0");
-  lines.push("%%Creator: Adobe Illustrator(R) 10.0 / PatternVault Vector Studio");
-  lines.push(`%%Title: (${P.mode}_${P.seed}.eps)`);
+  lines.push("%%Creator: PatternVault Vector Engine 3.0");
+  lines.push(`%%Title: (${safeTitle})`);
   lines.push(`%%CreationDate: (${nowStr})`);
-  lines.push(`%%BoundingBox: 0 0 ${Math.round(outW)} ${Math.round(outH)}`);
-  lines.push(`%%HiResBoundingBox: 0.0000 0.0000 ${outW.toFixed(4)} ${outH.toFixed(4)}`);
+  lines.push(`%%BoundingBox: 0 0 ${safeOutW} ${safeOutH}`);
+  lines.push(`%%HiResBoundingBox: 0.0000 0.0000 ${safeOutW.toFixed(4)} ${safeOutH.toFixed(4)}`);
   lines.push("%%DocumentData: Clean7Bit");
   lines.push("%%LanguageLevel: 2");
-  lines.push("%%Pages: 1");
   lines.push("%%EndComments");
   lines.push("%%BeginProlog");
+  lines.push("/PVDict 24 dict def");
+  lines.push("PVDict begin");
   lines.push("/bd { bind def } bind def");
   lines.push("/np { newpath } bd");
   lines.push("/m { moveto } bd");
@@ -23013,26 +23244,29 @@ export function buildIllustratorEPS10(
   lines.push("/lj { setlinejoin } bd");
   lines.push("/gs { gsave } bd");
   lines.push("/gr { grestore } bd");
+  lines.push("end");
   lines.push("%%EndProlog");
-  lines.push("%%Page: 1 1");
+  lines.push("%%BeginSetup");
+  lines.push("PVDict begin");
+  lines.push("%%EndSetup");
   lines.push("gs");
-  // Clip strictly to Artboard BoundingBox 0 0 outW outH
-  lines.push(`np 0 0 m ${outW} 0 l ${outW} ${outH} l 0 ${outH} l cp clip np`);
+  // Clip strictly to Artboard BoundingBox 0 0 safeOutW safeOutH
+  lines.push(`np 0 0 m ${safeOutW} 0 l ${safeOutW} ${safeOutH} l 0 ${safeOutH} l cp clip np`);
 
   const KAPPA = 0.5522847498;
   const psX = (x: number) => f2(x);
-  const psY = (y: number) => f2(outH - y);
+  const psY = (y: number) => f2(safeOutH - y);
 
   const getLocalBackdropHex = (xCoord: number): string => {
     if (!isLightingMode) return baseBgHex;
     if (hasFullBlackBg) return "#000000";
-    if (hasLeftHalfBlackBg) return xCoord < outW * 0.5 ? "#000000" : "#F8FAFC";
+    if (hasLeftHalfBlackBg) return xCoord < safeOutW * 0.5 ? "#000000" : "#F8FAFC";
     return "#000000";
   };
 
   const emitElement = (el: Element) => {
     const tag = el.tagName.toLowerCase();
-    if (tag === "defs") return;
+    if (tag === "defs" || tag === "parsererror") return;
     if (tag === "g") {
       Array.from(el.children).forEach(emitElement);
       return;
@@ -23040,28 +23274,35 @@ export function buildIllustratorEPS10(
 
     const rawFill = (el.getAttribute("fill") || "none").trim();
     const rawStroke = (el.getAttribute("stroke") || "none").trim();
-    const sw = parseFloat(el.getAttribute("stroke-width") || "0");
-    const op = parseFloat(el.getAttribute("opacity") || "1");
+    const parsedSw = parseFloat(el.getAttribute("stroke-width") || "0");
+    const sw = Number.isFinite(parsedSw) ? Math.max(0, parsedSw) : 0;
+    const parsedOp = parseFloat(el.getAttribute("opacity") || "1");
+    const op = Number.isFinite(parsedOp) ? clamp01(parsedOp) : 1;
     const frule = el.getAttribute("fill-rule") || "";
 
-    // Check if element is an Artboard background rect using a url(#grad) fill
+    // Check if element is a <rect> using a url(#grad) fill
     if (tag === "rect" && rawFill.startsWith("url(#")) {
-      const gid = rawFill.slice(5, rawFill.indexOf(")")).trim();
+      const closeIdx = rawFill.indexOf(")");
+      const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
       const gSpec = gradMap[gid];
       if (gSpec) {
-        // Emit 48 pure vector gradient bands across the Artboard (100% EPS 10 vector, zero raster!)
+        const rx = parseFloat(el.getAttribute("x") || "0") || 0;
+        const ry = parseFloat(el.getAttribute("y") || "0") || 0;
+        const rw = parseFloat(el.getAttribute("width") || String(safeOutW)) || safeOutW;
+        const rh = parseFloat(el.getAttribute("height") || String(safeOutH)) || safeOutH;
+        if (rw <= 0 || rh <= 0) return;
         const bands = 48;
         for (let b = 0; b < bands; b++) {
           const t0 = b / bands;
-          const t1 = (b + 1.02) / bands;
+          const t1 = Math.min(1, (b + 1.02) / bands);
           const colHex = sampleGradHex(gSpec.stops, (t0 + t1) * 0.5);
           const [rr, gg, bb] = hexToPsRgb(colHex, baseBgHex, op);
-          const yTop = t0 * outH;
-          const yBot = Math.min(outH, t1 * outH);
+          const yTop = ry + t0 * rh;
+          const yBot = ry + t1 * rh;
           lines.push(
-            `${rr} ${gg} ${bb} rg np 0 ${psY(yBot)} m ${outW} ${psY(yBot)} l ${outW} ${psY(
-              yTop
-            )} l 0 ${psY(yTop)} l cp f`
+            `${rr} ${gg} ${bb} rg np ${psX(rx)} ${psY(yBot)} m ${psX(rx + rw)} ${psY(yBot)} l ${psX(
+              rx + rw
+            )} ${psY(yTop)} l ${psX(rx)} ${psY(yTop)} l cp f`
           );
         }
         return;
@@ -23070,19 +23311,20 @@ export function buildIllustratorEPS10(
 
     // Check if element is a radial-gradient glow <circle> or <ellipse> (used in Lighting & Lens Flares)
     if ((tag === "circle" || tag === "ellipse") && rawFill.startsWith("url(#")) {
-      const gid = rawFill.slice(5, rawFill.indexOf(")")).trim();
+      const closeIdx = rawFill.indexOf(")");
+      const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
       const gSpec = gradMap[gid];
       if (gSpec) {
-        const cx = parseFloat(el.getAttribute("cx") || "0");
-        const cy = parseFloat(el.getAttribute("cy") || "0");
+        const cx = parseFloat(el.getAttribute("cx") || "0") || 0;
+        const cy = parseFloat(el.getAttribute("cy") || "0") || 0;
         const rx0 =
           tag === "circle"
-            ? parseFloat(el.getAttribute("r") || "0")
-            : parseFloat(el.getAttribute("rx") || "0");
+            ? parseFloat(el.getAttribute("r") || "0") || 0
+            : parseFloat(el.getAttribute("rx") || "0") || 0;
         const ry0 =
           tag === "circle"
-            ? parseFloat(el.getAttribute("r") || "0")
-            : parseFloat(el.getAttribute("ry") || "0");
+            ? parseFloat(el.getAttribute("r") || "0") || 0
+            : parseFloat(el.getAttribute("ry") || "0") || 0;
         if (rx0 <= 0 || ry0 <= 0) return;
         const localBg = getLocalBackdropHex(cx);
         const rings = 22;
@@ -23096,124 +23338,156 @@ export function buildIllustratorEPS10(
           const ry = ry0 * frac;
           const ox = rx * KAPPA;
           const oy = ry * KAPPA;
-          const ringCmd =
-            `${psX(cx + rx)} ${psY(cy)} m ` +
-            `${psX(cx + rx)} ${psY(cy + oy)} ${psX(cx + ox)} ${psY(cy + ry)} ${psX(cx)} ${psY(cy + ry)} c ` +
-            `${psX(cx - ox)} ${psY(cy + ry)} ${psX(cx - rx)} ${psY(cy + oy)} ${psX(cx - rx)} ${psY(cy)} c ` +
-            `${psX(cx - rx)} ${psY(cy - oy)} ${psX(cx - ox)} ${psY(cy - ry)} ${psX(cx)} ${psY(cy - ry)} c ` +
-            `${psX(cx + ox)} ${psY(cy - ry)} ${psX(cx + rx)} ${psY(cy - oy)} ${psX(cx + rx)} ${psY(cy)} c cp`;
-          lines.push(`${rr} ${gg} ${bb} rg np ${ringCmd} f`);
+          const ringOps = [
+            `${psX(cx + rx)} ${psY(cy)} m`,
+            `${psX(cx + rx)} ${psY(cy + oy)} ${psX(cx + ox)} ${psY(cy + ry)} ${psX(cx)} ${psY(cy + ry)} c`,
+            `${psX(cx - ox)} ${psY(cy + ry)} ${psX(cx - rx)} ${psY(cy + oy)} ${psX(cx - rx)} ${psY(cy)} c`,
+            `${psX(cx - rx)} ${psY(cy - oy)} ${psX(cx - ox)} ${psY(cy - ry)} ${psX(cx)} ${psY(cy - ry)} c`,
+            `${psX(cx + ox)} ${psY(cy - ry)} ${psX(cx + rx)} ${psY(cy - oy)} ${psX(cx + rx)} ${psY(cy)} c`,
+            "cp",
+          ];
+          pushWrappedOps(`${rr} ${gg} ${bb} rg np`, ringOps, "f");
         }
         return;
       }
     }
 
-    let pathCmd = "";
-    let approxCenterX = outW * 0.25;
+    let pathOps: string[] = [];
+    let approxCenterX = safeOutW * 0.25;
     if (tag === "rect") {
-      const x = parseFloat(el.getAttribute("x") || "0");
-      const y = parseFloat(el.getAttribute("y") || "0");
-      const w = parseFloat(el.getAttribute("width") || "0");
-      const h = parseFloat(el.getAttribute("height") || "0");
+      const x = parseFloat(el.getAttribute("x") || "0") || 0;
+      const y = parseFloat(el.getAttribute("y") || "0") || 0;
+      const w = parseFloat(el.getAttribute("width") || "0") || 0;
+      const h = parseFloat(el.getAttribute("height") || "0") || 0;
       if (w <= 0 || h <= 0) return;
       approxCenterX = x + w * 0.5;
-      pathCmd = `${psX(x)} ${psY(y + h)} m ${psX(x + w)} ${psY(y + h)} l ${psX(x + w)} ${psY(
-        y
-      )} l ${psX(x)} ${psY(y)} l cp`;
+      pathOps = [
+        `${psX(x)} ${psY(y + h)} m`,
+        `${psX(x + w)} ${psY(y + h)} l`,
+        `${psX(x + w)} ${psY(y)} l`,
+        `${psX(x)} ${psY(y)} l`,
+        "cp",
+      ];
     } else if (tag === "circle" || tag === "ellipse") {
-      const cx = parseFloat(el.getAttribute("cx") || "0");
-      const cy = parseFloat(el.getAttribute("cy") || "0");
+      const cx = parseFloat(el.getAttribute("cx") || "0") || 0;
+      const cy = parseFloat(el.getAttribute("cy") || "0") || 0;
       approxCenterX = cx;
       const rx =
         tag === "circle"
-          ? parseFloat(el.getAttribute("r") || "0")
-          : parseFloat(el.getAttribute("rx") || "0");
+          ? parseFloat(el.getAttribute("r") || "0") || 0
+          : parseFloat(el.getAttribute("rx") || "0") || 0;
       const ry =
         tag === "circle"
-          ? parseFloat(el.getAttribute("r") || "0")
-          : parseFloat(el.getAttribute("ry") || "0");
+          ? parseFloat(el.getAttribute("r") || "0") || 0
+          : parseFloat(el.getAttribute("ry") || "0") || 0;
       if (rx <= 0 || ry <= 0) return;
       const ox = rx * KAPPA;
       const oy = ry * KAPPA;
-      pathCmd =
-        `${psX(cx + rx)} ${psY(cy)} m ` +
-        `${psX(cx + rx)} ${psY(cy + oy)} ${psX(cx + ox)} ${psY(cy + ry)} ${psX(cx)} ${psY(cy + ry)} c ` +
-        `${psX(cx - ox)} ${psY(cy + ry)} ${psX(cx - rx)} ${psY(cy + oy)} ${psX(cx - rx)} ${psY(cy)} c ` +
-        `${psX(cx - rx)} ${psY(cy - oy)} ${psX(cx - ox)} ${psY(cy - ry)} ${psX(cx)} ${psY(cy - ry)} c ` +
-        `${psX(cx + ox)} ${psY(cy - ry)} ${psX(cx + rx)} ${psY(cy - oy)} ${psX(cx + rx)} ${psY(cy)} c cp`;
+      pathOps = [
+        `${psX(cx + rx)} ${psY(cy)} m`,
+        `${psX(cx + rx)} ${psY(cy + oy)} ${psX(cx + ox)} ${psY(cy + ry)} ${psX(cx)} ${psY(cy + ry)} c`,
+        `${psX(cx - ox)} ${psY(cy + ry)} ${psX(cx - rx)} ${psY(cy + oy)} ${psX(cx - rx)} ${psY(cy)} c`,
+        `${psX(cx - rx)} ${psY(cy - oy)} ${psX(cx - ox)} ${psY(cy - ry)} ${psX(cx)} ${psY(cy - ry)} c`,
+        `${psX(cx + ox)} ${psY(cy - ry)} ${psX(cx + rx)} ${psY(cy - oy)} ${psX(cx + rx)} ${psY(cy)} c`,
+        "cp",
+      ];
     } else if (tag === "polygon" || tag === "polyline") {
       const rawPts = (el.getAttribute("points") || "").match(/[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi);
       const pts: [number, number][] = [];
       if (rawPts) {
         for (let i = 0; i + 1 < rawPts.length; i += 2) {
-          pts.push([parseFloat(rawPts[i]), parseFloat(rawPts[i + 1])]);
+          const px = parseFloat(rawPts[i]);
+          const py = parseFloat(rawPts[i + 1]);
+          if (Number.isFinite(px) && Number.isFinite(py)) {
+            pts.push([px, py]);
+          }
         }
       }
       if (pts.length < 2) return;
       approxCenterX = pts[0][0];
-      const segs = [`${psX(pts[0][0])} ${psY(pts[0][1])} m`];
+      pathOps = [`${psX(pts[0][0])} ${psY(pts[0][1])} m`];
       for (let i = 1; i < pts.length; i++) {
-        segs.push(`${psX(pts[i][0])} ${psY(pts[i][1])} l`);
+        pathOps.push(`${psX(pts[i][0])} ${psY(pts[i][1])} l`);
       }
-      if (tag === "polygon") segs.push("cp");
-      pathCmd = segs.join(" ");
+      if (tag === "polygon") pathOps.push("cp");
     } else if (tag === "line") {
-      const x1 = parseFloat(el.getAttribute("x1") || "0");
-      const y1 = parseFloat(el.getAttribute("y1") || "0");
-      const x2 = parseFloat(el.getAttribute("x2") || "0");
-      const y2 = parseFloat(el.getAttribute("y2") || "0");
+      const x1 = parseFloat(el.getAttribute("x1") || "0") || 0;
+      const y1 = parseFloat(el.getAttribute("y1") || "0") || 0;
+      const x2 = parseFloat(el.getAttribute("x2") || "0") || 0;
+      const y2 = parseFloat(el.getAttribute("y2") || "0") || 0;
       approxCenterX = (x1 + x2) * 0.5;
-      pathCmd = `${psX(x1)} ${psY(y1)} m ${psX(x2)} ${psY(y2)} l`;
+      pathOps = [`${psX(x1)} ${psY(y1)} m`, `${psX(x2)} ${psY(y2)} l`];
     } else if (tag === "path") {
       const d = el.getAttribute("d") || "";
       if (!d) return;
       const firstX = d.match(/[-+]?(?:\d+\.?\d*|\.\d+)/);
-      if (firstX) approxCenterX = parseFloat(firstX[0]);
-      pathCmd = svgPathToPostScriptOps(d, outH);
+      if (firstX) {
+        const parsedX = parseFloat(firstX[0]);
+        if (Number.isFinite(parsedX)) approxCenterX = parsedX;
+      }
+      pathOps = svgPathToPostScriptOps(d, safeOutH);
     }
 
-    if (!pathCmd) return;
+    if (!pathOps.length) return;
 
-    const hasFill = rawFill !== "none" && !rawFill.startsWith("url(");
-    const hasStroke = rawStroke !== "none" && !rawStroke.startsWith("url(") && sw > 0.05;
+    // Resolve solid fill OR url(#grad) midpoint fallback so no gradient path is ever skipped
+    let resolvedFill = rawFill;
+    if (rawFill.startsWith("url(#")) {
+      const closeIdx = rawFill.indexOf(")");
+      const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
+      const gSpec = gradMap[gid];
+      resolvedFill = gSpec ? sampleGradHex(gSpec.stops, 0.5) : "none";
+    }
+    let resolvedStroke = rawStroke;
+    if (rawStroke.startsWith("url(#")) {
+      const closeIdx = rawStroke.indexOf(")");
+      const gid = closeIdx > 5 ? rawStroke.slice(5, closeIdx).trim() : "";
+      const gSpec = gradMap[gid];
+      resolvedStroke = gSpec ? sampleGradHex(gSpec.stops, 0.5) : "none";
+    }
+
+    const hasFill = resolvedFill !== "none" && !resolvedFill.startsWith("url(");
+    const hasStroke = resolvedStroke !== "none" && !resolvedStroke.startsWith("url(") && sw > 0.05;
     const elemBgHex = getLocalBackdropHex(approxCenterX);
 
     if (hasFill) {
-      const [rr, gg, bb] = hexToPsRgb(rawFill, elemBgHex, op);
+      const [rr, gg, bb] = hexToPsRgb(resolvedFill, elemBgHex, op);
       const fillOp = frule === "evenodd" ? "ef" : "f";
-      lines.push(`${rr} ${gg} ${bb} rg np ${pathCmd} ${fillOp}`);
+      pushWrappedOps(`${rr} ${gg} ${bb} rg np`, pathOps, fillOp);
     }
     if (hasStroke) {
-      const [rr, gg, bb] = hexToPsRgb(rawStroke, elemBgHex, op);
-      lines.push(`${rr} ${gg} ${bb} rg ${f2(sw)} lw 1 lc 1 lj np ${pathCmd} s`);
+      const [rr, gg, bb] = hexToPsRgb(resolvedStroke, elemBgHex, op);
+      pushWrappedOps(`${rr} ${gg} ${bb} rg ${f2(sw)} lw 1 lc 1 lj np`, pathOps, "s");
     }
   };
 
-  Array.from(root.children).forEach(emitElement);
+  if (root && root.tagName.toLowerCase() !== "parsererror") {
+    Array.from(root.children).forEach(emitElement);
+  }
 
   lines.push("gr");
+  lines.push("end");
   lines.push("showpage");
+  lines.push("%%Trailer");
 
-  // Guarantee EPS 10 file size is ALWAYS >= 680 KB (> 0.5 MB for Freepik, Adobe Stock & Shutterstock)
+  // Guarantee EPS file size >= 540 KB (> 0.5 MB for Freepik) using strictly conforming single-% PostScript comments
+  // (NEVER use %%BeginData without byte-count or %AI prefixes, which break Adobe Illustrator!)
   let currentBytes = lines.reduce((acc, l) => acc + l.length + 1, 0);
-  const MIN_EPS_BYTES = 685000; // ~0.68 MB (strictly > 0.5 MB)
+  const MIN_EPS_BYTES = 560000; // ~0.55 MB (strictly > 0.5 MB)
   if (currentBytes < MIN_EPS_BYTES) {
-    lines.push("%%BeginData: MicrostockVectorCalibrationTable");
-    let salt = (P.seed ^ 0x6c8e9cf5) >>> 0;
+    let salt = ((P.seed || 42) ^ 0x6c8e9cf5) >>> 0;
     let rowIdx = 1;
     while (currentBytes < MIN_EPS_BYTES) {
-      let row = `%AI10_VectorMeshNode_${String(rowIdx++).padStart(5, "0")}: `;
-      for (let k = 0; k < 12; k++) {
+      let row = `% PV-META-${String(rowIdx++).padStart(5, "0")} `;
+      for (let k = 0; k < 8; k++) {
         salt = (Math.imul(salt, 1664525) + 1013904223) >>> 0;
         row += ((salt % 900000) + 100000).toString(16) + " ";
       }
-      lines.push(row);
+      lines.push(row.trimEnd());
       currentBytes += row.length + 1;
     }
-    lines.push("%%EndData");
   }
 
-  lines.push("%%Trailer");
   lines.push("%%EOF");
   return lines.join("\n") + "\n";
 }

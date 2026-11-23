@@ -233,7 +233,7 @@ export default function App() {
 
   // Auto-Batch Generator State
   const [batchModalOpen, setBatchModalOpen] = useState<boolean>(false);
-  const [batchScope, setBatchScope] = useState<"current" | "favs" | "all">("current");
+  const [batchScope, setBatchScope] = useState<"all" | "category" | "favs" | "current">("all");
   const [batchFormat, setBatchFormat] = useState<"eps_jpg" | "eps" | "jpg" | "svg" | "both" | "all3">("eps_jpg");
   const [batchCount, setBatchCount] = useState<number>(10);
   const [batchBgMode, setBatchBgMode] = useState<"mix" | "gradient" | "texture" | "current">("mix");
@@ -823,21 +823,26 @@ export default function App() {
       baseP: PatternState,
       baseMP: Record<string, Record<string, any>>,
       withColours: boolean,
-      bgPref: "current" | "mix" | "gradient" | "texture" = "current"
+      bgPref: "current" | "mix" | "gradient" | "texture" = "current",
+      extremeDiverse = false,
+      batchIdx = -1,
+      batchUsedSigs?: Set<string>
     ) => {
       const curQ = baseMP[targetMode.id] || {};
       const seenSession = sessionSeenRef.current;
       const isBrush = targetMode.cat === "Brush";
       const isPoster = targetMode.cat === "Poster";
       const isLighting = targetMode.cat === "Lighting";
+      const maxAttempts = extremeDiverse ? 64 : 48;
 
-      for (let a = 0; a < 48; a++) {
-        const cand = genCand(targetMode, curQ, baseP, withColours);
+      const buildCandidateAt = (attempt: number) => {
+        const stepIdx = batchIdx >= 0 ? batchIdx + attempt * 13 : attempt * 7;
+        const cand = genCand(targetMode, curQ, baseP, withColours, extremeDiverse, stepIdx);
         const structSalt = nextUniqueStructuralSalt();
         if (isPoster || isLighting) {
           cand.q = {
             ...cand.q,
-            variant: ((Math.round(+(curQ.variant ?? 0)) + structSalt + a) % 24) + 1,
+            variant: ((Math.round(+(curQ.variant ?? 0)) + structSalt + stepIdx) % 48) + 1,
           };
         }
         let bgGrad: BgGradientMode =
@@ -847,17 +852,23 @@ export default function App() {
 
         if (!isBrush && !isPoster && !isLighting) {
           if (bgPref === "gradient") {
-            bgGrad = cand.gradModes[Math.floor(Math.random() * cand.gradModes.length)];
+            bgGrad = cand.gradModes[(stepIdx + Math.floor(Math.random() * cand.gradModes.length)) % cand.gradModes.length];
             bd = "none";
           } else if (bgPref === "texture") {
-            bd = cand.texModes[Math.floor(Math.random() * cand.texModes.length)];
+            bgGrad = "solid";
+            bd = cand.texModes[(stepIdx + Math.floor(Math.random() * cand.texModes.length)) % cand.texModes.length];
           } else if (bgPref === "mix") {
-            const r = Math.random();
-            bgGrad =
-              r < 0.55
-                ? cand.gradModes[Math.floor(Math.random() * cand.gradModes.length)]
-                : "solid";
-            bd = "none";
+            const slot = extremeDiverse ? stepIdx % 10 : Math.floor(Math.random() * 10);
+            if (slot < 4) {
+              bgGrad = cand.gradModes[(stepIdx + attempt) % cand.gradModes.length];
+              bd = "none";
+            } else if (slot < 7) {
+              bgGrad = "solid";
+              bd = cand.texModes[(stepIdx + attempt) % cand.texModes.length];
+            } else {
+              bgGrad = "solid";
+              bd = "none";
+            }
           }
         }
 
@@ -890,25 +901,61 @@ export default function App() {
         };
         const designHash = computeDesignHash(testP, cand.q);
         const structHash = computeStructuralSimilarityHash(testP, cand.q);
+        // Coarse per-batch anti-similarity signature (mode + dominant palette bucket + style + mx + variant + bg)
+        const coarseSig = `${targetMode.id}|${testP.bg.slice(0, 4)}|${testP.c0.slice(0, 4)}|${testP.style}|${testP.mx}|${testP.bgGrad}|${testP.bd}|${cand.q.variant ?? ""}|${cand.q.arch ?? ""}`;
+        return { cand, testP, designHash, structHash, coarseSig };
+      };
+
+      let lastBuilt: ReturnType<typeof buildCandidateAt> | null = null;
+      for (let a = 0; a < maxAttempts; a++) {
+        const built = buildCandidateAt(a);
+        lastBuilt = built;
         if (
-          isDesignDuplicate(designHash, structHash) ||
-          seenSession.has(designHash) ||
-          seenSession.has(structHash)
+          isDesignDuplicate(built.designHash, built.structHash) ||
+          seenSession.has(built.designHash) ||
+          seenSession.has(built.structHash) ||
+          (batchUsedSigs && batchUsedSigs.has(built.coarseSig))
         ) {
           continue; // HARD BLOCK: Never allow any previously tested, previewed, or structurally similar design
         }
 
-        seenSession.add(designHash);
-        seenSession.add(structHash);
-        if (seenSession.size > 6000) {
+        seenSession.add(built.designHash);
+        seenSession.add(built.structHash);
+        if (batchUsedSigs) batchUsedSigs.add(built.coarseSig);
+        if (seenSession.size > 12000) {
           const first = seenSession.values().next().value;
           if (first) seenSession.delete(first);
         }
         // HARD 1-TIME PERMANENT BURN: Lock immediately in localStorage even on a single test preview!
-        const total = registerDesignHash(designHash, structHash);
+        const total = registerDesignHash(built.designHash, built.structHash);
         setUniqCount(total);
-        const testMP = { ...baseMP, [targetMode.id]: cand.q };
-        return { cand, testP, testMP, designHash, structHash, total };
+        const testMP = { ...baseMP, [targetMode.id]: built.cand.q };
+        return {
+          cand: built.cand,
+          testP: built.testP,
+          testMP,
+          designHash: built.designHash,
+          structHash: built.structHash,
+          total,
+        };
+      }
+
+      // Guaranteed non-skip fallback in extreme batch mode when a tiny 1-mode pool hits tight structural saturation
+      if (extremeDiverse && lastBuilt) {
+        seenSession.add(lastBuilt.designHash);
+        seenSession.add(lastBuilt.structHash);
+        if (batchUsedSigs) batchUsedSigs.add(lastBuilt.coarseSig);
+        const total = registerDesignHash(lastBuilt.designHash, lastBuilt.structHash);
+        setUniqCount(total);
+        const testMP = { ...baseMP, [targetMode.id]: lastBuilt.cand.q };
+        return {
+          cand: lastBuilt.cand,
+          testP: lastBuilt.testP,
+          testMP,
+          designHash: lastBuilt.designHash,
+          structHash: lastBuilt.structHash,
+          total,
+        };
       }
       return null;
     },
@@ -1526,44 +1573,144 @@ export default function App() {
       }
 
       try {
-        const pool: PatternMode[] =
-          batchScope === "current"
-            ? curMode.cat === "Brush"
-              ? modes.filter((m) => m.cat === "Brush")
-              : curMode.cat === "Lighting"
-              ? modes.filter((m) => m.cat === "Lighting")
-              : [curMode]
+        const rawPool: PatternMode[] =
+          batchScope === "all"
+            ? modes.slice()
+            : batchScope === "category"
+            ? modes.filter((m) => m.cat === curMode.cat)
             : batchScope === "favs" && favs.size > 0
             ? modes.filter((m) => favs.has(m.id))
-            : modes;
+            : curMode.cat === "Brush"
+            ? modes.filter((m) => m.cat === "Brush")
+            : curMode.cat === "Lighting"
+            ? modes.filter((m) => m.cat === "Lighting")
+            : curMode.cat === "Poster"
+            ? modes.filter((m) => m.cat === "Poster")
+            : [curMode];
+
+        // Build a Category-Interleaved, Fisher-Yates Shuffled sequence so NO two consecutive designs share a category or style!
+        const shuffleArr = <T,>(arr: T[]): T[] => {
+          const a = arr.slice();
+          for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+          }
+          return a;
+        };
+
+        const buildInterleavedRound = (src: PatternMode[]): PatternMode[] => {
+          const byCat = new Map<string, PatternMode[]>();
+          src.forEach((m) => {
+            const list = byCat.get(m.cat) || [];
+            list.push(m);
+            byCat.set(m.cat, list);
+          });
+          const catKeys = shuffleArr(Array.from(byCat.keys()));
+          const buckets = catKeys.map((k) => {
+            const list = byCat.get(k)!;
+            // Prime-stride shuffle inside each category so related variants are maximally separated
+            if (list.length <= 2) return shuffleArr(list);
+            const shuffled = shuffleArr(list);
+            const strided: PatternMode[] = [];
+            const stride = list.length > 13 ? 13 : list.length > 7 ? 7 : 3;
+            const used = new Set<number>();
+            let pos = 0;
+            for (let i = 0; i < shuffled.length; i++) {
+              while (used.has(pos)) pos = (pos + 1) % shuffled.length;
+              strided.push(shuffled[pos]);
+              used.add(pos);
+              pos = (pos + stride) % shuffled.length;
+            }
+            return strided;
+          });
+          const out: PatternMode[] = [];
+          let remaining = true;
+          let depth = 0;
+          while (remaining) {
+            remaining = false;
+            for (let b = 0; b < buckets.length; b++) {
+              if (depth < buckets[b].length) {
+                out.push(buckets[b][depth]);
+                remaining = true;
+              }
+            }
+            depth++;
+          }
+          return out;
+        };
+
+        const modeSequence: PatternMode[] = [];
+        while (modeSequence.length < total) {
+          const round = buildInterleavedRound(rawPool.length ? rawPool : [curMode]);
+          // Avoid placing the same mode at the boundary between rounds
+          if (
+            modeSequence.length > 0 &&
+            round.length > 1 &&
+            round[0].id === modeSequence[modeSequence.length - 1].id
+          ) {
+            round.push(round.shift()!);
+          }
+          modeSequence.push(...round);
+        }
 
         const zipEntries: ZipEntryInput[] = [];
         const csvRows: MicrostockMetaRow[] = [];
-        let workingP = { ...P, safeEdge: false };
+        // Keep clean immutable anchor state so Lighting/Brush/Poster flags NEVER leak into regular Pattern modes!
+        const anchorP: PatternState = { ...P, safeEdge: false };
+        const userLightBgMode = curMode.cat === "Lighting" ? MP[curMode.id]?.bgMode : undefined;
+        const userLightPcs = curMode.cat === "Lighting" ? MP[curMode.id]?.pcs : undefined;
+        const userPosterPcs = curMode.cat === "Poster" ? MP[curMode.id]?.pcs : undefined;
+        const userPosterShowText = curMode.cat === "Poster" ? MP[curMode.id]?.showText : undefined;
+
         let workingMP = { ...MP };
+        const batchUsedSigs = new Set<string>();
 
         for (let idx = 0; idx < total; idx++) {
           if (batchCancelRef.current) break;
-          const targetMode = pool[idx % pool.length];
+          const targetMode = modeSequence[idx];
           setBatchProgress({
             done: idx,
             total,
-            msg: `GENERATING DESIGN ${idx + 1} OF ${total} (${targetMode.name.toUpperCase()})...`,
+            msg: `GENERATING UNIQUE ${idx + 1} / ${total} [${targetMode.cat.toUpperCase()} · ${targetMode.name.toUpperCase()}]...`,
           });
+
+          // Preserve user's explicit Lighting bgMode/pcs or Poster pcs/showText if batching inside that category
+          if (targetMode.cat === "Lighting" && (userLightBgMode !== undefined || userLightPcs !== undefined)) {
+            workingMP = {
+              ...workingMP,
+              [targetMode.id]: {
+                ...(workingMP[targetMode.id] || {}),
+                ...(userLightBgMode !== undefined ? { bgMode: userLightBgMode } : {}),
+                ...(userLightPcs !== undefined ? { pcs: userLightPcs } : {}),
+              },
+            };
+          } else if (targetMode.cat === "Poster" && (userPosterPcs !== undefined || userPosterShowText !== undefined)) {
+            workingMP = {
+              ...workingMP,
+              [targetMode.id]: {
+                ...(workingMP[targetMode.id] || {}),
+                ...(userPosterPcs !== undefined ? { pcs: userPosterPcs } : {}),
+                ...(userPosterShowText !== undefined ? { showText: userPosterShowText } : {}),
+              },
+            };
+          }
 
           const candRes = generateUniqueCandidateForMode(
             targetMode,
-            workingP,
+            anchorP,
             workingMP,
             true,
-            batchBgMode
+            batchBgMode,
+            true,
+            idx,
+            batchUsedSigs
           );
           if (!candRes) continue;
           await new Promise((r) => setTimeout(r, 0));
 
-          workingP = candRes.testP;
+          const workingP = candRes.testP;
           workingMP = candRes.testMP;
-          const lockedTotal = registerDesignHash(candRes.designHash);
+          const lockedTotal = registerDesignHash(candRes.designHash, candRes.structHash);
           setP(workingP);
           setMP(workingMP);
           setClicks((c) => c + 1);
@@ -2190,7 +2337,7 @@ export default function App() {
           </button>
 
           <button
-            className="btn"
+            className="btn seed-btn"
             onClick={() => {
               const nextS = nextUniqueSeed();
               const nextVar =
@@ -2220,7 +2367,7 @@ export default function App() {
           </button>
 
           <button
-            className="btn rand-cta"
+            className="btn rand-cta gen-btn"
             onClick={() => smartRandom(!randLocked, "current", false)}
             title="GENERATE 100% UNIQUE DESIGN — 1-TIME HARD BURN (NEVER GENERATES AGAIN) (SPACE)"
           >
@@ -2228,7 +2375,7 @@ export default function App() {
           </button>
 
           <button
-            className="btn pri"
+            className="btn pri batch-btn"
             onClick={() => setBatchModalOpen(true)}
             title="AUTO-BATCH GENERATE MULTIPLE UNIQUE FILES INTO A SINGLE MICROSTOCK FOLDER (B)"
           >
@@ -2245,7 +2392,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* DIRECT EXPORT & TOOLS DECK (100% VISIBLE, NEVER OVERFLOWS OFF-SCREEN) */}
+        {/* DIRECT EXPORT & TOOLS DECK (100% FIXED POSITION, NEVER JUMPS OR OVERFLOWS) */}
         <div className="header-right">
           <div className="export-pill-deck">
             <button
@@ -2264,7 +2411,7 @@ export default function App() {
               onClick={exportSVG}
               title="DOWNLOAD ADOBE ILLUSTRATOR AUTO-ARTBOARD VECTOR SVG (S)"
             >
-              ⬇ VECTOR SVG
+              ⬇ SVG
             </button>
             <button
               className="btn"
@@ -3569,11 +3716,17 @@ export default function App() {
                       value={batchScope}
                       onChange={(e) => setBatchScope(e.target.value as any)}
                     >
-                      <option value="current">
-                        CURRENT CANVAS STYLE (#{pad2(curModeIdx + 1)} · {curMode.name})
+                      <option value="all">
+                        ALL {modes.length} VAULT STYLES (100% DIFFERENT · ZERO SIMILAR)
+                      </option>
+                      <option value="category">
+                        ALL {curMode.cat.toUpperCase()} CATEGORY STYLES (
+                        {modes.filter((m) => m.cat === curMode.cat).length} UNIQUE STYLES)
                       </option>
                       <option value="favs">★ FAVOURITE STYLES ({favs.size || 1})</option>
-                      <option value="all">ALL {modes.length} VAULT STYLES</option>
+                      <option value="current">
+                        SINGLE STYLE EXTREME MUTATION (#{pad2(curModeIdx + 1)} · {curMode.name})
+                      </option>
                     </select>
                   </div>
                   <div className="r">
@@ -3582,9 +3735,12 @@ export default function App() {
                       value={batchFormat}
                       onChange={(e) => setBatchFormat(e.target.value as any)}
                     >
-                      <option value="jpg">JPG ONLY (5 MB – 10 MB 300-DPI MICROSTOCK)</option>
-                      <option value="svg">SVG ONLY (ILLUSTRATOR VECTOR ARTBOARD)</option>
+                      <option value="eps_jpg">EPS 10 + 5–10 MB JPG PAIR (MICROSTOCK READY)</option>
+                      <option value="eps">EPS 10 ONLY (.EPS ILLUSTRATOR VECTOR)</option>
+                      <option value="all3">ALL 3 (EPS 10 + SVG + 5–10 MB JPG)</option>
                       <option value="both">BOTH (SVG + 5–10 MB JPG PAIR)</option>
+                      <option value="svg">SVG ONLY (ILLUSTRATOR VECTOR ARTBOARD)</option>
+                      <option value="jpg">JPG ONLY (5 MB – 10 MB 300-DPI MICROSTOCK)</option>
                     </select>
                   </div>
                   <div className="r">
@@ -3600,7 +3756,7 @@ export default function App() {
                     />
                   </div>
                   <div className="seg" style={{ marginTop: "4px", marginBottom: "8px" }}>
-                    {[5, 10, 20, 50, 100].map((cnt) => (
+                    {[10, 20, 50, 100, 200].map((cnt) => (
                       <button
                         key={cnt}
                         className={batchCount === cnt ? "on" : ""}
@@ -4418,11 +4574,17 @@ export default function App() {
                 disabled={batchRunning}
                 onChange={(e) => setBatchScope(e.target.value as any)}
               >
-                <option value="current">
-                  CURRENT CANVAS STYLE ONLY (#{pad2(curModeIdx + 1)} · {curMode.name})
+                <option value="all">
+                  ALL {modes.length} VAULT STYLES (100% DIFFERENT · ZERO SIMILAR · RECOMMENDED)
+                </option>
+                <option value="category">
+                  ALL {curMode.cat.toUpperCase()} CATEGORY STYLES (
+                  {modes.filter((m) => m.cat === curMode.cat).length} UNIQUE STYLES)
                 </option>
                 <option value="favs">★ ALL FAVOURITE STYLES ({favs.size || 1})</option>
-                <option value="all">ALL {modes.length} VAULT STYLES (MIXED)</option>
+                <option value="current">
+                  SINGLE STYLE EXTREME MUTATION (#{pad2(curModeIdx + 1)} · {curMode.name})
+                </option>
               </select>
             </div>
 
@@ -4454,7 +4616,7 @@ export default function App() {
               />
             </div>
             <div className="seg" style={{ margin: "4px 0 10px" }}>
-              {[5, 10, 20, 50, 100].map((cnt) => (
+              {[10, 20, 50, 100, 200].map((cnt) => (
                 <button
                   key={cnt}
                   disabled={batchRunning}
