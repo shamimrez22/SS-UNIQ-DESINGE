@@ -1,0 +1,6 @@
+{
+  "name": "Creative Pattern — Seamless Pattern Maker",
+  "description": "Procedural seamless vector and raster pattern generator with 30+ presets, live multi-tile preview, custom color palettes, and high-resolution Adobe Stock ready SVG/JPG/PNG export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

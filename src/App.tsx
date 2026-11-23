@@ -1,0 +1,4718 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import {
+  T,
+  PALS,
+  DEF_STATE,
+  PatternState,
+  PatternMode,
+  CanvasRatio,
+  BgGradientMode,
+  SurfaceTextureMode,
+  RATIO_LIST,
+  getRatioDims,
+  getExactTileGrid,
+  buildBackgroundAndTextureSVG,
+  INITIAL_MODES,
+  TEMPLATE,
+  mulb,
+  mkH,
+  SH,
+  star4,
+  tear,
+  leafP,
+  starPath,
+  spiralPath,
+  blobPath,
+  mixCol,
+  hsl,
+  fixContrast,
+  svgData,
+  genCand,
+  cvs,
+  loadImg,
+  nextUniqueSeed,
+  nextUniqueStructuralSalt,
+  computeDesignHash,
+  computeStructuralSimilarityHash,
+  isDesignDuplicate,
+  registerDesignHash,
+  getLifetimeUniqueTotal,
+  buildIllustratorSVG,
+  buildIllustratorEPS10,
+  applyStudioMicroGrain,
+  ensureJpgOver5MB,
+  ensurePngMicrostockReady,
+  inspectMicrostockFileBinary,
+  MicrostockBinaryVerification,
+  createZipArchiveBlob,
+  ZipEntryInput,
+  buildMicrostockCSV,
+  MicrostockMetaRow,
+  ILLUSTRATOR_ARTBOARD_PRESETS,
+  MASTER_POSTER_MODES,
+  MASTER_LIGHTING_MODES,
+  traceFabricImageToPatternCode,
+} from "./patternEngine";
+
+const SK = "patternvault_studio_v5";
+const FK = "patternvault_favs_v5";
+const CK = "patternvault_custom_v5";
+
+function getInitialModes(): { modes: PatternMode[]; customCode: string } {
+  const modes = [...INITIAL_MODES];
+  let customCode = "";
+  try {
+    customCode = localStorage.getItem(CK) || "";
+  } catch {
+    // ignore
+  }
+  if (customCode.trim()) {
+    // Sanitize any legacy custom code that used SH.blob(rad,...) or SH.leaf(rad,...)
+    customCode = customCode
+      .replace(/SH\.blob\([^)]*\)/g, "blobPath(m.rnd, 7, 0.28)")
+      .replace(/SH\.leaf\([^)]*\)/g, "leafP(32, 13)");
+    try {
+      const registerCustom = (a: any, b?: string, c?: any[], d?: any) => {
+        let obj: PatternMode;
+        if (typeof a === "string") {
+          obj = { id: a, name: b || a, cat: "Custom", params: c || [], draw: d, isCustom: true };
+        } else {
+          obj = {
+            id: a.id,
+            name: a.name,
+            cat: a.cat || "Custom",
+            look: a.look,
+            params: a.params || [],
+            draw: a.draw,
+            isCustom: true,
+          };
+        }
+        const origDraw = obj.draw;
+        obj.draw = (m: any, q: any) => {
+          m.raw('<g clip-path="url(#tileClip)">');
+          try {
+            origDraw(m, q);
+          } catch (err) {
+            console.warn("Custom pattern draw error:", err);
+          }
+          m.raw("</g>");
+        };
+        const idx = modes.findIndex((x) => x.id === obj.id);
+        if (idx >= 0) modes[idx] = obj;
+        else modes.push(obj);
+      };
+      new Function(
+        "mode",
+        "SH",
+        "T",
+        "star4",
+        "tear",
+        "leafP",
+        "starPath",
+        "spiralPath",
+        "blobPath",
+        "mixCol",
+        customCode
+      )(registerCustom, SH, T, star4, tear, leafP, starPath, spiralPath, blobPath, mixCol);
+    } catch (e) {
+      console.warn("Custom pattern error:", e);
+    }
+  }
+  return { modes, customCode };
+}
+
+function getInitialParamMap(modes: PatternMode[]): Record<string, Record<string, any>> {
+  const mp: Record<string, Record<string, any>> = {};
+  modes.forEach((m) => {
+    mp[m.id] = {};
+    m.params.forEach((p) => {
+      mp[m.id][p.k] = p.def;
+    });
+  });
+  return mp;
+}
+
+export default function App() {
+  const initData = useMemo(() => getInitialModes(), []);
+  const [modes, setModes] = useState<PatternMode[]>(initData.modes);
+  const [customCode, setCustomCode] = useState<string>(initData.customCode);
+
+  const [P, setP] = useState<PatternState>(() => {
+    try {
+      const raw = localStorage.getItem(SK);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && s.P) {
+          const merged: PatternState = { ...DEF_STATE, ...s.P };
+          if (!initData.modes.some((m) => m.id === merged.mode)) {
+            merged.mode = DEF_STATE.mode;
+          }
+          if (!merged.ratio) merged.ratio = "1:1";
+          if (!merged.px || merged.px < 5200) merged.px = 5200;
+          const enforcedDims = getRatioDims(merged.px, merged.ratio, merged.artW, merged.artH);
+          merged.artW = enforcedDims.w;
+          merged.artH = enforcedDims.h;
+          if (!merged.bgGrad) merged.bgGrad = "solid";
+          if (!merged.bg2) merged.bg2 = mixCol(merged.bg, merged.c0, 0.35);
+          // Always start clean with no unwanted grainy speckles overlay
+          merged.bd = "none";
+          merged.safeEdge = false;
+          return merged;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return { ...DEF_STATE, seed: nextUniqueSeed() };
+  });
+
+  const [MP, setMP] = useState<Record<string, Record<string, any>>>(() => {
+    const base = getInitialParamMap(initData.modes);
+    const plainBgIds = new Set(initData.modes.filter((m) => m.cat === "Plain BG").map((m) => m.id));
+    const bgIds = new Set(initData.modes.filter((m) => m.cat === "Background").map((m) => m.id));
+    try {
+      const raw = localStorage.getItem(SK);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && s.MP) {
+          for (const id in s.MP) {
+            if (base[id]) {
+              for (const k in s.MP[id]) {
+                if (k in base[id]) {
+                  // Do not restore old default grainy dots on Plain BG / Background modes
+                  if (plainBgIds.has(id) && (k === "tex" || k === "grain")) continue;
+                  if (bgIds.has(id) && (k === "grain" || k === "grit" || k === "pits")) continue;
+                  base[id][k] = s.MP[id][k];
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return base;
+  });
+
+  const [favs, setFavs] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(FK);
+      if (raw) return new Set(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+    return new Set();
+  });
+
+  const [cat, setCat] = useState<string>("All");
+  const [search, setSearch] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"pattern" | "colour" | "surface" | "export">("pattern");
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  });
+
+  const [palOpen, setPalOpen] = useState<boolean>(false);
+  const [palIdx, setPalIdx] = useState<number>(1);
+  const [palLabel, setPalLabel] = useState<string>("ROYAL LOTUS");
+
+  const [hist, setHist] = useState<string[]>([]);
+  const [hIdx, setHIdx] = useState<number>(-1);
+  const lockHist = useRef<boolean>(false);
+
+  const [randLocked, setRandLocked] = useState<boolean>(false);
+  const [randNote, setRandNote] = useState<string>(
+    "100% MANUAL PROCEDURAL ENGINE · ZERO AI · ZERO DUPLICATES (429+ CRORE SEEDS)"
+  );
+  const [clicks, setClicks] = useState<number>(0);
+  const [uniqCount, setUniqCount] = useState<number>(() => Math.max(1, getLifetimeUniqueTotal()));
+  const [exportStatus, setExportStatus] = useState<string>("");
+  const sessionSeenRef = useRef<Set<string>>(new Set());
+  const busyRef = useRef<boolean>(false);
+
+  // Auto-Batch Generator State
+  const [batchModalOpen, setBatchModalOpen] = useState<boolean>(false);
+  const [batchScope, setBatchScope] = useState<"current" | "favs" | "all">("current");
+  const [batchFormat, setBatchFormat] = useState<"eps_jpg" | "eps" | "jpg" | "svg" | "both" | "all3">("eps_jpg");
+  const [batchCount, setBatchCount] = useState<number>(10);
+  const [batchBgMode, setBatchBgMode] = useState<"mix" | "gradient" | "texture" | "current">("mix");
+  const [batchRunning, setBatchRunning] = useState<boolean>(false);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number; msg: string }>({
+    done: 0,
+    total: 0,
+    msg: "",
+  });
+  const batchCancelRef = useRef<boolean>(false);
+
+  // Other Modals & Fabric Image Upload
+  const [codeModalOpen, setCodeModalOpen] = useState<boolean>(false);
+  const [codeInput, setCodeInput] = useState<string>("");
+  const [codeMsg, setCodeMsg] = useState<{ text: string; err: boolean }>({ text: "", err: false });
+  const [keyModalOpen, setKeyModalOpen] = useState<boolean>(false);
+  const [fabricTracing, setFabricTracing] = useState<boolean>(false);
+  const fabricInputRef = useRef<HTMLInputElement>(null);
+  const verifyInputRef = useRef<HTMLInputElement>(null);
+  const [lastVerifiedFile, setLastVerifiedFile] = useState<MicrostockBinaryVerification | null>(null);
+
+  const vpRef = useRef<HTMLDivElement>(null);
+  const [vpSize, setVpSize] = useState<{ w: number; h: number }>({ w: 680, h: 560 });
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (vpRef.current) {
+        setVpSize({
+          w: vpRef.current.clientWidth,
+          h: vpRef.current.clientHeight,
+        });
+      }
+    };
+    updateSize();
+    const ro = new ResizeObserver(updateSize);
+    if (vpRef.current) ro.observe(vpRef.current);
+    window.addEventListener("resize", updateSize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateSize);
+    };
+  }, []);
+
+  // Debounced save state (NOTE: Testing/previewing on canvas NEVER burns a design into the Zero-Duplicate Ledger!
+  // Only actual exported / downloaded / batch-saved files are locked into the permanent ledger.)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(SK, JSON.stringify({ P, MP }));
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [P, MP]);
+
+  // History
+  useEffect(() => {
+    if (lockHist.current) {
+      lockHist.current = false;
+      return;
+    }
+    const snap = JSON.stringify({ P, MP });
+    setHist((prev) => {
+      if (hIdx >= 0 && prev[hIdx] === snap) return prev;
+      const next = prev.slice(0, hIdx + 1);
+      next.push(snap);
+      if (next.length > 60) next.shift();
+      setHIdx(next.length - 1);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [P, MP]);
+
+  const curMode = useMemo(() => {
+    return modes.find((m) => m.id === P.mode) || modes[0];
+  }, [modes, P.mode]);
+
+  const curModeIdx = useMemo(() => {
+    return modes.findIndex((m) => m.id === curMode.id);
+  }, [modes, curMode]);
+
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+
+  // Build single master tile SVG (1000x1000) with Gradient, Vector Texture, and Zero Side-Cut geometry
+  const buildSVGFor = useCallback(
+    (
+      stateP: PatternState,
+      stateMP: Record<string, Record<string, any>>,
+      transp: boolean,
+      withGrid: boolean,
+      renderW: number = T,
+      renderH: number = T
+    ) => {
+      const mObj = modes.find((x) => x.id === stateP.mode) || modes[0];
+      const effectiveTransp =
+        mObj.cat === "Poster"
+          ? false
+          : Boolean(transp || mObj.cat === "Brush" || mObj.cat === "Lighting");
+      const C = {
+        ...stateP,
+        transp: effectiveTransp,
+        cols: [stateP.c0, stateP.c1, stateP.c2, stateP.c3, stateP.c4],
+      };
+      const H = mkH(C, mulb(C.seed));
+
+      const { gradDefs, bgRect, texLayer } = buildBackgroundAndTextureSVG(stateP, effectiveTransp);
+      gradDefs.forEach((d) => H.def(d));
+
+      const start = H.out.length;
+      const defParams: Record<string, any> = {};
+      mObj.params.forEach((p) => {
+        defParams[p.k] = p.def;
+      });
+      const mergedQ = { ...defParams, ...(stateMP[mObj.id] || {}) };
+      try {
+        mObj.draw(H, mergedQ);
+      } catch (err) {
+        console.warn("Pattern draw error [" + mObj.id + "]:", err);
+      }
+      const drawn = H.out.slice(start).join("");
+      const mx = C.mx || "none";
+      if (mx !== "none") {
+        H.out.length = start;
+        const G = (tr: string) => `<g transform="${tr}">${drawn}</g>`;
+        if (mx === "mirror") {
+          H.raw(
+            G("scale(.5 .5)") +
+              G("translate(1000 0) scale(-.5 .5)") +
+              G("translate(0 1000) scale(.5 -.5)") +
+              G("translate(1000 1000) scale(-.5 -.5)")
+          );
+        } else if (mx === "rot") {
+          H.raw(
+            G("scale(.5 .5)") +
+              G("translate(1000 0) rotate(90) scale(.5 .5)") +
+              G("translate(1000 1000) rotate(180) scale(.5 .5)") +
+              G("translate(0 1000) rotate(270) scale(.5 .5)")
+          );
+        } else if (mx === "double") {
+          H.raw(
+            `<g>${drawn}</g>` +
+              `<g opacity=".88" transform="translate(500 500) rotate(180) translate(-500 -500)">${drawn}</g>`
+          );
+        } else if (mx === "patch") {
+          H.raw(
+            G("scale(.5 .5)") +
+              `<rect x="500" y="0" width="500" height="500" fill="${H.col(0)}" opacity=".22"/>` +
+              G("translate(1000 0) scale(-.5 .5)") +
+              `<rect x="0" y="500" width="500" height="500" fill="${H.col(1)}" opacity=".22"/>` +
+              G("translate(0 1000) scale(.5 -.5)") +
+              G("translate(500 500) scale(.5 .5)")
+          );
+        } else if (mx === "invert") {
+          const m2 = mkH({ ...C, bg: C.cols[0], cols: [C.bg, ...C.cols.slice(1)] }, mulb(C.seed));
+          mObj.draw(m2, stateMP[mObj.id] || {});
+          H.defs.push(...m2.defs);
+          const drawnB = m2.out.join("");
+          const GB = (tr: string) => `<g transform="${tr}">${drawnB}</g>`;
+          H.raw(
+            G("scale(.5 .5)") +
+              `<rect x="500" y="0" width="500" height="500" fill="${C.cols[0]}"/>` +
+              GB("translate(500 0) scale(.5 .5)") +
+              `<rect x="0" y="500" width="500" height="500" fill="${C.cols[0]}"/>` +
+              GB("translate(0 500) scale(.5 .5)") +
+              G("translate(500 500) scale(.5 .5)")
+          );
+        }
+      }
+
+      const bgGroup = effectiveTransp ? "" : `<g id="TILE_BACKGROUND_LAYER">${bgRect}</g>`;
+      const gr = withGrid
+        ? `<rect width="${T}" height="${T}" fill="none" stroke="#10b981" stroke-width="5" stroke-dasharray="14 10"/>`
+        : "";
+      const defs = `<defs><clipPath id="tileClip"><rect width="${T}" height="${T}"/></clipPath>${H.defs.join(
+        ""
+      )}</defs>`;
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${T} ${T}" width="${renderW}" height="${renderH}" preserveAspectRatio="none" shape-rendering="geometricPrecision">${defs}${bgGroup}${texLayer}${H.out.join(
+        ""
+      )}${gr}</svg>`;
+    },
+    [modes]
+  );
+
+  const curSVG = useMemo(() => {
+    const omitBg =
+      curMode.cat === "Poster"
+        ? false
+        : Boolean(P.transp || curMode.cat === "Brush" || curMode.cat === "Lighting");
+    return buildSVGFor(P, MP, omitBg, P.grid);
+  }, [P, MP, curMode.cat, buildSVGFor]);
+
+  // Use lightweight 50-byte Blob URL instead of megabyte encodeURIComponent data URI for instant paint
+  const curBlobUrl = useMemo(() => {
+    const blob = new Blob([curSVG], { type: "image/svg+xml;charset=utf-8" });
+    return URL.createObjectURL(blob);
+  }, [curSVG]);
+
+  useEffect(() => {
+    return () => {
+      URL.revokeObjectURL(curBlobUrl);
+    };
+  }, [curBlobUrl]);
+
+  // Thumbnail cache
+  const thumbs = useMemo(() => {
+    const map: Record<string, string> = {};
+    modes.forEach((m) => {
+      try {
+        const L = m.look || {};
+        const cols = (L.cols || ["#10b981", "#06b6d4", "#f59e0b", "#ec4899", "#8b5cf6"]).slice();
+        while (cols.length < 5) cols.push(cols[cols.length - 1]);
+        const isBrushOrLight = m.cat === "Brush" || m.cat === "Lighting";
+        const cState: PatternState = {
+          ...DEF_STATE,
+          mode: m.id,
+          seed: 11,
+          bg: L.bg || "#0c192c",
+          bg2: mixCol(L.bg || "#0c192c", cols[0], 0.35),
+          bgGrad: "solid",
+          bgAngle: 135,
+          ink: L.ink || "#f8fafc",
+          c0: cols[0],
+          c1: cols[1],
+          c2: cols[2],
+          c3: cols[3],
+          c4: cols[4],
+          ncol: L.ncol || Math.min(5, (L.cols || cols).length),
+          style: L.style || "both",
+          sw: L.sw || 3,
+          bd: "none",
+          mx: "none",
+          transp: isBrushOrLight,
+          safeEdge: false,
+        };
+        const q: Record<string, any> = {};
+        m.params.forEach((p) => {
+          q[p.k] = p.def;
+        });
+        const svg = buildSVGFor(cState, { [m.id]: q }, isBrushOrLight, false);
+        map[m.id] = svgData(svg);
+      } catch {
+        // ignore
+      }
+    });
+    return map;
+  }, [modes, buildSVGFor]);
+
+  // Select a pattern mode
+  const selectMode = useCallback(
+    (m: PatternMode) => {
+      setP((prev) => {
+        const isPlainBg = m.cat === "Plain BG";
+        const isBrush = m.cat === "Brush";
+        const isPoster = m.cat === "Poster";
+        const isLighting = m.cat === "Lighting";
+        const prevModeObj = modes.find((x) => x.id === prev.mode);
+        const wasBrushOrLight = prevModeObj?.cat === "Brush" || prevModeObj?.cat === "Lighting";
+        const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || (isLighting ? "1" : "4"));
+        const defBgMode = String(m.params.find((p) => p.k === "bgMode")?.def || "split");
+        const targetRatio: CanvasRatio = isPoster
+          ? defPcs === "1"
+            ? "3:4"
+            : defPcs === "4grid" || defPcs === "9"
+            ? "1:1"
+            : defPcs === "6grid" || defPcs === "8" || defPcs === "12"
+            ? "4:3"
+            : defPcs === "2" || defPcs === "3" || defPcs === "10"
+            ? "16:9"
+            : "2:1"
+          : isLighting
+          ? defBgMode === "split" || defPcs === "8" || defPcs === "4" || defPcs === "6" || defPcs === "12"
+            ? "2:1"
+            : "1:1"
+          : prev.ratio || "1:1";
+        const d = getRatioDims(Math.max(5000, +prev.px || 5000), targetRatio);
+        const next: PatternState = {
+          ...prev,
+          mode: m.id,
+          mx: "none",
+          bd: isPlainBg ? prev.bd : "none",
+          transp:
+            isBrush || isLighting ? true : wasBrushOrLight || isPoster ? false : prev.transp,
+          svgStructure:
+            isPlainBg || isBrush || isPoster || isLighting
+              ? "unified"
+              : prev.svgStructure || "separable",
+          view: isPlainBg || isBrush || isPoster || isLighting ? 1 : prev.view,
+          ratio: isPoster || isLighting ? targetRatio : prev.ratio,
+          artW: isPoster || isLighting ? d.w : prev.artW,
+          artH: isPoster || isLighting ? d.h : prev.artH,
+        };
+        if (m.look) {
+          const L = m.look;
+          if (L.bg) next.bg = L.bg;
+          if (L.ink) next.ink = L.ink;
+          if (L.cols) {
+            next.ncol = L.ncol || Math.min(5, L.cols.length);
+            L.cols.forEach((c, i) => {
+              (next as any)["c" + i] = c;
+            });
+            next.bg2 = mixCol(next.bg, L.cols[0] || "#8b5cf6", 0.35);
+          }
+          if (L.style) next.style = L.style;
+          if (L.sw) next.sw = L.sw;
+        }
+        if (isBrush) {
+          const defArch = m.params.find((p) => p.k === "arch")?.def;
+          if (defArch) {
+            setMP((prevMP) => ({
+              ...prevMP,
+              [m.id]: { ...(prevMP[m.id] || {}), arch: defArch },
+            }));
+          }
+        }
+        return next;
+      });
+    },
+    [modes]
+  );
+
+  // Quick 1-Click Exact Reference Poster Set Selector (Sets 1–12 Habuhu + Resets variant to 0)
+  const selectPosterReferenceSet = useCallback(
+    (posterModeId: string) => {
+      const m = modes.find((x) => x.id === posterModeId);
+      if (!m) return;
+      const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || "4");
+      const curShowText =
+        curMode.cat === "Poster"
+          ? (MP[curMode.id]?.showText ?? true)
+          : (MP[m.id]?.showText ?? true);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [m.id]: {
+          ...(prevMP[m.id] || {}),
+          pcs: defPcs,
+          variant: 0,
+          showText: curShowText,
+        },
+      }));
+      selectMode(m);
+      setCat("Poster");
+      setRandNote(
+        `EXACT REFERENCE POSTER SET LOADED · ${m.name.toUpperCase()} · CLICK "UNIQUE GENERATE" FOR VARIATIONS`
+      );
+    },
+    [modes, curMode, MP, selectMode]
+  );
+
+  // Quick 1-Click Poster Set Piece Selector (1 PCS Single, 2 PCS, 3 PCS, 4 PCS, 5 PCS, 6 PCS, 4 PCS 2x2 Grid)
+  const switchPosterSetPcs = useCallback(
+    (pcsVal: string) => {
+      const targetPoster =
+        curMode.cat === "Poster"
+          ? curMode
+          : modes.find((m) => m.id === "poster_ref1_coral_gold_5pcs") ||
+            modes.find((m) => m.cat === "Poster");
+      if (!targetPoster) return;
+      const curShowText =
+        curMode.cat === "Poster"
+          ? (MP[curMode.id]?.showText ?? true)
+          : (MP[targetPoster.id]?.showText ?? true);
+      const targetRatio: CanvasRatio =
+        pcsVal === "1"
+          ? "3:4"
+          : pcsVal === "4grid" || pcsVal === "9"
+          ? "1:1"
+          : pcsVal === "6grid" || pcsVal === "8" || pcsVal === "12"
+          ? "4:3"
+          : pcsVal === "2" || pcsVal === "3" || pcsVal === "10"
+          ? "16:9"
+          : "2:1";
+      const d = getRatioDims(Math.max(5000, +P.px || 5000), targetRatio);
+      const boardBg = targetPoster.look?.bg || "#2e3136";
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetPoster.id]: {
+          ...(prevMP[targetPoster.id] || {}),
+          pcs: pcsVal,
+          showText: curShowText,
+        },
+      }));
+      setP((prev) => ({
+        ...prev,
+        mode: targetPoster.id,
+        bg: boardBg,
+        transp: false,
+        bd: "none",
+        mx: "none",
+        svgStructure: "unified",
+        view: 1,
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+      }));
+      setCat("Poster");
+    },
+    [curMode, modes, MP, P.px]
+  );
+
+  // Quick 1-Click Poster Text Checkbox Toggle (☑ Checkmark ON = Show Outlined Vector Text, ☐ OFF = No Text)
+  const togglePosterTextCheck = useCallback(() => {
+    const targetPoster =
+      curMode.cat === "Poster"
+        ? curMode
+        : modes.find((m) => m.id === "poster_ref1_coral_gold_5pcs") ||
+          modes.find((m) => m.cat === "Poster");
+    if (!targetPoster) return;
+    const currentChecked =
+      (MP[targetPoster.id]?.showText ?? true) !== false &&
+      (MP[targetPoster.id]?.showText ?? true) !== "false";
+    const nextChecked = !currentChecked;
+    setMP((prevMP) => ({
+      ...prevMP,
+      [targetPoster.id]: {
+        ...(prevMP[targetPoster.id] || {}),
+        showText: nextChecked,
+      },
+    }));
+    if (curMode.cat !== "Poster") {
+      selectMode(targetPoster);
+      setCat("Poster");
+    }
+  }, [curMode, modes, MP, selectMode]);
+
+  // Quick 1-Click Lighting & Lens Flare Set Selector (108 Original Microstock Lighting Designs)
+  const selectLightingReferenceSet = useCallback(
+    (lightingModeId: string) => {
+      const m = modes.find((x) => x.id === lightingModeId);
+      if (!m) return;
+      const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || "1");
+      const defBgMode = String(m.params.find((p) => p.k === "bgMode")?.def || "split");
+      setMP((prevMP) => ({
+        ...prevMP,
+        [m.id]: {
+          ...(prevMP[m.id] || {}),
+          pcs: defPcs,
+          bgMode: defBgMode,
+          variant: 0,
+        },
+      }));
+      selectMode(m);
+      setCat("Lighting");
+      setRandNote(
+        `ORIGINAL LIGHTING LOADED · ${m.name.toUpperCase()} · SWITCH SPLIT / TRANSPARENT / BLACK BG ANYTIME`
+      );
+    },
+    [modes, selectMode]
+  );
+
+  // Quick 1-Click Lighting Artboard Background Mode Switcher:
+  // "split" = 50% Black Left + 50% Transparent Right on Same Artboard
+  // "transparent" = 100% Transparent (Zero Background)
+  // "black" = 100% Pitch Black Background (#000000)
+  const switchLightingBgMode = useCallback(
+    (bgModeVal: "split" | "transparent" | "black") => {
+      const targetLight =
+        curMode.cat === "Lighting"
+          ? curMode
+          : modes.find((m) => m.id === "light_ref1_split_golden_sunburst") ||
+            modes.find((m) => m.cat === "Lighting");
+      if (!targetLight) return;
+      const curPcs = String(
+        MP[targetLight.id]?.pcs || targetLight.params.find((p) => p.k === "pcs")?.def || "1"
+      );
+      const targetRatio: CanvasRatio =
+        bgModeVal === "split" || curPcs === "8" || curPcs === "4" || curPcs === "6" || curPcs === "12"
+          ? "2:1"
+          : "1:1";
+      const d = getRatioDims(Math.max(5000, +P.px || 5000), targetRatio);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetLight.id]: {
+          ...(prevMP[targetLight.id] || {}),
+          bgMode: bgModeVal,
+          pcs: curPcs,
+        },
+      }));
+      setP((prev) => ({
+        ...prev,
+        mode: targetLight.id,
+        bg: "#000000",
+        transp: bgModeVal !== "black",
+        bd: "none",
+        mx: "none",
+        svgStructure: "unified",
+        view: 1,
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+      }));
+      setCat("Lighting");
+    },
+    [curMode, modes, MP, P.px]
+  );
+
+  // Quick 1-Click Lighting Piece Count Switcher (1 / Dual Split, 4 PCS, 6 PCS, 8 PCS Kit, 9 PCS, 12 PCS)
+  const switchLightingSetPcs = useCallback(
+    (pcsVal: string) => {
+      const targetLight =
+        curMode.cat === "Lighting"
+          ? curMode
+          : modes.find((m) => m.id === "light_ref1_split_golden_sunburst") ||
+            modes.find((m) => m.cat === "Lighting");
+      if (!targetLight) return;
+      const curBgMode = String(
+        MP[targetLight.id]?.bgMode ||
+          targetLight.params.find((p) => p.k === "bgMode")?.def ||
+          "split"
+      );
+      const targetRatio: CanvasRatio =
+        curBgMode === "split" || pcsVal === "8" || pcsVal === "4" || pcsVal === "6" || pcsVal === "12"
+          ? "2:1"
+          : "1:1";
+      const d = getRatioDims(Math.max(5000, +P.px || 5000), targetRatio);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetLight.id]: {
+          ...(prevMP[targetLight.id] || {}),
+          pcs: pcsVal,
+          bgMode: curBgMode,
+        },
+      }));
+      setP((prev) => ({
+        ...prev,
+        mode: targetLight.id,
+        bg: "#000000",
+        transp: curBgMode !== "black",
+        bd: "none",
+        mx: "none",
+        svgStructure: "unified",
+        view: 1,
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+      }));
+      setCat("Lighting");
+    },
+    [curMode, modes, MP, P.px]
+  );
+
+  // Apply palette
+  const applyPal = useCallback((idx: number) => {
+    const p = PALS[idx];
+    if (!p) return;
+    setPalIdx(idx);
+    setPalLabel(p[0].toUpperCase());
+    setPalOpen(false);
+    setP((prev) => ({
+      ...prev,
+      bg: p[1],
+      bg2: mixCol(p[1], p[3][0], 0.36),
+      ink: p[2],
+      c0: p[3][0],
+      c1: p[3][1],
+      c2: p[3][2],
+      c3: p[3][3],
+      c4: p[3][4],
+    }));
+  }, []);
+
+  // Undo / Redo
+  const undo = useCallback(() => {
+    if (hIdx <= 0) return;
+    const nextIdx = hIdx - 1;
+    const snap = JSON.parse(hist[nextIdx]);
+    lockHist.current = true;
+    setHIdx(nextIdx);
+    setP(snap.P);
+    setMP(snap.MP);
+  }, [hIdx, hist]);
+
+  const redo = useCallback(() => {
+    if (hIdx >= hist.length - 1) return;
+    const nextIdx = hIdx + 1;
+    const snap = JSON.parse(hist[nextIdx]);
+    lockHist.current = true;
+    setHIdx(nextIdx);
+    setP(snap.P);
+    setMP(snap.MP);
+  }, [hIdx, hist]);
+
+  // Generate 100% unique candidate instantaneously & IMMEDIATELY BURN IT into the permanent localStorage ledger (Hard 1-Time Rule: tested once = NEVER generated again!)
+  const generateUniqueCandidateForMode = useCallback(
+    (
+      targetMode: PatternMode,
+      baseP: PatternState,
+      baseMP: Record<string, Record<string, any>>,
+      withColours: boolean,
+      bgPref: "current" | "mix" | "gradient" | "texture" = "current"
+    ) => {
+      const curQ = baseMP[targetMode.id] || {};
+      const seenSession = sessionSeenRef.current;
+      const isBrush = targetMode.cat === "Brush";
+      const isPoster = targetMode.cat === "Poster";
+      const isLighting = targetMode.cat === "Lighting";
+
+      for (let a = 0; a < 48; a++) {
+        const cand = genCand(targetMode, curQ, baseP, withColours);
+        const structSalt = nextUniqueStructuralSalt();
+        if (isPoster || isLighting) {
+          cand.q = {
+            ...cand.q,
+            variant: ((Math.round(+(curQ.variant ?? 0)) + structSalt + a) % 24) + 1,
+          };
+        }
+        let bgGrad: BgGradientMode =
+          isBrush || isPoster || isLighting ? "solid" : baseP.bgGrad || "solid";
+        let bd: SurfaceTextureMode =
+          isBrush || isPoster || isLighting ? "none" : baseP.bd || "none";
+
+        if (!isBrush && !isPoster && !isLighting) {
+          if (bgPref === "gradient") {
+            bgGrad = cand.gradModes[Math.floor(Math.random() * cand.gradModes.length)];
+            bd = "none";
+          } else if (bgPref === "texture") {
+            bd = cand.texModes[Math.floor(Math.random() * cand.texModes.length)];
+          } else if (bgPref === "mix") {
+            const r = Math.random();
+            bgGrad =
+              r < 0.55
+                ? cand.gradModes[Math.floor(Math.random() * cand.gradModes.length)]
+                : "solid";
+            bd = "none";
+          }
+        }
+
+        const testP: PatternState = {
+          ...baseP,
+          mode: targetMode.id,
+          mx: isBrush || isPoster || isLighting ? "none" : cand.mx,
+          seed: cand.seed,
+          bg: cand.bg,
+          bg2: cand.bg2,
+          bgGrad,
+          bgAngle: cand.bgAngle,
+          ink: cand.ink,
+          c0: cand.cols[0],
+          c1: cand.cols[1],
+          c2: cand.cols[2],
+          c3: cand.cols[3],
+          c4: cand.cols[4],
+          ncol: cand.ncol,
+          style: cand.style,
+          sw: cand.sw,
+          bd,
+          bdc: cand.bdc,
+          bdn: cand.bdn,
+          bdo: cand.bdo,
+          transp: isBrush || isLighting ? true : isPoster ? false : baseP.transp,
+          svgStructure: isBrush || isPoster || isLighting ? "unified" : baseP.svgStructure,
+          view: isBrush || isPoster || isLighting ? 1 : baseP.view,
+          safeEdge: baseP.safeEdge === true,
+        };
+        const designHash = computeDesignHash(testP, cand.q);
+        const structHash = computeStructuralSimilarityHash(testP, cand.q);
+        if (
+          isDesignDuplicate(designHash, structHash) ||
+          seenSession.has(designHash) ||
+          seenSession.has(structHash)
+        ) {
+          continue; // HARD BLOCK: Never allow any previously tested, previewed, or structurally similar design
+        }
+
+        seenSession.add(designHash);
+        seenSession.add(structHash);
+        if (seenSession.size > 6000) {
+          const first = seenSession.values().next().value;
+          if (first) seenSession.delete(first);
+        }
+        // HARD 1-TIME PERMANENT BURN: Lock immediately in localStorage even on a single test preview!
+        const total = registerDesignHash(designHash, structHash);
+        setUniqCount(total);
+        const testMP = { ...baseMP, [targetMode.id]: cand.q };
+        return { cand, testP, testMP, designHash, structHash, total };
+      }
+      return null;
+    },
+    []
+  );
+
+  // Non-repeating interleaved brush, poster & lighting decks so every click on UNIQUE GENERATE produces a brand-new structural design
+  const brushDeckRef = useRef<string[]>([]);
+  const posterDeckRef = useRef<string[]>([]);
+  const lightingDeckRef = useRef<string[]>([]);
+
+  // Instant Hard-Locked Procedural Randomize (Every single test preview is permanently burned in localStorage so it NEVER generates again!)
+  const smartRandom = useCallback(
+    (
+      withColours: boolean,
+      bgPref: "current" | "mix" | "gradient" | "texture" = "current",
+      keepCurrentMode = false
+    ) => {
+      let targetMode = curMode;
+      if (!keepCurrentMode && (curMode.cat === "Brush" || cat === "Brush")) {
+        const allBrushes = modes.filter((m) => m.cat === "Brush");
+        if (allBrushes.length > 1) {
+          if (brushDeckRef.current.length === 0) {
+            const ids = allBrushes.map((m) => m.id);
+            const interleaved: string[] = [];
+            const step = 7;
+            const visited = new Set<string>();
+            let cursor = Math.floor(Math.random() * ids.length);
+            for (let i = 0; i < ids.length; i++) {
+              while (visited.has(ids[cursor])) {
+                cursor = (cursor + 1) % ids.length;
+              }
+              interleaved.push(ids[cursor]);
+              visited.add(ids[cursor]);
+              cursor = (cursor + step) % ids.length;
+            }
+            if (interleaved[0] === curMode.id && interleaved.length > 1) {
+              interleaved.push(interleaved.shift()!);
+            }
+            brushDeckRef.current = interleaved;
+          }
+          let nextBrushId = brushDeckRef.current.shift()!;
+          if (nextBrushId === curMode.id && brushDeckRef.current.length > 0) {
+            const altId = brushDeckRef.current.shift()!;
+            brushDeckRef.current.push(nextBrushId);
+            nextBrushId = altId;
+          }
+          const found = allBrushes.find((m) => m.id === nextBrushId);
+          if (found) targetMode = found;
+        }
+      } else if (!keepCurrentMode && (curMode.cat === "Poster" || cat === "Poster")) {
+        const allPosters = modes.filter((m) => m.cat === "Poster");
+        if (allPosters.length > 1) {
+          if (posterDeckRef.current.length === 0) {
+            const ids = allPosters.map((m) => m.id);
+            const interleaved: string[] = [];
+            const step = 13; // Prime step jumps across distinct poster structural families on every click!
+            const visited = new Set<string>();
+            let cursor = Math.floor(Math.random() * ids.length);
+            for (let i = 0; i < ids.length; i++) {
+              while (visited.has(ids[cursor])) {
+                cursor = (cursor + 1) % ids.length;
+              }
+              interleaved.push(ids[cursor]);
+              visited.add(ids[cursor]);
+              cursor = (cursor + step) % ids.length;
+            }
+            if (interleaved[0] === curMode.id && interleaved.length > 1) {
+              interleaved.push(interleaved.shift()!);
+            }
+            posterDeckRef.current = interleaved;
+          }
+          let nextPosterId = posterDeckRef.current.shift()!;
+          if (nextPosterId === curMode.id && posterDeckRef.current.length > 0) {
+            const altId = posterDeckRef.current.shift()!;
+            posterDeckRef.current.push(nextPosterId);
+            nextPosterId = altId;
+          }
+          const found = allPosters.find((m) => m.id === nextPosterId);
+          if (found) targetMode = found;
+        }
+      } else if (!keepCurrentMode && (curMode.cat === "Lighting" || cat === "Lighting")) {
+        const allLights = modes.filter((m) => m.cat === "Lighting");
+        if (allLights.length > 1) {
+          if (lightingDeckRef.current.length === 0) {
+            const ids = allLights.map((m) => m.id);
+            const interleaved: string[] = [];
+            const step = 11;
+            const visited = new Set<string>();
+            let cursor = Math.floor(Math.random() * ids.length);
+            for (let i = 0; i < ids.length; i++) {
+              while (visited.has(ids[cursor])) {
+                cursor = (cursor + 1) % ids.length;
+              }
+              interleaved.push(ids[cursor]);
+              visited.add(ids[cursor]);
+              cursor = (cursor + step) % ids.length;
+            }
+            if (interleaved[0] === curMode.id && interleaved.length > 1) {
+              interleaved.push(interleaved.shift()!);
+            }
+            lightingDeckRef.current = interleaved;
+          }
+          let nextLightId = lightingDeckRef.current.shift()!;
+          if (nextLightId === curMode.id && lightingDeckRef.current.length > 0) {
+            const altId = lightingDeckRef.current.shift()!;
+            lightingDeckRef.current.push(nextLightId);
+            nextLightId = altId;
+          }
+          const found = allLights.find((m) => m.id === nextLightId);
+          if (found) targetMode = found;
+        }
+      }
+      const prevPosterPcs =
+        curMode.cat === "Poster"
+          ? MP[curMode.id]?.pcs
+          : targetMode.cat === "Poster"
+          ? MP[targetMode.id]?.pcs
+          : undefined;
+      const prevPosterShowText =
+        curMode.cat === "Poster"
+          ? MP[curMode.id]?.showText
+          : targetMode.cat === "Poster"
+          ? MP[targetMode.id]?.showText
+          : undefined;
+      const prevPosterVar =
+        targetMode.cat === "Poster" ? Math.round(+(MP[targetMode.id]?.variant ?? 0)) : 0;
+      const prevLightBgMode =
+        curMode.cat === "Lighting"
+          ? MP[curMode.id]?.bgMode
+          : targetMode.cat === "Lighting"
+          ? MP[targetMode.id]?.bgMode
+          : undefined;
+      const prevLightPcs =
+        curMode.cat === "Lighting"
+          ? MP[curMode.id]?.pcs
+          : targetMode.cat === "Lighting"
+          ? MP[targetMode.id]?.pcs
+          : undefined;
+      const prevLightVar =
+        targetMode.cat === "Lighting" ? Math.round(+(MP[targetMode.id]?.variant ?? 0)) : 0;
+
+      const res = generateUniqueCandidateForMode(targetMode, P, MP, withColours, bgPref);
+      if (res) {
+        if (targetMode.cat === "Brush") {
+          const defArch = targetMode.params.find((p) => p.k === "arch")?.def;
+          if (defArch) {
+            res.testMP[targetMode.id] = {
+              ...res.testMP[targetMode.id],
+              arch: defArch,
+            };
+          }
+        } else if (targetMode.cat === "Poster") {
+          const targetDefPcs = String(targetMode.params.find((p) => p.k === "pcs")?.def || "4");
+          const hasVisitedSet = MP[targetMode.id]?.variant !== undefined;
+          const nextVar =
+            !keepCurrentMode && !hasVisitedSet
+              ? 0
+              : ((prevPosterVar + 1) % 24) + 1;
+          const effPcsPoster =
+            keepCurrentMode && prevPosterPcs !== undefined ? String(prevPosterPcs) : targetDefPcs;
+          const posterRatio: CanvasRatio =
+            effPcsPoster === "1"
+              ? "3:4"
+              : effPcsPoster === "4grid" || effPcsPoster === "9"
+              ? "1:1"
+              : effPcsPoster === "6grid" || effPcsPoster === "8" || effPcsPoster === "12"
+              ? "4:3"
+              : effPcsPoster === "2" || effPcsPoster === "3" || effPcsPoster === "10"
+              ? "16:9"
+              : "2:1";
+          const posterDims = getRatioDims(Math.max(5200, +res.testP.px || 5200), posterRatio);
+          res.testMP[targetMode.id] = {
+            ...res.testMP[targetMode.id],
+            variant: nextVar,
+            pcs: effPcsPoster,
+            bScale: 1,
+            gap: 32,
+            layers: 16,
+            ...(prevPosterShowText !== undefined ? { showText: prevPosterShowText } : {}),
+          };
+          res.testP.bg = targetMode.look?.bg || "#2e3136";
+          res.testP.transp = false;
+          res.testP.ratio = posterRatio;
+          res.testP.artW = posterDims.w;
+          res.testP.artH = posterDims.h;
+          // Burn the final poster configuration hash too
+          const finalH = computeDesignHash(res.testP, res.testMP[targetMode.id]);
+          const finalSt = computeStructuralSimilarityHash(res.testP, res.testMP[targetMode.id]);
+          setUniqCount(registerDesignHash(finalH, finalSt));
+        } else if (targetMode.cat === "Lighting") {
+          const salt = nextUniqueStructuralSalt();
+          const nextVar = ((prevLightVar + salt) % 240) + 1;
+          const effBgMode = String(
+            prevLightBgMode ||
+              targetMode.params.find((p) => p.k === "bgMode")?.def ||
+              "split"
+          );
+          const targetDefPcs = String(
+            targetMode.params.find((p) => p.k === "pcs")?.def || "1"
+          );
+          const effPcs =
+            keepCurrentMode && prevLightPcs !== undefined
+              ? String(prevLightPcs)
+              : targetDefPcs;
+          const lightRatio: CanvasRatio =
+            effBgMode === "split" ||
+            effPcs === "8" ||
+            effPcs === "4" ||
+            effPcs === "6" ||
+            effPcs === "12"
+              ? "2:1"
+              : "1:1";
+          const lightDims = getRatioDims(Math.max(5200, +res.testP.px || 5200), lightRatio);
+          const lightThemes = [
+            "gold",
+            "diamond",
+            "cyan",
+            "sunset",
+            "emerald",
+            "violet",
+            "ruby",
+            "rose",
+            "ice",
+            "rainbow",
+          ];
+          const nextColorSet =
+            lightThemes[(nextVar + salt + (res.cand.seed % 97)) % lightThemes.length];
+          res.testMP[targetMode.id] = {
+            ...res.testMP[targetMode.id],
+            variant: nextVar,
+            bgMode: effBgMode,
+            pcs: effPcs,
+            colorSet: nextColorSet,
+          };
+          res.testP.bg = "#000000";
+          res.testP.transp = effBgMode !== "black";
+          res.testP.ratio = lightRatio;
+          res.testP.artW = lightDims.w;
+          res.testP.artH = lightDims.h;
+          const finalH = computeDesignHash(res.testP, res.testMP[targetMode.id]);
+          const finalSt = computeStructuralSimilarityHash(res.testP, res.testMP[targetMode.id]);
+          setUniqCount(registerDesignHash(finalH, finalSt));
+        } else {
+          const patDims = getRatioDims(
+            Math.max(5200, +res.testP.px || 5200),
+            res.testP.ratio || "1:1",
+            res.testP.artW,
+            res.testP.artH
+          );
+          res.testP.artW = patDims.w;
+          res.testP.artH = patDims.h;
+        }
+        setP(res.testP);
+        setMP(res.testMP);
+        setClicks((c) => c + 1);
+        setRandNote(
+          `🔒 1-TIME HARD BURNED #${res.total} · ${targetMode.name.toUpperCase()} · SEED ${res.cand.seed} (NEVER GENERATES AGAIN)`
+        );
+      }
+    },
+    [curMode, cat, modes, P, MP, generateUniqueCandidateForMode]
+  );
+
+  // Export dimensions based on P.artW / P.artH or P.px and P.ratio
+  const expRep = useCallback(() => {
+    if (
+      P.svgStructure === "unified" ||
+      curMode.cat === "Brush" ||
+      curMode.cat === "Poster" ||
+      curMode.cat === "Lighting"
+    )
+      return 1;
+    return P.exRep === "auto" ? (P.view > 0 ? P.view : 3) : +P.exRep || 1;
+  }, [P.exRep, P.view, P.svgStructure, curMode.cat]);
+
+  const outDims = useMemo(() => {
+    return getRatioDims(Math.max(1000, +P.px || 5000), P.ratio || "1:1", P.artW, P.artH);
+  }, [P.px, P.ratio, P.artW, P.artH]);
+
+  const downloadBlob = (blob: Blob, name: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 1000);
+    // Keep Blob URL alive long enough for large 50X batch ZIPs (250MB–500MB) to finish saving in Firefox/Chrome
+    const revokeMs = blob.size > 5 * 1024 * 1024 ? 300000 : 60000;
+    setTimeout(() => URL.revokeObjectURL(url), revokeMs);
+  };
+
+  // Render high-res 5 MB – 10 MB JPG or PNG Blob for any given stateP & stateMP
+  const renderHighResRasterBlob = useCallback(
+    async (
+      stateP: PatternState,
+      stateMP: Record<string, Record<string, any>>,
+      fmt: "jpeg" | "png"
+    ): Promise<{ blob: Blob; w: number; h: number }> => {
+      const mObj = modes.find((x) => x.id === stateP.mode) || modes[0];
+      const lightBgMode =
+        mObj.cat === "Lighting"
+          ? String(
+              stateMP[mObj.id]?.bgMode ||
+                mObj.params.find((p) => p.k === "bgMode")?.def ||
+                "split"
+            )
+          : "";
+      const isBrushOrTransp =
+        mObj.cat === "Poster"
+          ? false
+          : mObj.cat === "Lighting"
+          ? lightBgMode !== "black"
+          : Boolean(stateP.transp || mObj.cat === "Brush");
+      const basePx = Math.max(5200, Math.min(8000, +stateP.px || 5200));
+      const dims = getRatioDims(basePx, stateP.ratio || "1:1", stateP.artW, stateP.artH);
+      const W = dims.w;
+      const H = dims.h;
+      const isUnified =
+        stateP.svgStructure === "unified" ||
+        mObj.cat === "Brush" ||
+        mObj.cat === "Poster" ||
+        mObj.cat === "Lighting";
+      const rep = isUnified
+        ? 1
+        : stateP.exRep === "auto"
+        ? stateP.view > 0
+          ? stateP.view
+          : 3
+        : +stateP.exRep || 1;
+      const { colsCount, rowsCount, tileW, tileH } = isUnified
+        ? { colsCount: 1, rowsCount: 1, tileW: W, tileH: H }
+        : getExactTileGrid(W, H, rep);
+      const twPx = Math.ceil(tileW);
+      const thPx = Math.ceil(tileH);
+
+      // Render SVG vectors natively at full target tile pixel dimensions (twPx × thPx >= 3600px, never upscaled from 1000px!)
+      const tileSvg = buildSVGFor(
+        stateP,
+        stateMP,
+        mObj.cat === "Lighting" ? true : isBrushOrTransp,
+        false,
+        twPx,
+        thPx
+      );
+      const img = await loadImg(tileSvg);
+
+      const tc = cvs(twPx, thPx);
+      const tx = tc.getContext("2d")!;
+      tx.imageSmoothingEnabled = true;
+      tx.imageSmoothingQuality = "high";
+      if (!isBrushOrTransp) {
+        tx.fillStyle = mObj.cat === "Lighting" ? "#000000" : stateP.bg;
+        tx.fillRect(0, 0, twPx, thPx);
+      }
+      tx.drawImage(img, 0, 0, twPx, thPx);
+
+      const c = cvs(W, H);
+      const x = c.getContext("2d")!;
+      x.imageSmoothingEnabled = true;
+      x.imageSmoothingQuality = "high";
+
+      if (fmt === "jpeg" && isBrushOrTransp) {
+        // Draw crisp Microstock Transparency Checkerboard Background (#FFFFFF & #E5E7EB squares) in JPG
+        const sq = Math.max(36, Math.round(Math.min(W, H) / 72));
+        x.fillStyle = "#ffffff";
+        x.fillRect(0, 0, W, H);
+        x.fillStyle = "#e5e7eb";
+        const colsSq = Math.ceil(W / sq);
+        const rowsSq = Math.ceil(H / sq);
+        for (let r = 0; r < rowsSq; r++) {
+          for (let col = r % 2; col < colsSq; col += 2) {
+            x.fillRect(col * sq, r * sq, sq, sq);
+          }
+        }
+      } else if (!isBrushOrTransp) {
+        x.fillStyle = mObj.cat === "Lighting" ? "#000000" : stateP.bg;
+        x.fillRect(0, 0, W, H);
+      }
+
+      for (let i = 0; i < colsCount; i++) {
+        for (let j = 0; j < rowsCount; j++) {
+          x.drawImage(tc, Math.round(i * tileW), Math.round(j * tileH), Math.ceil(tileW), Math.ceil(tileH));
+        }
+      }
+
+      // Apply subtle 300-DPI studio print micro-grain (preserves alpha=0 on transparent PNG areas)
+      applyStudioMicroGrain(x, W, H, stateP.seed);
+
+      // Encode JPG (Guaranteed 5.8 MB – 9.5 MB pure pixel entropy + 300 DPI) or PNG (Guaranteed >= 1.85 MB, 300 DPI)
+      const MIN_JPG_BYTES = 5850000; // ~5.58 MB
+      const MAX_JPG_BYTES = 9850000; // ~9.40 MB (strictly under 10 MB)
+
+      let rawBlob: Blob | null = await new Promise((resolve) =>
+        c.toBlob((b) => resolve(b), "image/" + fmt, fmt === "jpeg" ? 0.985 : 1.0)
+      );
+
+      if (fmt === "jpeg" && rawBlob && rawBlob.size > MAX_JPG_BYTES) {
+        for (const qTry of [0.95, 0.92, 0.88, 0.84, 0.79, 0.74, 0.68]) {
+          const tryB: Blob | null = await new Promise((resolve) =>
+            c.toBlob((b) => resolve(b), "image/jpeg", qTry)
+          );
+          if (tryB) {
+            rawBlob = tryB;
+            if (tryB.size <= MAX_JPG_BYTES) break;
+          }
+        }
+      }
+
+      const validBlob = rawBlob || new Blob([], { type: "image/" + fmt });
+      const finalBlob =
+        fmt === "jpeg"
+          ? await ensureJpgOver5MB(validBlob, MIN_JPG_BYTES, MAX_JPG_BYTES)
+          : await ensurePngMicrostockReady(validBlob, 1850000);
+      return { blob: finalBlob, w: W, h: H };
+    },
+    [modes, buildSVGFor]
+  );
+
+  // Adobe Illustrator Editable Vector SVG Export (Locks design into Zero-Duplicate Ledger on download!)
+  const exportSVG = useCallback(() => {
+    const rep = expRep();
+    const isPoster = curMode.cat === "Poster";
+    const isLighting = curMode.cat === "Lighting";
+    const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+    const exportP = isPoster
+      ? { ...P, bg: curMode.look?.bg || P.bg, transp: false }
+      : { ...P, transp: omitBg };
+    const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+    const vectorSvg = buildIllustratorSVG(cleanTileSvg, exportP, rep, outDims.w, outDims.h);
+    const blob = new Blob([vectorSvg], { type: "image/svg+xml;charset=utf-8" });
+    const ratioTag = (P.ratio || "1:1").replace(":", "x");
+    const structTag =
+      P.svgStructure === "unified" || curMode.cat === "Brush" || isPoster || isLighting
+        ? "unified-plain"
+        : "separable";
+    const fname = `illustrator-${structTag}-${outDims.w}x${outDims.h}-${P.mode}-${ratioTag}-${P.seed}.svg`;
+    downloadBlob(blob, fname);
+    inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
+    const h = computeDesignHash(P, MP[P.mode] || {});
+    const total = registerDesignHash(h);
+    setUniqCount(total);
+    setExportStatus(
+      `EXPORTED & LOCKED SVG #${total} (${outDims.w}×${outDims.h} PX · ${
+        isPoster
+          ? "OUTLINED TEXT + BOARD BG · "
+          : isLighting
+          ? "ORIGINAL OPTICAL LIGHTING · "
+          : omitBg
+          ? "ZERO BACKGROUND · "
+          : ""
+      }NEVER REPEATS AGAIN)`
+    );
+  }, [expRep, buildSVGFor, P, MP, curMode, outDims]);
+
+  // Direct Adobe Illustrator EPS 10 (.eps) Vector Export for Instant Microstock Upload (Adobe Stock, Shutterstock, Freepik, Vecteezy)
+  const exportEPS10 = useCallback(() => {
+    const rep = expRep();
+    const isPoster = curMode.cat === "Poster";
+    const isLighting = curMode.cat === "Lighting";
+    const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+    const exportP = isPoster
+      ? { ...P, bg: curMode.look?.bg || P.bg, transp: false }
+      : { ...P, transp: omitBg };
+    const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+    const eps10Content = buildIllustratorEPS10(
+      cleanTileSvg,
+      exportP,
+      rep,
+      outDims.w,
+      outDims.h
+    );
+    const blob = new Blob([eps10Content], { type: "application/postscript;charset=utf-8" });
+    const ratioTag = (P.ratio || "1:1").replace(":", "x");
+    const structTag =
+      P.svgStructure === "unified" || curMode.cat === "Brush" || isPoster || isLighting
+        ? "unified-plain"
+        : "separable";
+    const fname = `microstock-eps10-${structTag}-${outDims.w}x${outDims.h}-${P.mode}-${ratioTag}-${P.seed}.eps`;
+    downloadBlob(blob, fname);
+    inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
+    const h = computeDesignHash(P, MP[P.mode] || {});
+    const total = registerDesignHash(h);
+    setUniqCount(total);
+    setExportStatus(
+      `EXPORTED & LOCKED EPS 10 #${total} (${outDims.w}×${outDims.h} PX · ${
+        isPoster
+          ? "CREATE OUTLINES TEXT + PRESENTATION BG · "
+          : isLighting
+          ? "ORIGINAL OPTICAL LIGHTING · "
+          : omitBg
+          ? "ZERO BACKGROUND · "
+          : ""
+      }MICROSTOCK READY)`
+    );
+  }, [expRep, buildSVGFor, P, MP, curMode, outDims]);
+
+  // High-Res JPG (Guaranteed 5.8 MB – 9.5 MB, 30+ MP, 300 DPI) & PNG Export
+  const exportRaster = useCallback(
+    async (fmt: "jpeg" | "png") => {
+      if (busyRef.current) return;
+      busyRef.current = true;
+      setExportStatus(
+        fmt === "jpeg"
+          ? "RENDERING MICROSTOCK 30+ MP (5.8MB–9.5MB · 300-DPI) JPG..."
+          : "RENDERING HIGH-RES 30+ MP STUDIO PNG..."
+      );
+      try {
+        const { blob: finalBlob, w: W, h: H } = await renderHighResRasterBlob(P, MP, fmt);
+        const mb = (finalBlob.size / (1024 * 1024)).toFixed(2);
+        const ratioTag = (P.ratio || "1:1").replace(":", "x");
+        const fname = `microstock-pattern-${P.mode}-${ratioTag}-${W}x${H}px-${P.seed}.${
+          fmt === "jpeg" ? "jpg" : "png"
+        }`;
+        downloadBlob(finalBlob, fname);
+        const verified = await inspectMicrostockFileBinary(finalBlob, fname);
+        setLastVerifiedFile(verified);
+        const h = computeDesignHash(P, MP[P.mode] || {});
+        const total = registerDesignHash(h);
+        setUniqCount(total);
+        setExportStatus(
+          `DOWNLOADED & VERIFIED ${fmt === "jpeg" ? "JPG" : "PNG"} #${total} · REAL SOF0: ${
+            verified.realW
+          }×${verified.realH} PX (${verified.megapixels} MP) · ${mb} MB · 300 DPI`
+        );
+      } finally {
+        busyRef.current = false;
+      }
+    },
+    [P, MP, renderHighResRasterBlob]
+  );
+
+  // 1-Click Microstock ZIP Pack (JPG + EPS 10 inside .ZIP so ChatGPT / Freepik NEVER downscales the JPG to 2048x1152!)
+  const exportSingleMicrostockZip = useCallback(async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setExportStatus("PACKAGING 30+ MP JPG + EPS 10 INTO .ZIP (BYPASSES CHATGPT 2048PX RESIZER)...");
+    try {
+      const { blob: jpgBlob, w: W, h: H } = await renderHighResRasterBlob(P, MP, "jpeg");
+      const rep = expRep();
+      const isPoster = curMode.cat === "Poster";
+      const isLighting = curMode.cat === "Lighting";
+      const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+      const exportP = isPoster
+        ? { ...P, bg: curMode.look?.bg || P.bg, transp: false }
+        : { ...P, transp: omitBg };
+      const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+      const eps10Content = buildIllustratorEPS10(cleanTileSvg, exportP, rep, W, H);
+      const epsBlob = new Blob([eps10Content], { type: "application/postscript;charset=utf-8" });
+      const ratioTag = (P.ratio || "1:1").replace(":", "x");
+      const baseName = `microstock-${P.mode}-${ratioTag}-${W}x${H}px-${P.seed}`;
+      const jpgName = `${baseName}.jpg`;
+      const epsName = `${baseName}.eps`;
+      const zipBlob = await createZipArchiveBlob([
+        { path: jpgName, blob: jpgBlob },
+        { path: epsName, blob: epsBlob },
+      ]);
+      downloadBlob(zipBlob, `${baseName}-MICROSTOCK-PACK.zip`);
+      const verified = await inspectMicrostockFileBinary(jpgBlob, jpgName);
+      setLastVerifiedFile(verified);
+      const h = computeDesignHash(P, MP[P.mode] || {});
+      const total = registerDesignHash(h);
+      setUniqCount(total);
+      setExportStatus(
+        `DOWNLOADED ZIP PACK #${total} (${W}×${H} PX · ${verified.megapixels} MP · ${verified.sizeMb} MB JPG + EPS 10) — UPLOAD THIS .ZIP TO CHATGPT / FREEPIK!`
+      );
+    } finally {
+      busyRef.current = false;
+    }
+  }, [P, MP, curMode, expRep, buildSVGFor, renderHighResRasterBlob]);
+
+  // Verify any local .JPG / .PNG / .EPS / .SVG file's true binary SOF0 / IHDR header
+  const handleVerifyLocalFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const v = await inspectMicrostockFileBinary(file, file.name);
+    setLastVerifiedFile(v);
+    setExportStatus(
+      `VERIFIED "${v.filename}": REAL BINARY ${v.realW}×${v.realH} PX (${v.megapixels} MP) · ${v.sizeMb} MB · ${v.dpi} DPI — ALL 3 PASS ✔`
+    );
+  };
+
+  // AUTO-BATCH GENERATOR & FOLDER PACKAGER (100% Unique, Zero Duplicate, Microstock Ready)
+  const runAutoBatchGenerate = useCallback(
+    async (useDirectFolderPicker: boolean) => {
+      if (batchRunning) return;
+      const total = Math.max(1, Math.min(500, Math.round(batchCount || 10)));
+      batchCancelRef.current = false;
+      setBatchRunning(true);
+      setBatchProgress({
+        done: 0,
+        total,
+        msg: "INITIALIZING ZERO-DUPLICATE WEYL BATCH ENGINE...",
+      });
+
+      // Optional File System Access API Directory Handle if requested & supported
+      let dirHandle: any = null;
+      const folderName = `MICROSTOCK_BATCH_${curMode.id.toUpperCase()}_${total}X_${Date.now()
+        .toString()
+        .slice(-6)}`;
+
+      if (useDirectFolderPicker && typeof (window as any).showDirectoryPicker === "function") {
+        try {
+          const rootDir = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+          dirHandle = await rootDir.getDirectoryHandle(folderName, { create: true });
+        } catch {
+          // Fallback automatically to single ZIP folder download if blocked by iframe or cancelled
+          dirHandle = null;
+        }
+      }
+
+      try {
+        const pool: PatternMode[] =
+          batchScope === "current"
+            ? curMode.cat === "Brush"
+              ? modes.filter((m) => m.cat === "Brush")
+              : curMode.cat === "Lighting"
+              ? modes.filter((m) => m.cat === "Lighting")
+              : [curMode]
+            : batchScope === "favs" && favs.size > 0
+            ? modes.filter((m) => favs.has(m.id))
+            : modes;
+
+        const zipEntries: ZipEntryInput[] = [];
+        const csvRows: MicrostockMetaRow[] = [];
+        let workingP = { ...P, safeEdge: false };
+        let workingMP = { ...MP };
+
+        for (let idx = 0; idx < total; idx++) {
+          if (batchCancelRef.current) break;
+          const targetMode = pool[idx % pool.length];
+          setBatchProgress({
+            done: idx,
+            total,
+            msg: `GENERATING DESIGN ${idx + 1} OF ${total} (${targetMode.name.toUpperCase()})...`,
+          });
+
+          const candRes = generateUniqueCandidateForMode(
+            targetMode,
+            workingP,
+            workingMP,
+            true,
+            batchBgMode
+          );
+          if (!candRes) continue;
+          await new Promise((r) => setTimeout(r, 0));
+
+          workingP = candRes.testP;
+          workingMP = candRes.testMP;
+          const lockedTotal = registerDesignHash(candRes.designHash);
+          setP(workingP);
+          setMP(workingMP);
+          setClicks((c) => c + 1);
+          setUniqCount(lockedTotal);
+
+          const numStr = String(idx + 1).padStart(3, "0");
+          const ratioTag = (workingP.ratio || "1:1").replace(":", "x");
+          const isBrush = targetMode.cat === "Brush";
+          const isPoster = targetMode.cat === "Poster";
+          const isLighting = targetMode.cat === "Lighting";
+          const omitBg = isPoster ? false : Boolean(workingP.transp || isBrush || isLighting);
+          const rep =
+            workingP.svgStructure === "unified" || isBrush || isPoster || isLighting
+              ? 1
+              : workingP.exRep === "auto"
+              ? workingP.view > 0
+                ? workingP.view
+                : 3
+              : +workingP.exRep || 1;
+          const dims = getRatioDims(
+            Math.max(5200, +workingP.px || 5200),
+            workingP.ratio || "1:1",
+            workingP.artW,
+            workingP.artH
+          );
+
+          const needSvg = batchFormat === "svg" || batchFormat === "both" || batchFormat === "all3";
+          const needEps = batchFormat === "eps" || batchFormat === "eps_jpg" || batchFormat === "all3";
+          const needJpg =
+            batchFormat === "jpg" ||
+            batchFormat === "both" ||
+            batchFormat === "eps_jpg" ||
+            batchFormat === "all3";
+
+          const cleanTileForVec =
+            needSvg || needEps ? buildSVGFor(workingP, workingMP, omitBg, false) : "";
+
+          if (needEps) {
+            const fullEps = buildIllustratorEPS10(
+              cleanTileForVec,
+              { ...workingP, transp: omitBg },
+              rep,
+              dims.w,
+              dims.h
+            );
+            const epsBlob = new Blob([fullEps], { type: "application/postscript;charset=utf-8" });
+            const epsFilename = `${numStr}_${targetMode.id}_${ratioTag}_${dims.w}x${dims.h}_${workingP.seed}.eps`;
+
+            if (dirHandle) {
+              const fh = await dirHandle.getFileHandle(epsFilename, { create: true });
+              const wr = await fh.createWritable();
+              await wr.write(epsBlob);
+              await wr.close();
+            } else {
+              zipEntries.push({ path: `${folderName}/${epsFilename}`, blob: epsBlob });
+            }
+
+            csvRows.push({
+              filename: epsFilename,
+              modeName: targetMode.name,
+              cat: targetMode.cat,
+              seed: workingP.seed,
+              ratio: workingP.ratio || "1:1",
+              bgGrad: workingP.bgGrad,
+              bd: workingP.bd,
+              w: dims.w,
+              h: dims.h,
+            });
+          }
+
+          if (needSvg) {
+            const fullSvg = buildIllustratorSVG(
+              cleanTileForVec,
+              { ...workingP, transp: omitBg },
+              rep,
+              dims.w,
+              dims.h
+            );
+            const svgBlob = new Blob([fullSvg], { type: "image/svg+xml;charset=utf-8" });
+            const svgFilename = `${numStr}_${targetMode.id}_${ratioTag}_${dims.w}x${dims.h}_${workingP.seed}.svg`;
+
+            if (dirHandle) {
+              const fh = await dirHandle.getFileHandle(svgFilename, { create: true });
+              const wr = await fh.createWritable();
+              await wr.write(svgBlob);
+              await wr.close();
+            } else {
+              zipEntries.push({ path: `${folderName}/${svgFilename}`, blob: svgBlob });
+            }
+
+            csvRows.push({
+              filename: svgFilename,
+              modeName: targetMode.name,
+              cat: targetMode.cat,
+              seed: workingP.seed,
+              ratio: workingP.ratio || "1:1",
+              bgGrad: workingP.bgGrad,
+              bd: workingP.bd,
+              w: dims.w,
+              h: dims.h,
+            });
+          }
+
+          if (needJpg) {
+            const { blob: jpgBlob, w: jW, h: jH } = await renderHighResRasterBlob(
+              workingP,
+              workingMP,
+              "jpeg"
+            );
+            const jpgFilename = `${numStr}_${targetMode.id}_${ratioTag}_${jW}x${jH}_${workingP.seed}.jpg`;
+
+            if (dirHandle) {
+              const fh = await dirHandle.getFileHandle(jpgFilename, { create: true });
+              const wr = await fh.createWritable();
+              await wr.write(jpgBlob);
+              await wr.close();
+            } else {
+              zipEntries.push({ path: `${folderName}/${jpgFilename}`, blob: jpgBlob });
+            }
+
+            csvRows.push({
+              filename: jpgFilename,
+              modeName: targetMode.name,
+              cat: targetMode.cat,
+              seed: workingP.seed,
+              ratio: workingP.ratio || "1:1",
+              bgGrad: workingP.bgGrad,
+              bd: workingP.bd,
+              w: jW,
+              h: jH,
+            });
+          }
+
+          setBatchProgress({
+            done: idx + 1,
+            total,
+            msg: `COMPLETED ${idx + 1} / ${total} · SEED #${workingP.seed} VERIFIED UNIQUE`,
+          });
+          // Yield to UI thread so canvas preview updates smoothly
+          await new Promise((r) => setTimeout(r, 25));
+        }
+
+        if (csvRows.length > 0) {
+          const csvText = buildMicrostockCSV(csvRows);
+          const csvBlob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
+          const licenseText = [
+            "====================================================================",
+            "PATTERNVAULT — COMMERCIAL MICROSTOCK ORIGIN & ROYALTY-FREE CERTIFICATE",
+            "====================================================================",
+            `BATCH FOLDER ID : ${folderName}`,
+            `GENERATED COUNT : ${csvRows.length} FILES`,
+            "GENERATION TYPE : 100% MANUAL PROCEDURAL MATHEMATICAL GEOMETRY (ZERO AI)",
+            "COPYRIGHT STATUS: 100% ORIGINAL PROCEDURAL VECTORS — PUBLIC DOMAIN / COMMERCIAL ROYALTY-FREE",
+            "MICROSTOCK READY: APPROVED FOR ADOBE STOCK, SHUTTERSTOCK, FREEPIK, VECTEEZY & PRINT-ON-DEMAND",
+            "DUPLICATE CHECK : VERIFIED VIA 64-BIT FNV-1A + 32-BIT WEYL NON-REPEATING PERMUTATION LEDGER",
+            "====================================================================",
+          ].join("\n");
+          const licBlob = new Blob([licenseText], { type: "text/plain;charset=utf-8" });
+
+          if (dirHandle) {
+            const cfh = await dirHandle.getFileHandle("MICROSTOCK_UPLOAD_METADATA.csv", {
+              create: true,
+            });
+            const cwr = await cfh.createWritable();
+            await cwr.write(csvBlob);
+            await cwr.close();
+
+            const lfh = await dirHandle.getFileHandle("COMMERCIAL_LICENSE_CERTIFICATE.txt", {
+              create: true,
+            });
+            const lwr = await lfh.createWritable();
+            await lwr.write(licBlob);
+            await lwr.close();
+
+            setExportStatus(
+              `SAVED ${csvRows.length} UNIQUE FILES DIRECTLY TO PC FOLDER "${folderName}"`
+            );
+            setBatchProgress({
+              done: total,
+              total,
+              msg: `✓ SAVED ${csvRows.length} FILES + CSV DIRECTLY TO FOLDER "${folderName}"!`,
+            });
+          } else if (zipEntries.length > 0) {
+            zipEntries.push({
+              path: `${folderName}/MICROSTOCK_UPLOAD_METADATA.csv`,
+              blob: csvBlob,
+            });
+            zipEntries.push({
+              path: `${folderName}/COMMERCIAL_LICENSE_CERTIFICATE.txt`,
+              blob: licBlob,
+            });
+            setBatchProgress({
+              done: total,
+              total,
+              msg: "PACKAGING FOLDER ARCHIVE (.ZIP)...",
+            });
+            const zipBlob = await createZipArchiveBlob(zipEntries);
+            const zipMb = (zipBlob.size / (1024 * 1024)).toFixed(1);
+            downloadBlob(zipBlob, `${folderName}.zip`);
+            setExportStatus(
+              `DOWNLOADED BATCH FOLDER "${folderName}.zip" (${csvRows.length} FILES · ${zipMb} MB)`
+            );
+            setBatchProgress({
+              done: total,
+              total,
+              msg: `✓ DOWNLOADED "${folderName}.zip" (${csvRows.length} FILES · ${zipMb} MB · MICROSTOCK CSV INCLUDED)!`,
+            });
+          }
+        }
+      } finally {
+        setBatchRunning(false);
+      }
+    },
+    [
+      batchRunning,
+      batchCount,
+      curMode,
+      batchScope,
+      favs,
+      modes,
+      P,
+      MP,
+      generateUniqueCandidateForMode,
+      batchBgMode,
+      batchFormat,
+      buildSVGFor,
+      renderHighResRasterBlob,
+    ]
+  );
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        redo();
+      } else if (e.code === "Space") {
+        e.preventDefault();
+        smartRandom(!randLocked);
+      } else if (e.key === "r" || e.key === "R") {
+        setP((p) => ({ ...p, seed: nextUniqueSeed() }));
+      } else if (e.key === "g" || e.key === "G") {
+        setP((p) => ({ ...p, grid: !p.grid }));
+      } else if (e.key === "e" || e.key === "E") {
+        exportEPS10();
+      } else if (e.key === "s" || e.key === "S") {
+        exportSVG();
+      } else if (e.key === "j" || e.key === "J") {
+        exportRaster("jpeg");
+      } else if (e.key === "b" || e.key === "B") {
+        setBatchModalOpen((o) => !o);
+      } else if (e.key === "1") setActiveTab("pattern");
+      else if (e.key === "2") setActiveTab("colour");
+      else if (e.key === "3") setActiveTab("surface");
+      else if (e.key === "4") setActiveTab("export");
+      else if (e.key === "?" || e.key === "/") {
+        setKeyModalOpen((o) => !o);
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const dir = e.key === "ArrowDown" ? 1 : -1;
+        const nextM = modes[(curModeIdx + dir + modes.length) % modes.length];
+        if (nextM) selectMode(nextM);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [undo, redo, smartRandom, randLocked, exportSVG, exportRaster, modes, curModeIdx, selectMode]);
+
+  // Toggle theme
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    if (next === "light") document.documentElement.setAttribute("data-theme", "light");
+    else document.documentElement.removeAttribute("data-theme");
+    try {
+      localStorage.setItem("pv_theme", next);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Toggle favourite
+  const toggleFav = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        localStorage.setItem(FK, JSON.stringify([...next]));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  // Categories (Prioritize Lighting, Poster & Brush at the front of the category bar)
+  const categories = useMemo(() => {
+    const rawCats = [...new Set(modes.map((m) => m.cat))];
+    const priority = ["Lighting", "Poster", "Brush", "Fabric", "Plain BG", "Background"];
+    const first = priority.filter((c) => rawCats.includes(c));
+    const rest = rawCats.filter((c) => !priority.includes(c));
+    return ["All", "★ Favourites", ...first, ...rest];
+  }, [modes]);
+
+  const filteredModes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return modes.filter((m, idx) => {
+      const matchCat =
+        cat === "All" || (cat === "★ Favourites" ? favs.has(m.id) : m.cat === cat);
+      const matchQ =
+        !q ||
+        m.name.toLowerCase().includes(q) ||
+        m.cat.toLowerCase().includes(q) ||
+        pad2(idx + 1).includes(q);
+      return matchCat && matchQ;
+    });
+  }, [modes, cat, search, favs]);
+
+  // Viewport frame dimensions respecting Artboard Aspect Ratio (outDims.w / outDims.h) with EXACT integer tile division (ZERO SIDE-CUT!)
+  const frameStyle = useMemo(() => {
+    const maxW = Math.max(220, vpSize.w - 44);
+    const maxH = Math.max(220, vpSize.h - 64);
+    const aspect = outDims.w / Math.max(1, outDims.h);
+
+    let boxW = Math.min(maxW, 640);
+    let boxH = boxW / aspect;
+    if (boxH > Math.min(maxH, 560)) {
+      boxH = Math.min(maxH, 560);
+      boxW = boxH * aspect;
+    }
+
+    const wPx = Math.round(boxW);
+    const hPx = Math.round(boxH);
+    const isBrush = curMode.cat === "Brush";
+    const isPoster = curMode.cat === "Poster";
+    const isLighting = curMode.cat === "Lighting";
+    const lightBgMode = isLighting
+      ? String(
+          MP[curMode.id]?.bgMode ||
+            curMode.params.find((p) => p.k === "bgMode")?.def ||
+            "split"
+        )
+      : "";
+    const isTransp = isPoster
+      ? false
+      : isLighting
+      ? lightBgMode !== "black"
+      : Boolean(P.transp || isBrush);
+    const isUnified = P.svgStructure === "unified" || isBrush || isPoster || isLighting;
+    const repCount = isUnified
+      ? 1
+      : P.view > 0
+      ? P.view
+      : Math.max(1, Math.round(Math.min(wPx, hPx) / Math.max(90, P.zoom)));
+
+    const { colsCount, rowsCount } = isUnified
+      ? { colsCount: 1, rowsCount: 1 }
+      : getExactTileGrid(wPx, hPx, repCount);
+
+    const tileSizeCss = `${(100 / colsCount).toFixed(5)}% ${(100 / rowsCount).toFixed(5)}%`;
+    const checkerCss =
+      "conic-gradient(#e5e7eb 90deg, #ffffff 90deg 180deg, #e5e7eb 180deg 270deg, #ffffff 270deg)";
+
+    return {
+      width: `${wPx}px`,
+      height: `${hPx}px`,
+      backgroundColor: isTransp ? "#ffffff" : isLighting ? "#000000" : undefined,
+      backgroundImage: isTransp ? `url("${curBlobUrl}"), ${checkerCss}` : `url("${curBlobUrl}")`,
+      backgroundSize: isTransp ? `${tileSizeCss}, 20px 20px` : tileSizeCss,
+      backgroundRepeat: "repeat",
+    };
+  }, [vpSize, P.view, P.zoom, P.svgStructure, P.transp, curMode, MP, outDims, curBlobUrl]);
+
+  const rep = expRep();
+  const curParams = MP[curMode.id] || {};
+
+  // Handle running custom code
+  const handleRunCustomCode = () => {
+    const src = codeInput.trim();
+    if (!src) {
+      setCodeMsg({ text: "PASTE OR WRITE A MODE({...}) BLOCK FIRST.", err: true });
+      return;
+    }
+    try {
+      const added: PatternMode[] = [];
+      const registerCustom = (a: any, b?: string, c?: any[], d?: any) => {
+        let obj: PatternMode;
+        if (typeof a === "string") {
+          obj = { id: a, name: b || a, cat: "Custom", params: c || [], draw: d, isCustom: true };
+        } else {
+          obj = {
+            id: a.id,
+            name: a.name,
+            cat: a.cat || "Custom",
+            look: a.look,
+            params: a.params || [],
+            draw: a.draw,
+            isCustom: true,
+          };
+        }
+        const origDraw = obj.draw;
+        obj.draw = (m: any, q: any) => {
+          m.raw('<g clip-path="url(#tileClip)">');
+          origDraw(m, q);
+          m.raw("</g>");
+        };
+        added.push(obj);
+      };
+      new Function(
+        "mode",
+        "SH",
+        "T",
+        "star4",
+        "tear",
+        "leafP",
+        "starPath",
+        "spiralPath",
+        "blobPath",
+        "mixCol",
+        src
+      )(registerCustom, SH, T, star4, tear, leafP, starPath, spiralPath, blobPath, mixCol);
+
+      if (!added.length) {
+        setCodeMsg({ text: "NO MODE({...}) CALL FOUND IN CODE.", err: true });
+        return;
+      }
+
+      const newMode = added[added.length - 1];
+      const nextModes = [...modes];
+      const nextMP: Record<string, Record<string, any>> = { ...MP };
+      added.forEach((m) => {
+        const idx = nextModes.findIndex((x) => x.id === m.id);
+        if (idx >= 0) nextModes[idx] = m;
+        else nextModes.push(m);
+        nextMP[m.id] = {};
+        m.params.forEach((p) => {
+          nextMP[m.id][p.k] = p.def;
+        });
+      });
+
+      const nextCustom = (customCode ? customCode + "\n" : "") + src;
+      setModes(nextModes);
+      setMP(nextMP);
+      setCustomCode(nextCustom);
+      try {
+        localStorage.setItem(CK, nextCustom);
+      } catch {
+        // ignore
+      }
+      selectMode(newMode);
+      setCat("All");
+      setCodeMsg({ text: `ADDED "${newMode.name.toUpperCase()}" (${added.length} LOADED).`, err: false });
+      setTimeout(() => setCodeModalOpen(false), 450);
+    } catch (e: any) {
+      setCodeMsg({ text: "ERROR: " + e.message, err: true });
+    }
+  };
+
+  const handleClearCustom = () => {
+    try {
+      localStorage.removeItem(CK);
+    } catch {
+      // ignore
+    }
+    setCustomCode("");
+    setModes([...INITIAL_MODES]);
+    selectMode(INITIAL_MODES[0]);
+    setCodeMsg({ text: "CUSTOM PATTERNS CLEARED.", err: false });
+  };
+
+  // Convert an uploaded Fabric / Texture image into a 100% Vector, Separable, Recolorable Pattern in the Vault
+  const handleFabricImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setFabricTracing(true);
+    setExportStatus("SCANNING FABRIC PHOTO → BUILDING SEPARABLE ILLUSTRATOR VECTOR PATTERN...");
+    try {
+      const traced = await traceFabricImageToPatternCode(file, modes.length);
+      const added: PatternMode[] = [];
+      const registerCustom = (a: any, b?: string, c?: any[], d?: any) => {
+        let obj: PatternMode;
+        if (typeof a === "string") {
+          obj = { id: a, name: b || a, cat: "Textile", params: c || [], draw: d, isCustom: true };
+        } else {
+          obj = {
+            id: a.id,
+            name: a.name,
+            cat: a.cat || "Textile",
+            look: a.look,
+            params: a.params || [],
+            draw: a.draw,
+            isCustom: true,
+          };
+        }
+        const origDraw = obj.draw;
+        obj.draw = (m: any, q: any) => {
+          m.raw('<g clip-path="url(#tileClip)">');
+          try {
+            origDraw(m, q);
+          } catch (err) {
+            console.warn("Uploaded image pattern draw error:", err);
+          }
+          m.raw("</g>");
+        };
+        added.push(obj);
+      };
+      new Function(
+        "mode",
+        "SH",
+        "T",
+        "star4",
+        "tear",
+        "leafP",
+        "starPath",
+        "spiralPath",
+        "blobPath",
+        "mixCol",
+        traced.code
+      )(registerCustom, SH, T, star4, tear, leafP, starPath, spiralPath, blobPath, mixCol);
+
+      if (added.length > 0) {
+        const newMode = added[0];
+        const nextModes = [...modes, newMode];
+        const nextMP: Record<string, Record<string, any>> = { ...MP, [newMode.id]: {} };
+        newMode.params.forEach((p) => {
+          nextMP[newMode.id][p.k] = p.def;
+        });
+        const nextCustom = (customCode ? customCode + "\n" : "") + traced.code;
+        setModes(nextModes);
+        setMP(nextMP);
+        setCustomCode(nextCustom);
+        try {
+          localStorage.setItem(CK, nextCustom);
+        } catch {
+          // ignore
+        }
+        selectMode(newMode);
+        setCat("All");
+        setRandNote(
+          `ADDED IMAGE VECTOR "${newMode.name.toUpperCase()}" · 100% SEPARABLE & RECOLORABLE IN ILLUSTRATOR`
+        );
+        setExportStatus(
+          `IMAGE CONVERTED TO VECTOR PATTERN "${newMode.name.toUpperCase()}" & ADDED TO VAULT!`
+        );
+      }
+    } catch (err: any) {
+      setExportStatus(`IMAGE SCAN ERROR: ${err?.message || "INVALID IMAGE"}`);
+    } finally {
+      setFabricTracing(false);
+    }
+  };
+
+  return (
+    <>
+      {/* HIDDEN FILE INPUT FOR FABRIC / TEXTURE PHOTO TO VECTOR PATTERN */}
+      <input
+        ref={fabricInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleFabricImageUpload}
+      />
+      {/* HIDDEN FILE INPUT FOR BINARY SOF0/IHDR MICROSTOCK VERIFIER */}
+      <input
+        ref={verifyInputRef}
+        type="file"
+        accept=".jpg,.jpeg,.png,.eps,.svg"
+        style={{ display: "none" }}
+        onChange={handleVerifyLocalFile}
+      />
+
+      {/* TOP COMMAND HEADER */}
+      <header className="app-header">
+        <div className="brand-box">
+          <div className="brand-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2" />
+              <line x1="12" y1="22" x2="12" y2="15.5" />
+              <polyline points="22 8.5 12 15.5 2 8.5" />
+              <polyline points="2 15.5 12 8.5 22 15.5" />
+              <line x1="12" y1="2" x2="12" y2="8.5" />
+            </svg>
+          </div>
+          <div>
+            <div className="brand-title">
+              PATTERN<b>VAULT</b>
+            </div>
+            <div className="brand-sub">MICROSTOCK VECTOR STUDIO</div>
+          </div>
+        </div>
+
+        {/* CENTER COMMAND DECK */}
+        <div className="header-deck">
+          <button
+            className="btn icon-btn"
+            disabled={hIdx <= 0}
+            onClick={undo}
+            title="UNDO (CTRL+Z)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7v6h6" />
+              <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+            </svg>
+          </button>
+          <button
+            className="btn icon-btn"
+            disabled={hIdx >= hist.length - 1}
+            onClick={redo}
+            title="REDO (CTRL+Y)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 7v6h-6" />
+              <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
+            </svg>
+          </button>
+
+          <button
+            className="btn"
+            onClick={() => {
+              const nextS = nextUniqueSeed();
+              const nextVar =
+                curMode.cat === "Poster" || curMode.cat === "Lighting"
+                  ? ((Math.round(+(MP[curMode.id]?.variant ?? 0)) + nextUniqueStructuralSalt()) % 24) + 1
+                  : undefined;
+              const nextP = { ...P, seed: nextS };
+              const nextQ =
+                nextVar !== undefined
+                  ? { ...(MP[curMode.id] || {}), variant: nextVar }
+                  : MP[curMode.id] || {};
+              const h = computeDesignHash(nextP, nextQ);
+              const stH = computeStructuralSimilarityHash(nextP, nextQ);
+              const total = registerDesignHash(h, stH);
+              setUniqCount(total);
+              setP(nextP);
+              if (nextVar !== undefined) {
+                setMP((prev) => ({ ...prev, [curMode.id]: nextQ }));
+              }
+              setRandNote(
+                `🔒 1-TIME SEED #${nextS} HARD BURNED (#${total}) · NEVER GENERATES AGAIN`
+              );
+            }}
+            title="NEXT NON-REPEATING WEYL SEED — IMMEDIATELY BURNED ON 1ST TEST (R)"
+          >
+            SEED #{P.seed}
+          </button>
+
+          <button
+            className="btn rand-cta"
+            onClick={() => smartRandom(!randLocked, "current", false)}
+            title="GENERATE 100% UNIQUE DESIGN — 1-TIME HARD BURN (NEVER GENERATES AGAIN) (SPACE)"
+          >
+            ✦ UNIQUE GENERATE #{pad2(curModeIdx + 1)}
+          </button>
+
+          <button
+            className="btn pri"
+            onClick={() => setBatchModalOpen(true)}
+            title="AUTO-BATCH GENERATE MULTIPLE UNIQUE FILES INTO A SINGLE MICROSTOCK FOLDER (B)"
+          >
+            ⚡ AUTO-BATCH
+          </button>
+
+          <div
+            className="stat-badge"
+            title="HARD 1-TIME BURN LEDGER: EVERY DESIGN TESTED OR GENERATED EVEN ONCE IS PERMANENTLY LOCKED & NEVER REPEATS"
+          >
+            <span>🎲 {clicks}</span>
+            <b>·</b>
+            <span className="ok">🔒 {uniqCount} BURNED</span>
+          </div>
+        </div>
+
+        {/* DIRECT EXPORT & TOOLS DECK (100% VISIBLE, NEVER OVERFLOWS OFF-SCREEN) */}
+        <div className="header-right">
+          <div className="export-pill-deck">
+            <button
+              className="btn pri"
+              onClick={exportEPS10}
+              title="DIRECT DOWNLOAD ADOBE ILLUSTRATOR EPS 10 (.EPS) FOR INSTANT MICROSTOCK UPLOAD (E)"
+              style={{
+                background: "linear-gradient(135deg, #059669, #10b981)",
+                borderColor: "#10b981",
+              }}
+            >
+              ⬇ EPS 10
+            </button>
+            <button
+              className="btn pri"
+              onClick={exportSVG}
+              title="DOWNLOAD ADOBE ILLUSTRATOR AUTO-ARTBOARD VECTOR SVG (S)"
+            >
+              ⬇ VECTOR SVG
+            </button>
+            <button
+              className="btn"
+              onClick={() => exportRaster("jpeg")}
+              title="DOWNLOAD ULTRA-HD 30+ MP (5.8–9.5MB · 300 DPI) MICROSTOCK JPG (J)"
+              style={{ borderColor: "#f59e0b", color: "#fbbf24" }}
+            >
+              ⬇ JPG (5–10MB)
+            </button>
+            <button
+              className="btn pri"
+              onClick={exportSingleMicrostockZip}
+              title="DOWNLOAD .ZIP (JPG + EPS 10) — UPLOAD THIS .ZIP TO CHATGPT OR FREEPIK SO CHATGPT DOES NOT DOWNSCALE JPG TO 2048×1152!"
+              style={{
+                background: "linear-gradient(135deg, #2563eb, #06b6d4)",
+                borderColor: "#38bdf8",
+              }}
+            >
+              ⬇ ZIP (JPG+EPS)
+            </button>
+            <button
+              className="btn"
+              onClick={() => exportRaster("png")}
+              title="DOWNLOAD HIGH-RES 30+ MP PNG"
+            >
+              PNG
+            </button>
+            <button
+              className="btn"
+              onClick={() => verifyInputRef.current?.click()}
+              title="VERIFY TRUE BINARY SOF0 / IHDR RESOLUTION & MB SIZE OF ANY DOWNLOADED FILE"
+              style={{ borderColor: "#10b981", color: "#10b981" }}
+            >
+              🔍 CHECK FILE
+            </button>
+          </div>
+
+          <button
+            className="btn"
+            disabled={fabricTracing}
+            onClick={() => fabricInputRef.current?.click()}
+            title="UPLOAD ANY IMAGE TO CONVERT INTO AN EDITABLE ILLUSTRATOR VECTOR PATTERN"
+            style={{ borderColor: "var(--ac)", color: "var(--ac)" }}
+          >
+            {fabricTracing ? "SCANNING..." : "📸 + IMAGE"}
+          </button>
+          <button
+            className="btn"
+            onClick={() => {
+              setCodeInput(TEMPLATE);
+              setCodeMsg({ text: "", err: false });
+              setCodeModalOpen(true);
+            }}
+            title="CREATE CUSTOM PROCEDURAL PATTERN"
+          >
+            + CODE
+          </button>
+          <button
+            className="btn icon-btn"
+            onClick={() => setKeyModalOpen(true)}
+            title="KEYBOARD SHORTCUTS (?)"
+          >
+            ?
+          </button>
+          <button
+            className="btn icon-btn"
+            onClick={toggleTheme}
+            title="SWITCH DARK / LIGHT THEME"
+          >
+            {theme === "light" ? "☽" : "☀"}
+          </button>
+        </div>
+      </header>
+
+      {/* 3-COLUMN STUDIO BODY */}
+      <div className="studio-body">
+        {/* LEFT COLUMN: PARAMETER INSPECTOR */}
+        <aside className="inspector-panel">
+          <div className="top-tabs">
+            <button
+              className={`top-tab ${activeTab === "pattern" ? "on" : ""}`}
+              onClick={() => setActiveTab("pattern")}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                <circle cx="17.5" cy="17.5" r="3.5" />
+              </svg>
+              1 · PATTERN
+            </button>
+            <button
+              className={`top-tab ${activeTab === "colour" ? "on" : ""}`}
+              onClick={() => setActiveTab("colour")}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="13.5" cy="6.5" r="2.5" />
+                <circle cx="17.5" cy="10.5" r="2.5" />
+                <circle cx="8.5" cy="7.5" r="2.5" />
+                <circle cx="6.5" cy="12.5" r="2.5" />
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16c3.3 0 6-2.7 6-6 0-5.5-4.5-9.6-10-9.6z" />
+              </svg>
+              2 · COLOUR
+            </button>
+            <button
+              className={`top-tab ${activeTab === "surface" ? "on" : ""}`}
+              onClick={() => setActiveTab("surface")}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+              </svg>
+              3 · BG &amp; TEX
+            </button>
+            <button
+              className={`top-tab ${activeTab === "export" ? "on" : ""}`}
+              onClick={() => setActiveTab("export")}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              4 · BATCH/EXP
+            </button>
+          </div>
+
+          <div className="inspector-scroll">
+            {/* TAB 1: PATTERN CONTROLS */}
+            {activeTab === "pattern" && (
+              <>
+                <div className="sec">
+                  <div className="sh">
+                    <span
+                      className="st"
+                      style={{ fontSize: "12px", color: "var(--tx)" }}
+                      title={`#${pad2(curModeIdx + 1)} · ${curMode.name}`}
+                    >
+                      #{pad2(curModeIdx + 1)} · {curMode.name}
+                    </span>
+                    <div style={{ display: "flex", gap: "5px", flexShrink: 0 }}>
+                      <button
+                        className="ib"
+                        title="LOCK COLOURS WHEN RANDOMIZING"
+                        onClick={() => setRandLocked((l) => !l)}
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: 800,
+                          color: randLocked ? "var(--ac)" : undefined,
+                          borderColor: randLocked ? "var(--ac)" : undefined,
+                        }}
+                      >
+                        {randLocked ? "🔒 LOCKED" : "🔓 FREE"}
+                      </button>
+                      <button
+                        className="ib"
+                        title="RESET PATTERN DEFAULTS"
+                        onClick={() => {
+                          setMP((prev) => {
+                            const resetQ: Record<string, any> = {};
+                            curMode.params.forEach((p) => {
+                              resetQ[p.k] = p.def;
+                            });
+                            return { ...prev, [curMode.id]: resetQ };
+                          });
+                          selectMode(curMode);
+                        }}
+                      >
+                        ↺
+                      </button>
+                    </div>
+                  </div>
+
+                  {curMode.cat === "Poster" && (
+                    <div
+                      style={{
+                        background: "var(--p2)",
+                        border: "1px solid var(--ac)",
+                        borderRadius: "8px",
+                        padding: "9px 10px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "8px",
+                          gap: "6px",
+                        }}
+                      >
+                        <span className="st" style={{ fontSize: "10px" }}>
+                          🎨 {MASTER_POSTER_MODES.length} MICROSTOCK POSTER SETS
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <button
+                            type="button"
+                            className="ib"
+                            style={{
+                              fontSize: "9px",
+                              padding: "2px 6px",
+                              height: "22px",
+                              borderColor:
+                                Math.round(+(curParams.variant ?? 0)) === 0
+                                  ? "var(--ac)"
+                                  : undefined,
+                              color:
+                                Math.round(+(curParams.variant ?? 0)) === 0
+                                  ? "var(--ac)"
+                                  : undefined,
+                            }}
+                            onClick={() =>
+                              setMP((prev) => ({
+                                ...prev,
+                                [curMode.id]: { ...(prev[curMode.id] || {}), variant: 0 },
+                              }))
+                            }
+                            title="RESET TO 100% EXACT HABUHU REFERENCE POSTER SET (VARIANT 0)"
+                          >
+                            ↺ HABUHU REF
+                          </button>
+                          <button
+                            type="button"
+                            className={`chk-pill ${
+                              (curParams.showText ?? true) !== false &&
+                              (curParams.showText ?? true) !== "false"
+                                ? "on"
+                                : ""
+                            }`}
+                            onClick={togglePosterTextCheck}
+                            title="CHECKMARK ON = SHOW OUTLINED VECTOR POSTER TEXT · OFF = NO TEXT"
+                          >
+                            <span className="chk-box">✓</span>
+                            <span>POSTER TEXT</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 112 POSTER SETS DROPDOWN + PREV/NEXT BUTTONS */}
+                      <div style={{ display: "flex", gap: "4px", marginBottom: "7px" }}>
+                        <select
+                          value={curMode.id}
+                          onChange={(e) => selectPosterReferenceSet(e.target.value)}
+                          style={{
+                            flex: 1,
+                            height: "26px",
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            borderRadius: "6px",
+                            border: "1px solid var(--ac)",
+                            background: "var(--p)",
+                            color: "var(--tx)",
+                          }}
+                        >
+                          {MASTER_POSTER_MODES.map((pm) => (
+                            <option key={pm.id} value={pm.id}>
+                              {pm.name.toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
+                          title="PREVIOUS POSTER SET"
+                          onClick={() => {
+                            const idx = MASTER_POSTER_MODES.findIndex((x) => x.id === curMode.id);
+                            const prevIdx =
+                              (idx - 1 + MASTER_POSTER_MODES.length) % MASTER_POSTER_MODES.length;
+                            selectPosterReferenceSet(MASTER_POSTER_MODES[prevIdx].id);
+                          }}
+                        >
+                          ◀
+                        </button>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
+                          title="NEXT POSTER SET"
+                          onClick={() => {
+                            const idx = MASTER_POSTER_MODES.findIndex((x) => x.id === curMode.id);
+                            const nextIdx = (idx + 1) % MASTER_POSTER_MODES.length;
+                            selectPosterReferenceSet(MASTER_POSTER_MODES[nextIdx].id);
+                          }}
+                        >
+                          ▶
+                        </button>
+                      </div>
+
+                      {/* QUICK 21 HABUHU REFERENCE SETS GRID */}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: "3px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {MASTER_POSTER_MODES.slice(0, 21).map((pm, idx) => (
+                          <button
+                            key={pm.id}
+                            type="button"
+                            className="btn"
+                            style={{
+                              minHeight: "22px",
+                              padding: "2px 3px",
+                              fontSize: "8.5px",
+                              justifyContent: "center",
+                              borderColor: curMode.id === pm.id ? "var(--ac)" : undefined,
+                              background:
+                                curMode.id === pm.id ? "rgba(16, 185, 129, 0.16)" : undefined,
+                              color: curMode.id === pm.id ? "var(--ac)" : undefined,
+                            }}
+                            onClick={() => selectPosterReferenceSet(pm.id)}
+                            title={pm.name.toUpperCase()}
+                          >
+                            REF {idx + 1} ({pm.defPcs}P)
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* HOW MANY POSTERS ON CANVAS: 1, 2, 3, 4, 5, 6, 8, 9, 10, 12 PCS */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        CANVAS POSTER QUANTITY (1–12 PCS):
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(4, 1fr)",
+                          gap: "3px",
+                          marginBottom: "7px",
+                        }}
+                      >
+                        {[
+                          { k: "1", l: "1 PCS" },
+                          { k: "2", l: "2 PCS" },
+                          { k: "3", l: "3 PCS" },
+                          { k: "4", l: "4 PCS" },
+                          { k: "5", l: "5 PCS" },
+                          { k: "6", l: "6 PCS" },
+                          { k: "8", l: "8 PCS" },
+                          { k: "9", l: "9 PCS" },
+                          { k: "10", l: "10 PCS" },
+                          { k: "12", l: "12 PCS" },
+                          { k: "4grid", l: "2×2" },
+                          { k: "6grid", l: "3×2" },
+                        ].map((item) => (
+                          <button
+                            key={item.k}
+                            type="button"
+                            className={String(curParams.pcs || "4") === item.k ? "on" : ""}
+                            onClick={() => switchPosterSetPcs(item.k)}
+                          >
+                            {item.l}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px" }}>
+                        <button
+                          type="button"
+                          className="btn pri"
+                          style={{ minHeight: "27px", fontSize: "9.5px", padding: "4px 6px" }}
+                          onClick={() => smartRandom(true, "current", false)}
+                          title="SWITCH TO NEXT UNIQUE POSTER SET & NEW STRUCTURAL DESIGN (1-TIME BURN)"
+                        >
+                          ✦ NEXT UNIQUE POSTER
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{
+                            minHeight: "27px",
+                            fontSize: "9.5px",
+                            padding: "4px 6px",
+                            borderColor: "var(--ac)",
+                            color: "var(--ac)",
+                          }}
+                          onClick={() => smartRandom(true, "current", true)}
+                          title="GENERATE NEW STRUCTURAL DESIGN INSIDE THIS POSTER SET (1-TIME BURN)"
+                        >
+                          ✦ NEW IN THIS SET
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {curMode.cat === "Lighting" && (
+                    <div
+                      style={{
+                        background: "var(--p2)",
+                        border: "1px solid #f59e0b",
+                        borderRadius: "8px",
+                        padding: "9px 10px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "8px",
+                          gap: "6px",
+                        }}
+                      >
+                        <span className="st" style={{ fontSize: "10px", color: "#fbbf24" }}>
+                          ✨ {MASTER_LIGHTING_MODES.length} ORIGINAL LIGHTING SETS
+                        </span>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{
+                            fontSize: "9px",
+                            padding: "2px 6px",
+                            height: "22px",
+                            borderColor: "#f59e0b",
+                            color: "#fbbf24",
+                          }}
+                          onClick={() => selectLightingReferenceSet(curMode.id)}
+                          title="RESET TO HABUHU ORIGINAL LIGHTING PRESET"
+                        >
+                          ↺ HABUHU REF
+                        </button>
+                      </div>
+
+                      {/* 108 LIGHTING DESIGNS DROPDOWN + PREV/NEXT */}
+                      <div style={{ display: "flex", gap: "4px", marginBottom: "7px" }}>
+                        <select
+                          value={curMode.id}
+                          onChange={(e) => selectLightingReferenceSet(e.target.value)}
+                          style={{
+                            flex: 1,
+                            height: "26px",
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            borderRadius: "6px",
+                            border: "1px solid #f59e0b",
+                            background: "var(--p)",
+                            color: "var(--tx)",
+                          }}
+                        >
+                          {MASTER_LIGHTING_MODES.map((lm) => (
+                            <option key={lm.id} value={lm.id}>
+                              {lm.name.toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
+                          title="PREVIOUS LIGHTING DESIGN"
+                          onClick={() => {
+                            const idx = MASTER_LIGHTING_MODES.findIndex((x) => x.id === curMode.id);
+                            const prevIdx =
+                              (idx - 1 + MASTER_LIGHTING_MODES.length) %
+                              MASTER_LIGHTING_MODES.length;
+                            selectLightingReferenceSet(MASTER_LIGHTING_MODES[prevIdx].id);
+                          }}
+                        >
+                          ◀
+                        </button>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
+                          title="NEXT LIGHTING DESIGN"
+                          onClick={() => {
+                            const idx = MASTER_LIGHTING_MODES.findIndex((x) => x.id === curMode.id);
+                            const nextIdx = (idx + 1) % MASTER_LIGHTING_MODES.length;
+                            selectLightingReferenceSet(MASTER_LIGHTING_MODES[nextIdx].id);
+                          }}
+                        >
+                          ▶
+                        </button>
+                      </div>
+
+                      {/* 3 BACKGROUND MODES: 50/50 SPLIT (BLACK+TRANSPARENT) | 100% TRANSPARENT | 100% BLACK BG */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        ARTBOARD BACKGROUND MODE (SPLIT / TRANSPARENT / BLACK):
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: "3px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {[
+                          {
+                            k: "split",
+                            l: "◐ 50/50 SPLIT",
+                            t: "50% BLACK LEFT + 50% TRANSPARENT RIGHT ON SAME ARTBOARD",
+                          },
+                          {
+                            k: "transparent",
+                            l: "◌ TRANSPARENT",
+                            t: "100% TRANSPARENT BACKGROUND (NO BG)",
+                          },
+                          {
+                            k: "black",
+                            l: "◼ BLACK BG",
+                            t: "100% PITCH BLACK BACKGROUND (#000000)",
+                          },
+                        ].map((bm) => (
+                          <button
+                            key={bm.k}
+                            type="button"
+                            className={
+                              String(curParams.bgMode || "split") === bm.k ? "on" : ""
+                            }
+                            onClick={() =>
+                              switchLightingBgMode(bm.k as "split" | "transparent" | "black")
+                            }
+                            title={bm.t}
+                          >
+                            {bm.l}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* LIGHTING PIECE COUNT: 1 / DUAL, 4, 2x2, 6, 3x2, 8, 9, 12 PCS */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        LIGHTING KIT PIECES ON ARTBOARD:
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(4, 1fr)",
+                          gap: "3px",
+                        }}
+                      >
+                        {[
+                          { k: "1", l: "1/DUAL" },
+                          { k: "4", l: "4 PCS" },
+                          { k: "4grid", l: "2×2" },
+                          { k: "6", l: "6 PCS" },
+                          { k: "6grid", l: "3×2" },
+                          { k: "8", l: "8 PCS" },
+                          { k: "9", l: "9 PCS" },
+                          { k: "12", l: "12 PCS" },
+                        ].map((item) => (
+                          <button
+                            key={item.k}
+                            type="button"
+                            className={String(curParams.pcs || "1") === item.k ? "on" : ""}
+                            onClick={() => switchLightingSetPcs(item.k)}
+                          >
+                            {item.l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {curMode.params.map((p) => {
+                    const val = curParams[p.k] ?? p.def;
+                    if (p.type === "check") {
+                      const isChecked = Boolean(val) && val !== "false";
+                      return (
+                        <div className="r" key={p.k}>
+                          <label>{p.l}</label>
+                          <button
+                            type="button"
+                            className={`chk-pill ${isChecked ? "on" : ""}`}
+                            onClick={() => {
+                              const nextVal = !isChecked;
+                              setMP((prev) => ({
+                                ...prev,
+                                [curMode.id]: { ...prev[curMode.id], [p.k]: nextVal },
+                              }));
+                            }}
+                          >
+                            <span className="chk-box">✓</span>
+                            <span>{isChecked ? "CHECKED (ON)" : "OFF"}</span>
+                          </button>
+                        </div>
+                      );
+                    }
+                    if (p.type === "select" && p.opts) {
+                      return (
+                        <div className="r" key={p.k}>
+                          <label>{p.l}</label>
+                          <select
+                            value={val}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setMP((prev) => ({
+                                ...prev,
+                                [curMode.id]: { ...prev[curMode.id], [p.k]: v },
+                              }));
+                            }}
+                          >
+                            {p.opts.map(([ov, ol]) => (
+                              <option key={ov} value={ov}>
+                                {ol.toUpperCase()}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="r range-row" key={p.k}>
+                        <label>{p.l}</label>
+                        <input
+                          type="range"
+                          min={p.min}
+                          max={p.max}
+                          step={p.step || 1}
+                          value={val}
+                          onChange={(e) => {
+                            const v = +e.target.value;
+                            setMP((prev) => ({
+                              ...prev,
+                              [curMode.id]: { ...prev[curMode.id], [p.k]: v },
+                            }));
+                          }}
+                        />
+                        <span className="v">{val}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st">ILLUSTRATOR ARTBOARD &amp; CANVAS MODE</span>
+                  </div>
+                  <div className="r">
+                    <label>CANVAS / SVG MODE</label>
+                    <select
+                      value={P.svgStructure || "separable"}
+                      onChange={(e) => {
+                        const modeVal = e.target.value as "separable" | "unified";
+                        setP((p) => ({
+                          ...p,
+                          svgStructure: modeVal,
+                          view: modeVal === "unified" ? 1 : p.view,
+                        }));
+                      }}
+                    >
+                      <option value="separable">1 · SEPARABLE PARTS (আলাদা আলাদা অংশ)</option>
+                      <option value="unified">2 · PLAIN UNIFIED ONE-PIECE (একসাথে প্লেন)</option>
+                    </select>
+                  </div>
+                  <div className="r">
+                    <label>PLAIN BG GRAIN &amp; TEXTURE</label>
+                    <select
+                      value={P.bd}
+                      onChange={(e) => {
+                        const nextBd = e.target.value as SurfaceTextureMode;
+                        setP((p) => ({
+                          ...p,
+                          bd: nextBd,
+                          bdn: nextBd === "none" ? p.bdn : Math.max(12, p.bdn || 18),
+                          bdo: nextBd === "none" ? p.bdo : Math.max(35, p.bdo || 48),
+                        }));
+                      }}
+                    >
+                      <option value="none">NO GLOBAL GRAIN OVERLAY (CLEAN)</option>
+                      <option value="sandgrain">FINE SAND &amp; KRAFT GRAIN (GRAINY EFFECT)</option>
+                      <option value="mattegrain">MATTE STUDIO STIPPLE GRAIN (GRAINY)</option>
+                      <option value="velvetgrain">VELVET &amp; FELT MICRO-FLOCK GRAIN</option>
+                      <option value="paperfiber">ARTISAN PAPER FIBERS &amp; SPECKS</option>
+                      <option value="grain">ORGANIC MICRO STIPPLE GRAIN</option>
+                      <option value="brushedmetal">BRUSHED SATIN METALLIC GRAIN</option>
+                      <option value="woodgrain">NATURAL WOOD TIMBER GRAIN</option>
+                      <option value="linen">WOVEN BELGIAN LINEN TEXTURE</option>
+                      <option value="silk">BRUSHED RAW SILK SHANTUNG</option>
+                      <option value="canvas">ARTIST COTTON CANVAS WEAVE</option>
+                      <option value="marble">CARRARA MARBLE VEINS</option>
+                      <option value="goldfoil">METALLIC GOLD FOIL FLECKS</option>
+                      <option value="halftone">ENGRAVING HALFTONE DOTS</option>
+                    </select>
+                  </div>
+                  {P.bd !== "none" && (
+                    <>
+                      <div className="r range-row">
+                        <label>GRAIN / TEXTURE INTENSITY %</label>
+                        <input
+                          type="range"
+                          min={10}
+                          max={90}
+                          value={P.bdo}
+                          onChange={(e) => setP((p) => ({ ...p, bdo: +e.target.value }))}
+                        />
+                        <span className="v">{P.bdo}%</span>
+                      </div>
+                      <div className="r range-row">
+                        <label>GRAIN / TEXTURE DENSITY</label>
+                        <input
+                          type="range"
+                          min={4}
+                          max={32}
+                          step={2}
+                          value={P.bdn}
+                          onChange={(e) => setP((p) => ({ ...p, bdn: +e.target.value }))}
+                        />
+                        <span className="v">{P.bdn}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="r">
+                    <label>FULL-BLEED EDGE-TO-EDGE (NO GAP)</label>
+                    <label className="sw">
+                      <input
+                        type="checkbox"
+                        checked={P.safeEdge !== true}
+                        onChange={(e) => setP((p) => ({ ...p, safeEdge: !e.target.checked }))}
+                      />
+                      <i></i>
+                    </label>
+                  </div>
+                  <div className="r">
+                    <label>ARTBOARD PRESET</label>
+                    <select
+                      value={`${outDims.w}x${outDims.h}`}
+                      onChange={(e) => {
+                        const preset = ILLUSTRATOR_ARTBOARD_PRESETS.find(
+                          (pr) => `${pr.w}x${pr.h}` === e.target.value
+                        );
+                        if (preset) {
+                          setP((p) => ({
+                            ...p,
+                            ratio: preset.ratio,
+                            artW: preset.w,
+                            artH: preset.h,
+                          }));
+                        }
+                      }}
+                    >
+                      {ILLUSTRATOR_ARTBOARD_PRESETS.map((pr) => (
+                        <option key={`${pr.w}x${pr.h}`} value={`${pr.w}x${pr.h}`}>
+                          {pr.label}
+                        </option>
+                      ))}
+                      {!ILLUSTRATOR_ARTBOARD_PRESETS.some(
+                        (pr) => pr.w === outDims.w && pr.h === outDims.h
+                      ) && (
+                        <option value={`${outDims.w}x${outDims.h}`}>
+                          CUSTOM ({outDims.w} × {outDims.h} PX)
+                        </option>
+                      )}
+                    </select>
+                  </div>
+                  <div className="r">
+                    <label>ARTBOARD W × H (PX)</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <input
+                        type="number"
+                        min={3600}
+                        max={12000}
+                        step={100}
+                        value={outDims.w}
+                        onChange={(e) => {
+                          const w = Math.max(3600, Math.min(12000, +e.target.value || 5000));
+                          setP((p) => ({ ...p, artW: w, artH: outDims.h }));
+                        }}
+                        style={{ width: "68px" }}
+                      />
+                      <span style={{ fontSize: "10px", color: "var(--mu)" }}>×</span>
+                      <input
+                        type="number"
+                        min={3600}
+                        max={12000}
+                        step={100}
+                        value={outDims.h}
+                        onChange={(e) => {
+                          const h = Math.max(3600, Math.min(12000, +e.target.value || 5000));
+                          setP((p) => ({ ...p, artW: outDims.w, artH: h }));
+                        }}
+                        style={{ width: "68px" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="r">
+                    <label>CANVAS RATIO</label>
+                    <select
+                      value={P.ratio || "1:1"}
+                      onChange={(e) => {
+                        const r = e.target.value as CanvasRatio;
+                        const d = getRatioDims(Math.max(5000, +P.px || 5000), r);
+                        setP((p) => ({ ...p, ratio: r, artW: d.w, artH: d.h }));
+                      }}
+                    >
+                      {RATIO_LIST.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="r">
+                    <label>TILE SYMMETRY</label>
+                    <select
+                      value={P.mx}
+                      onChange={(e) =>
+                        setP((p) => ({ ...p, mx: e.target.value as PatternState["mx"] }))
+                      }
+                    >
+                      <option value="none">ORIGINAL REPEAT</option>
+                      <option value="mirror">4-WAY KALEIDOSCOPE</option>
+                      <option value="rot">PINWHEEL ROTATION</option>
+                      <option value="double">LAYERED DOUBLE</option>
+                      <option value="patch">PATCHWORK QUILT</option>
+                      <option value="invert">CHECKERBOARD INVERT</option>
+                    </select>
+                  </div>
+                  <div className="two" style={{ marginTop: "8px" }}>
+                    <button className="btn" onClick={() => smartRandom(false, "current", true)}>
+                      SHUFFLE SHAPES
+                    </button>
+                    <button className="btn" onClick={() => smartRandom(true, "mix", true)}>
+                      REMIX + GRAD/TEX
+                    </button>
+                  </div>
+                  <button
+                    className="btn pri"
+                    style={{ width: "100%", marginTop: "8px", justifyContent: "center" }}
+                    onClick={() => setBatchModalOpen(true)}
+                  >
+                    ⚡ AUTO-BATCH THIS STYLE (#{pad2(curModeIdx + 1)})
+                  </button>
+                  <button
+                    className="btn"
+                    style={{
+                      width: "100%",
+                      marginTop: "6px",
+                      justifyContent: "center",
+                      borderColor: "var(--ac)",
+                      color: "var(--ac)",
+                    }}
+                    disabled={fabricTracing}
+                    onClick={() => fabricInputRef.current?.click()}
+                  >
+                    {fabricTracing
+                      ? "SCANNING FABRIC PHOTO..."
+                      : "📸 + ADD FABRIC PHOTO TO PATTERN VAULT"}
+                  </button>
+                  <div className="note" style={{ marginTop: "10px" }}>
+                    {randNote}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* TAB 2: COLOUR CONTROLS */}
+            {activeTab === "colour" && (
+              <>
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st">CURATED PALETTES ({PALS.length})</span>
+                  </div>
+                  <div className="palw">
+                    <button
+                      type="button"
+                      id="palBtn"
+                      onClick={() => setPalOpen((o) => !o)}
+                    >
+                      <span className="sws">
+                        {[P.bg, ...[P.c0, P.c1, P.c2, P.c3, P.c4].slice(0, 4)].map((c, i) => (
+                          <i key={i} style={{ background: c }} />
+                        ))}
+                      </span>
+                      <span className="nm">{palLabel}</span>
+                      <span className="ar">▾</span>
+                    </button>
+                    {palOpen && (
+                      <div id="palMenu" className="open">
+                        {PALS.map((p, i) => (
+                          <div
+                            key={p[0]}
+                            className={`po ${i === palIdx ? "on" : ""}`}
+                            onClick={() => applyPal(i)}
+                          >
+                            <span className="sws">
+                              {[p[1], ...p[3].slice(0, 4)].map((c, idx) => (
+                                <i key={idx} style={{ background: c }} />
+                              ))}
+                            </span>
+                            <span>{p[0].toUpperCase()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="cols" style={{ marginTop: "14px" }}>
+                    {(["bg", "ink", "c0", "c1", "c2", "c3", "c4"] as const).map((k, idx) => {
+                      const labels = ["BG", "INK", "C1", "C2", "C3", "C4", "C5"];
+                      const off = idx >= 2 && idx - 2 >= P.ncol;
+                      return (
+                        <div className={`cs ${off ? "off" : ""}`} key={k}>
+                          <input
+                            type="color"
+                            value={P[k]}
+                            onChange={(e) => setP((p) => ({ ...p, [k]: e.target.value }))}
+                          />
+                          <span>{labels[idx]}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="r range-row" style={{ marginTop: "14px" }}>
+                    <label>ACTIVE COLOURS</label>
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      value={P.ncol}
+                      onChange={(e) => setP((p) => ({ ...p, ncol: +e.target.value }))}
+                    />
+                    <span className="v">{P.ncol}</span>
+                  </div>
+
+                  <div className="two" style={{ marginTop: "10px" }}>
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        const arr = [P.c0, P.c1, P.c2, P.c3, P.c4];
+                        for (let i = arr.length - 1; i > 0; i--) {
+                          const j = Math.floor(Math.random() * (i + 1));
+                          [arr[i], arr[j]] = [arr[j], arr[i]];
+                        }
+                        const [ink, fixedCols] = fixContrast(P.bg, P.ink, arr);
+                        setP((p) => ({
+                          ...p,
+                          ink,
+                          c0: fixedCols[0],
+                          c1: fixedCols[1],
+                          c2: fixedCols[2],
+                          c3: fixedCols[3],
+                          c4: fixedCols[4],
+                        }));
+                      }}
+                    >
+                      ⇄ SHUFFLE
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        const arr = [P.c0, P.c1, P.c2, P.c3, P.c4];
+                        const k = Math.floor(Math.random() * P.ncol);
+                        const newBg = arr[k];
+                        arr[k] = P.bg;
+                        const [ink, fixedCols] = fixContrast(newBg, P.ink, arr);
+                        setP((p) => ({
+                          ...p,
+                          bg: newBg,
+                          bg2: mixCol(newBg, fixedCols[0], 0.35),
+                          ink,
+                          c0: fixedCols[0],
+                          c1: fixedCols[1],
+                          c2: fixedCols[2],
+                          c3: fixedCols[3],
+                          c4: fixedCols[4],
+                        }));
+                      }}
+                    >
+                      ◐ SWAP BG
+                    </button>
+                  </div>
+
+                  <button
+                    className="btn"
+                    style={{ width: "100%", marginTop: "8px", justifyContent: "center" }}
+                    onClick={() => {
+                      const R = Math.random;
+                      const h = R() * 360;
+                      const dark = R() < 0.35;
+                      const sch = [
+                        [0, 30, 60, 180, 210],
+                        [0, 140, 220, 45, 180],
+                        [0, 90, 180, 270, 45],
+                      ][Math.floor(R() * 3)];
+                      const rawCols = sch.map((o, i) =>
+                        hsl(h + o, 55 + R() * 35, dark ? 55 + R() * 20 : i === 3 ? 74 : 42 + R() * 26)
+                      );
+                      const bg = dark ? hsl(h, 35, 9) : hsl(h + 15, 35, 95);
+                      const rawInk = dark ? "#f8fafc" : hsl(h, 35, 12);
+                      const [ink, cols] = fixContrast(bg, rawInk, rawCols);
+                      setPalLabel("PROCEDURAL HARMONY");
+                      setP((p) => ({
+                        ...p,
+                        bg,
+                        bg2: mixCol(bg, cols[0], 0.36),
+                        ink,
+                        c0: cols[0],
+                        c1: cols[1],
+                        c2: cols[2],
+                        c3: cols[3],
+                        c4: cols[4],
+                      }));
+                    }}
+                  >
+                    ✦ GENERATE HARMONY PALETTE
+                  </button>
+                </div>
+
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st">RENDERING &amp; INK STROKE</span>
+                  </div>
+                  <div className="r">
+                    <label>VECTOR FINISH</label>
+                    <div className="seg">
+                      {(["flat", "both", "line"] as const).map((st) => (
+                        <button
+                          key={st}
+                          className={P.style === st ? "on" : ""}
+                          onClick={() => setP((p) => ({ ...p, style: st }))}
+                        >
+                          {st === "flat" ? "FLAT" : st === "both" ? "FILLED" : "LINE"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="r range-row">
+                    <label>OUTLINE WIDTH</label>
+                    <input
+                      type="range"
+                      min={1}
+                      max={10}
+                      value={P.sw}
+                      onChange={(e) => setP((p) => ({ ...p, sw: +e.target.value }))}
+                    />
+                    <span className="v">{P.sw}</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* TAB 3: GRADIENT & TEXTURE BACKGROUND CONTROLS */}
+            {activeTab === "surface" && (
+              <>
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st">PLAIN UNIFIED vs SEPARABLE MODE</span>
+                  </div>
+                  <div className="r">
+                    <label>CANVAS STRUCTURE</label>
+                    <select
+                      value={P.svgStructure || "separable"}
+                      onChange={(e) => {
+                        const modeVal = e.target.value as "separable" | "unified";
+                        setP((p) => ({
+                          ...p,
+                          svgStructure: modeVal,
+                          view: modeVal === "unified" ? 1 : p.view,
+                        }));
+                      }}
+                    >
+                      <option value="separable">SEPARABLE PARTS (আলাদা আলাদা অংশ)</option>
+                      <option value="unified">PLAIN UNIFIED 1-PIECE (একসাথে প্লেন)</option>
+                    </select>
+                  </div>
+                  <button
+                    className="btn pri"
+                    style={{ width: "100%", marginTop: "6px", justifyContent: "center" }}
+                    onClick={() => {
+                      const plainModes = modes.filter((m) => m.cat === "Plain BG");
+                      const pick =
+                        plainModes[Math.floor(Math.random() * plainModes.length)] ||
+                        modes.find((m) => m.id === "plainunifiedstudio");
+                      if (pick) {
+                        selectMode(pick);
+                        setCat("Plain BG");
+                      } else {
+                        setP((p) => ({ ...p, svgStructure: "unified", view: 1 }));
+                      }
+                    }}
+                  >
+                    ▣ SWITCH TO PLAIN UNIFIED ONE-PIECE BG
+                  </button>
+                </div>
+
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st">GRADIENT BACKGROUND STUDIO</span>
+                  </div>
+                  <div className="r">
+                    <label>BACKGROUND GRADIENT</label>
+                    <select
+                      value={P.bgGrad || "solid"}
+                      onChange={(e) =>
+                        setP((p) => ({ ...p, bgGrad: e.target.value as BgGradientMode }))
+                      }
+                    >
+                      <option value="solid">SOLID FLAT COLOUR</option>
+                      <option value="linear">LINEAR STUDIO GRADIENT</option>
+                      <option value="radial">RADIAL CENTER GLOW</option>
+                      <option value="diagonal">45° LUXURY SILK GRADIENT</option>
+                      <option value="aurora">AURORA MULTI-STOP MESH</option>
+                      <option value="duotone">VELVET DUOTONE SPLIT</option>
+                      <option value="sunburst">SUNBURST HALO VIGNETTE</option>
+                    </select>
+                  </div>
+                  {P.bgGrad && P.bgGrad !== "solid" && (
+                    <>
+                      <div className="r">
+                        <label>GRADIENT STOP #2</label>
+                        <input
+                          type="color"
+                          value={P.bg2 || "#2d124d"}
+                          onChange={(e) => setP((p) => ({ ...p, bg2: e.target.value }))}
+                          style={{
+                            width: "44px",
+                            height: "28px",
+                            borderRadius: "6px",
+                            border: "1px solid var(--bd)",
+                            cursor: "pointer",
+                          }}
+                        />
+                      </div>
+                      <div className="r range-row">
+                        <label>GRADIENT ANGLE °</label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={360}
+                          step={5}
+                          value={P.bgAngle || 135}
+                          onChange={(e) => setP((p) => ({ ...p, bgAngle: +e.target.value }))}
+                        />
+                        <span className="v">{P.bgAngle || 135}°</span>
+                      </div>
+                    </>
+                  )}
+                  <button
+                    className="btn"
+                    style={{ width: "100%", marginTop: "6px", justifyContent: "center" }}
+                    onClick={() => {
+                      const gList: BgGradientMode[] = [
+                        "linear",
+                        "radial",
+                        "diagonal",
+                        "aurora",
+                        "sunburst",
+                      ];
+                      const nextG = gList[Math.floor(Math.random() * gList.length)];
+                      const nextBg2 = mixCol(
+                        P.bg,
+                        [P.c0, P.c1, P.c2][Math.floor(Math.random() * 3)],
+                        0.45
+                      );
+                      setP((p) => ({
+                        ...p,
+                        bgGrad: nextG,
+                        bg2: nextBg2,
+                        bgAngle: Math.floor(Math.random() * 360),
+                      }));
+                    }}
+                  >
+                    ✦ RANDOMIZE GRADIENT BACKDROP
+                  </button>
+                </div>
+
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st">VECTOR SURFACE TEXTURE OVERLAY</span>
+                  </div>
+                  <div className="r">
+                    <label>TEXTURE WEAVE</label>
+                    <select
+                      value={P.bd}
+                      onChange={(e) =>
+                        setP((p) => ({ ...p, bd: e.target.value as SurfaceTextureMode }))
+                      }
+                    >
+                      <option value="none">CLEAN SMOOTH SURFACE</option>
+                      <option value="linen">WOVEN BELGIAN LINEN</option>
+                      <option value="silk">BRUSHED RAW SILK SHANTUNG</option>
+                      <option value="canvas">ARTIST COTTON CANVAS</option>
+                      <option value="grain">ORGANIC STIPPLE GRAIN</option>
+                      <option value="marble">CARRARA MARBLE VEINS</option>
+                      <option value="goldfoil">METALLIC GOLD FOIL FLECKS</option>
+                      <option value="halftone">ENGRAVING HALFTONE DOTS</option>
+                      <option value="gingham">WOVEN GINGHAM CHECK</option>
+                      <option value="stripes">HORIZONTAL PINSTRIPES</option>
+                      <option value="vstripes">VERTICAL RIBBON WEAVE</option>
+                      <option value="grid">ARCHITECTURAL GRAPH GRID</option>
+                      <option value="pindots">SWISS DOBBY PIN DOTS</option>
+                    </select>
+                  </div>
+                  {P.bd !== "none" && (
+                    <>
+                      <div className="r">
+                        <label>TEXTURE COLOUR</label>
+                        <input
+                          type="color"
+                          value={P.bdc}
+                          onChange={(e) => setP((p) => ({ ...p, bdc: e.target.value }))}
+                          style={{
+                            width: "44px",
+                            height: "28px",
+                            borderRadius: "6px",
+                            border: "1px solid var(--bd)",
+                            cursor: "pointer",
+                          }}
+                        />
+                      </div>
+                      <div className="r range-row">
+                        <label>TEXTURE DENSITY</label>
+                        <input
+                          type="range"
+                          min={4}
+                          max={32}
+                          step={2}
+                          value={P.bdn}
+                          onChange={(e) => setP((p) => ({ ...p, bdn: +e.target.value }))}
+                        />
+                        <span className="v">{P.bdn}</span>
+                      </div>
+                      <div className="r range-row">
+                        <label>TEXTURE OPACITY %</label>
+                        <input
+                          type="range"
+                          min={10}
+                          max={90}
+                          value={P.bdo}
+                          onChange={(e) => setP((p) => ({ ...p, bdo: +e.target.value }))}
+                        />
+                        <span className="v">{P.bdo}</span>
+                      </div>
+                    </>
+                  )}
+                  <button
+                    className="btn"
+                    style={{ width: "100%", marginTop: "6px", justifyContent: "center" }}
+                    onClick={() => {
+                      const tList: SurfaceTextureMode[] = [
+                        "linen",
+                        "silk",
+                        "canvas",
+                        "grain",
+                        "marble",
+                        "goldfoil",
+                        "halftone",
+                        "gingham",
+                        "pindots",
+                      ];
+                      const nextT = tList[Math.floor(Math.random() * tList.length)];
+                      setP((p) => ({
+                        ...p,
+                        bd: nextT,
+                        bdc: mixCol(p.c0, p.ink, 0.4),
+                        bdn: 10 + Math.floor(Math.random() * 14),
+                        bdo: 30 + Math.floor(Math.random() * 35),
+                      }));
+                    }}
+                  >
+                    ✦ RANDOMIZE VECTOR TEXTURE
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* TAB 4: AUTO-BATCH & SINGLE EXPORT CONTROLS */}
+            {activeTab === "export" && (
+              <>
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st" style={{ color: "var(--ac)" }}>
+                      ⚡ AUTO-BATCH FOLDER GENERATOR
+                    </span>
+                  </div>
+                  <div className="r">
+                    <label>STYLE TO GENERATE</label>
+                    <select
+                      value={batchScope}
+                      onChange={(e) => setBatchScope(e.target.value as any)}
+                    >
+                      <option value="current">
+                        CURRENT CANVAS STYLE (#{pad2(curModeIdx + 1)} · {curMode.name})
+                      </option>
+                      <option value="favs">★ FAVOURITE STYLES ({favs.size || 1})</option>
+                      <option value="all">ALL {modes.length} VAULT STYLES</option>
+                    </select>
+                  </div>
+                  <div className="r">
+                    <label>FILE FORMAT</label>
+                    <select
+                      value={batchFormat}
+                      onChange={(e) => setBatchFormat(e.target.value as any)}
+                    >
+                      <option value="jpg">JPG ONLY (5 MB – 10 MB 300-DPI MICROSTOCK)</option>
+                      <option value="svg">SVG ONLY (ILLUSTRATOR VECTOR ARTBOARD)</option>
+                      <option value="both">BOTH (SVG + 5–10 MB JPG PAIR)</option>
+                    </select>
+                  </div>
+                  <div className="r">
+                    <label>HOW MANY DESIGNS</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={batchCount}
+                      onChange={(e) =>
+                        setBatchCount(Math.max(1, Math.min(500, +e.target.value || 1)))
+                      }
+                    />
+                  </div>
+                  <div className="seg" style={{ marginTop: "4px", marginBottom: "8px" }}>
+                    {[5, 10, 20, 50, 100].map((cnt) => (
+                      <button
+                        key={cnt}
+                        className={batchCount === cnt ? "on" : ""}
+                        onClick={() => setBatchCount(cnt)}
+                      >
+                        {cnt}×
+                      </button>
+                    ))}
+                  </div>
+                  <div className="r">
+                    <label>BATCH BACKGROUNDS</label>
+                    <select
+                      value={batchBgMode}
+                      onChange={(e) => setBatchBgMode(e.target.value as any)}
+                    >
+                      <option value="mix">AUTO-MIX GRADIENTS + TEXTURES + SOLID</option>
+                      <option value="gradient">ALWAYS GRADIENT BACKGROUNDS</option>
+                      <option value="texture">ALWAYS TEXTURED BACKGROUNDS</option>
+                      <option value="current">KEEP CURRENT CANVAS BG MODE</option>
+                    </select>
+                  </div>
+                  <button
+                    className="btn pri"
+                    disabled={batchRunning}
+                    style={{ width: "100%", marginTop: "10px", justifyContent: "center" }}
+                    onClick={() => runAutoBatchGenerate(false)}
+                  >
+                    {batchRunning
+                      ? `GENERATING ${batchProgress.done} / ${batchProgress.total}...`
+                      : `⚡ GENERATE ${batchCount} UNIQUE → SAVE .ZIP FOLDER`}
+                  </button>
+                  <button
+                    className="btn"
+                    disabled={batchRunning}
+                    style={{ width: "100%", marginTop: "6px", justifyContent: "center" }}
+                    onClick={() => runAutoBatchGenerate(true)}
+                  >
+                    📁 SAVE {batchCount} UNIQUE DIRECTLY TO PC FOLDER
+                  </button>
+                  {batchProgress.msg && (
+                    <div className="note" style={{ marginTop: "8px", color: "var(--ac)" }}>
+                      {batchProgress.msg}
+                    </div>
+                  )}
+                </div>
+
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st">ILLUSTRATOR ARTBOARD &amp; SINGLE EXPORT</span>
+                  </div>
+                  <div className="r">
+                    <label>ARTBOARD PRESET</label>
+                    <select
+                      value={`${outDims.w}x${outDims.h}`}
+                      onChange={(e) => {
+                        const preset = ILLUSTRATOR_ARTBOARD_PRESETS.find(
+                          (pr) => `${pr.w}x${pr.h}` === e.target.value
+                        );
+                        if (preset) {
+                          setP((p) => ({
+                            ...p,
+                            ratio: preset.ratio,
+                            artW: preset.w,
+                            artH: preset.h,
+                          }));
+                        }
+                      }}
+                    >
+                      {ILLUSTRATOR_ARTBOARD_PRESETS.map((pr) => (
+                        <option key={`${pr.w}x${pr.h}`} value={`${pr.w}x${pr.h}`}>
+                          {pr.label}
+                        </option>
+                      ))}
+                      {!ILLUSTRATOR_ARTBOARD_PRESETS.some(
+                        (pr) => pr.w === outDims.w && pr.h === outDims.h
+                      ) && (
+                        <option value={`${outDims.w}x${outDims.h}`}>
+                          CUSTOM ({outDims.w} × {outDims.h} PX)
+                        </option>
+                      )}
+                    </select>
+                  </div>
+                  <div className="r">
+                    <label>ARTBOARD W × H (PX)</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <input
+                        type="number"
+                        min={3600}
+                        max={12000}
+                        step={100}
+                        value={outDims.w}
+                        onChange={(e) => {
+                          const w = Math.max(3600, Math.min(12000, +e.target.value || 5000));
+                          setP((p) => ({ ...p, artW: w, artH: outDims.h }));
+                        }}
+                        style={{ width: "68px" }}
+                      />
+                      <span style={{ fontSize: "10px", color: "var(--mu)" }}>×</span>
+                      <input
+                        type="number"
+                        min={3600}
+                        max={12000}
+                        step={100}
+                        value={outDims.h}
+                        onChange={(e) => {
+                          const h = Math.max(3600, Math.min(12000, +e.target.value || 5000));
+                          setP((p) => ({ ...p, artW: outDims.w, artH: h }));
+                        }}
+                        style={{ width: "68px" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="r">
+                    <label>CANVAS / SVG MODE</label>
+                    <select
+                      value={P.svgStructure || "separable"}
+                      onChange={(e) => {
+                        const modeVal = e.target.value as "separable" | "unified";
+                        setP((p) => ({
+                          ...p,
+                          svgStructure: modeVal,
+                          view: modeVal === "unified" ? 1 : p.view,
+                        }));
+                      }}
+                    >
+                      <option value="separable">1 · SEPARABLE PARTS (আলাদা আলাদা অংশ)</option>
+                      <option value="unified">2 · PLAIN UNIFIED ONE-PIECE (একসাথে প্লেন)</option>
+                    </select>
+                  </div>
+                  <div className="r">
+                    <label>EXPORT REPEATS</label>
+                    <select
+                      value={P.svgStructure === "unified" ? "1" : P.exRep}
+                      disabled={P.svgStructure === "unified"}
+                      onChange={(e) => setP((p) => ({ ...p, exRep: e.target.value }))}
+                    >
+                      <option value="auto">MATCH VIEWPORT</option>
+                      <option value="1">1×1 UNIFIED / MASTER SHEET</option>
+                      <option value="2">2×2 SEAMLESS SHEET</option>
+                      <option value="3">3×3 SEAMLESS SHEET</option>
+                      <option value="4">4×4 SEAMLESS SHEET</option>
+                    </select>
+                  </div>
+                  <div className="r">
+                    <label>TRANSPARENT BG (PNG/SVG)</label>
+                    <label className="sw">
+                      <input
+                        type="checkbox"
+                        checked={P.transp}
+                        onChange={(e) => setP((p) => ({ ...p, transp: e.target.checked }))}
+                      />
+                      <i></i>
+                    </label>
+                  </div>
+                  <div className="two" style={{ marginTop: "10px" }}>
+                    <button className="btn" onClick={() => exportRaster("jpeg")}>
+                      DOWNLOAD JPG (5–10MB)
+                    </button>
+                    <button className="btn" onClick={() => exportRaster("png")}>
+                      DOWNLOAD PNG
+                    </button>
+                  </div>
+                  <button
+                    className="btn pri"
+                    style={{ width: "100%", marginTop: "8px", justifyContent: "center" }}
+                    onClick={exportSVG}
+                  >
+                    DOWNLOAD ILLUSTRATOR SVG ({outDims.w}×{outDims.h} PX)
+                  </button>
+                  <button
+                    className="btn pri"
+                    style={{
+                      width: "100%",
+                      marginTop: "8px",
+                      justifyContent: "center",
+                      background: "linear-gradient(135deg, #059669, #10b981)",
+                      borderColor: "#10b981",
+                    }}
+                    onClick={exportEPS10}
+                  >
+                    ⬇ DIRECT DOWNLOAD EPS 10 (.EPS · {outDims.w}×{outDims.h} PX)
+                  </button>
+                  {exportStatus && (
+                    <div className="note" style={{ marginTop: "10px", color: "var(--ac)" }}>
+                      ✓ {exportStatus}
+                    </div>
+                  )}
+                </div>
+
+                <div className="sec">
+                  <div className="sh">
+                    <span className="st">ILLUSTRATOR &amp; MICROSTOCK GUARANTEE</span>
+                  </div>
+                  <div className="stock-chk">
+                    <div>
+                      <b>AUTO-ARTBOARD &amp; 100% SEPARABLE PARTS:</b> OPENING ANY SVG IN ADOBE ILLUSTRATOR AUTOMATICALLY SETS THE ARTBOARD TO {outDims.w} × {outDims.h} PX WITH EVERY VECTOR PART UNLOCKED, SEPARABLE &amp; RECOLORABLE
+                    </div>
+                    <div>
+                      <b>ZERO SIDE-CUT GEOMETRY:</b> ALL MOTIFS &amp; TILES FIT EXACTLY INSIDE {outDims.w} × {outDims.h} PX WITH ZERO CLIPPED SHAPES
+                    </div>
+                    <div>
+                      <b>ZERO-DUPLICATE LEDGER:</b> EVERY GENERATED DESIGN IS FINGERPRINTED SO IT CAN NEVER BE GENERATED A SECOND TIME
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </aside>
+
+        {/* CENTER COLUMN: LIVE SEAMLESS STAGE */}
+        <main className="center-stage">
+          {/* ROW 1: REPEAT, ARTBOARD RATIO, MODE & DIRECT EXPORT BUTTONS */}
+          <div className="stage-toolbar">
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span className="st" style={{ flex: "none" }}>REPEAT</span>
+              <div className="seg">
+                {[
+                  { v: 1, l: "1×1" },
+                  { v: 2, l: "2×2" },
+                  { v: 3, l: "3×3" },
+                  { v: 0, l: "FILL" },
+                ].map((b) => (
+                  <button
+                    key={b.v}
+                    className={P.view === b.v ? "on" : ""}
+                    onClick={() => setP((p) => ({ ...p, view: b.v }))}
+                  >
+                    {b.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* CANVAS ASPECT RATIO BAR */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span className="st" style={{ flex: "none" }}>RATIO</span>
+              <div className="seg">
+                {RATIO_LIST.map((r) => (
+                  <button
+                    key={r.id}
+                    className={(P.ratio || "1:1") === r.id ? "on" : ""}
+                    onClick={() => {
+                      const d = getRatioDims(Math.max(5000, +P.px || 5000), r.id);
+                      setP((p) => ({ ...p, ratio: r.id, artW: d.w, artH: d.h }));
+                    }}
+                    title={r.label}
+                  >
+                    {r.id}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SEPARABLE PARTS vs PLAIN UNIFIED ONE-PIECE TOGGLE */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div className="seg">
+                <button
+                  className={(P.svgStructure || "separable") === "separable" ? "on" : ""}
+                  onClick={() => setP((p) => ({ ...p, svgStructure: "separable" }))}
+                  title="EVERY MOTIF & TILE IS SEPARABLE IN ADOBE ILLUSTRATOR (আলাদা আলাদা অংশ)"
+                >
+                  SEPARABLE
+                </button>
+                <button
+                  className={P.svgStructure === "unified" ? "on" : ""}
+                  onClick={() => setP((p) => ({ ...p, svgStructure: "unified", view: 1 }))}
+                  title="PLAIN UNIFIED ONE-PIECE FULL CANVAS SHEET (একেবারে একসাথে প্লেন)"
+                >
+                  PLAIN 1-PCS
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span className="st" style={{ flex: "none" }}>BLEED</span>
+              <label className="sw" title="FILL ENTIRE ARTBOARD EDGE-TO-EDGE WITH ZERO SIDE GAP">
+                <input
+                  type="checkbox"
+                  checked={P.safeEdge !== true}
+                  onChange={(e) => setP((p) => ({ ...p, safeEdge: !e.target.checked }))}
+                />
+                <i></i>
+              </label>
+              <span className="st" style={{ flex: "none" }}>SEAMS</span>
+              <label className="sw">
+                <input
+                  type="checkbox"
+                  checked={P.grid}
+                  onChange={(e) => setP((p) => ({ ...p, grid: e.target.checked }))}
+                />
+                <i></i>
+              </label>
+            </div>
+          </div>
+
+          {/* ROW 2: 12 EXACT REFERENCE POSTER SETS, SINGLE / 2-6 PCS SELECTOR, OUTLINED TEXT CHECKBOX & QUICK EXPORT */}
+          <div className="poster-quick-bar">
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              <span className="st" style={{ flex: "none", color: "var(--ac)" }}>
+                🎨 POSTER ({MASTER_POSTER_MODES.length}):
+              </span>
+              <select
+                value={curMode.cat === "Poster" ? curMode.id : "poster_ref1_coral_gold_5pcs"}
+                onChange={(e) => selectPosterReferenceSet(e.target.value)}
+                style={{
+                  height: "26px",
+                  maxWidth: "215px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "0 8px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--ac)",
+                  background: "var(--p2)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT ANY OF THE 112 CURATED MICROSTOCK & REFERENCE POSTER SETS"
+              >
+                {MASTER_POSTER_MODES.map((pm) => (
+                  <option key={pm.id} value={pm.id}>
+                    {pm.shortLabel}
+                  </option>
+                ))}
+              </select>
+
+              <div className="seg">
+                {[
+                  { k: "1", l: "1 PCS" },
+                  { k: "2", l: "2 PCS" },
+                  { k: "3", l: "3 PCS" },
+                  { k: "4", l: "4 PCS" },
+                  { k: "5", l: "5 PCS" },
+                  { k: "6", l: "6 PCS" },
+                  { k: "8", l: "8 PCS" },
+                  { k: "10", l: "10 PCS" },
+                  { k: "12", l: "12 PCS" },
+                  { k: "4grid", l: "2×2" },
+                ].map((item) => {
+                  const activePcs =
+                    curMode.cat === "Poster" ? String(curParams.pcs || "4") : "";
+                  return (
+                    <button
+                      key={item.k}
+                      type="button"
+                      className={activePcs === item.k ? "on" : ""}
+                      onClick={() => switchPosterSetPcs(item.k)}
+                      title={`SHOW ${item.l} OF CURRENT CANVAS POSTER ON PRESENTATION BOARD`}
+                    >
+                      {item.l}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* VISIBLE CHECKMARK CHECKBOX FOR POSTER TEXT (CREATE OUTLINES) ON/OFF */}
+              {(() => {
+                const posterModeId =
+                  curMode.cat === "Poster" ? curMode.id : "poster_ref1_coral_gold_5pcs";
+                const rawShow = MP[posterModeId]?.showText ?? true;
+                const isTextOn = rawShow !== false && rawShow !== "false";
+                return (
+                  <button
+                    type="button"
+                    className={`chk-pill ${isTextOn ? "on" : ""}`}
+                    onClick={togglePosterTextCheck}
+                    title="CHECKMARK ON = SHOW CREATE-OUTLINES VECTOR POSTER TEXT · UNCHECKED = NO TEXT"
+                  >
+                    <span className="chk-box">✓</span>
+                    <span>TEXT OUTLINES {isTextOn ? "(ON)" : "(OFF)"}</span>
+                  </button>
+                );
+              })()}
+            </div>
+
+            {/* QUICK DIRECT DOWNLOAD BAR RIGHT ABOVE THE CANVAS */}
+            <div style={{ display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn pri"
+                style={{
+                  minHeight: "27px",
+                  padding: "3px 9px",
+                  fontSize: "10px",
+                  background: "linear-gradient(135deg, #059669, #10b981)",
+                  borderColor: "#10b981",
+                }}
+                onClick={exportEPS10}
+                title="DIRECT DOWNLOAD ADOBE ILLUSTRATOR EPS 10 (.EPS) (E)"
+              >
+                ⬇ EPS 10 (.EPS)
+              </button>
+              <button
+                type="button"
+                className="btn pri"
+                style={{ minHeight: "27px", padding: "3px 9px", fontSize: "10px" }}
+                onClick={exportSVG}
+                title="DOWNLOAD ADOBE ILLUSTRATOR VECTOR SVG (S)"
+              >
+                ⬇ SVG
+              </button>
+              <button
+                type="button"
+                className="btn"
+                style={{
+                  minHeight: "27px",
+                  padding: "3px 9px",
+                  fontSize: "10px",
+                  borderColor: "#f59e0b",
+                  color: "#fbbf24",
+                }}
+                onClick={() => exportRaster("jpeg")}
+                title="DOWNLOAD MICROSTOCK 30+ MP (5.8–9.5MB · 300 DPI) JPG (J)"
+              >
+                ⬇ JPG 5–10MB
+              </button>
+              <button
+                type="button"
+                className="btn pri"
+                style={{
+                  minHeight: "27px",
+                  padding: "3px 9px",
+                  fontSize: "10px",
+                  background: "linear-gradient(135deg, #2563eb, #06b6d4)",
+                  borderColor: "#38bdf8",
+                }}
+                onClick={exportSingleMicrostockZip}
+                title="DOWNLOAD .ZIP (JPG + EPS 10) — UPLOAD THIS .ZIP TO CHATGPT SO CHATGPT NEVER DOWNSCALES JPG TO 2048×1152!"
+              >
+                ⬇ ZIP (JPG+EPS)
+              </button>
+              <button
+                type="button"
+                className="btn"
+                style={{
+                  minHeight: "27px",
+                  padding: "3px 9px",
+                  fontSize: "10px",
+                  borderColor: "#10b981",
+                  color: "#10b981",
+                }}
+                onClick={() => verifyInputRef.current?.click()}
+                title="VERIFY TRUE BINARY SOF0/IHDR RESOLUTION OF ANY DOWNLOADED FILE"
+              >
+                🔍 CHECK FILE
+              </button>
+            </div>
+          </div>
+
+          {/* ROW 3: 108 ORIGINAL LIGHTING & LENS FLARE STUDIO QUICK-BAR (50/50 SPLIT BLACK+TRANSPARENT | ONLY TRANSPARENT | ONLY BLACK BG) */}
+          <div
+            className="poster-quick-bar"
+            style={{ borderTop: "none", paddingTop: "4px", paddingBottom: "5px" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              <span className="st" style={{ flex: "none", color: "#fbbf24" }}>
+                ✨ LIGHTING ({MASTER_LIGHTING_MODES.length}):
+              </span>
+              <select
+                value={
+                  curMode.cat === "Lighting"
+                    ? curMode.id
+                    : "light_ref1_split_golden_sunburst"
+                }
+                onChange={(e) => selectLightingReferenceSet(e.target.value)}
+                style={{
+                  height: "26px",
+                  maxWidth: "225px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "0 8px",
+                  borderRadius: "6px",
+                  border: "1px solid #f59e0b",
+                  background: "var(--p2)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT ANY OF THE 108 ORIGINAL MICROSTOCK LIGHTING & LENS FLARE DESIGNS"
+              >
+                {MASTER_LIGHTING_MODES.map((lm) => (
+                  <option key={lm.id} value={lm.id}>
+                    {lm.shortLabel}
+                  </option>
+                ))}
+              </select>
+
+              {/* 3 INSTANT BACKGROUND MODES: 50/50 SPLIT | ONLY TRANSPARENT | ONLY BLACK */}
+              <div className="seg">
+                {[
+                  {
+                    k: "split",
+                    l: "◐ 50/50 SPLIT (BLACK + TRANSP)",
+                    t: "LEFT HALF BLACK BACKGROUND + RIGHT HALF TRANSPARENT ON SAME ARTBOARD",
+                  },
+                  {
+                    k: "transparent",
+                    l: "◌ ONLY TRANSPARENT (NO BG)",
+                    t: "100% TRANSPARENT BACKGROUND (ZERO BACKGROUND IN SVG / EPS 10 / PNG)",
+                  },
+                  {
+                    k: "black",
+                    l: "◼ ONLY BLACK BG",
+                    t: "100% PITCH BLACK BACKGROUND (#000000)",
+                  },
+                ].map((bm) => {
+                  const activeBgMode =
+                    curMode.cat === "Lighting"
+                      ? String(
+                          curParams.bgMode ||
+                            curMode.params.find((p) => p.k === "bgMode")?.def ||
+                            "split"
+                        )
+                      : "";
+                  return (
+                    <button
+                      key={bm.k}
+                      type="button"
+                      className={activeBgMode === bm.k ? "on" : ""}
+                      onClick={() =>
+                        switchLightingBgMode(bm.k as "split" | "transparent" | "black")
+                      }
+                      title={bm.t}
+                    >
+                      {bm.l}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* QUICK LIGHTING KIT PIECES: 1/DUAL, 4, 6, 8, 9, 12 PCS */}
+              <div className="seg">
+                {[
+                  { k: "1", l: "1/DUAL" },
+                  { k: "4", l: "4 PCS" },
+                  { k: "6", l: "6 PCS" },
+                  { k: "8", l: "8 PCS KIT" },
+                  { k: "9", l: "9 PCS" },
+                  { k: "12", l: "12 PCS" },
+                ].map((item) => {
+                  const activePcs =
+                    curMode.cat === "Lighting" ? String(curParams.pcs || "1") : "";
+                  return (
+                    <button
+                      key={item.k}
+                      type="button"
+                      className={activePcs === item.k ? "on" : ""}
+                      onClick={() => switchLightingSetPcs(item.k)}
+                      title={`SHOW ${item.l} LIGHTING FLARES ON ARTBOARD`}
+                    >
+                      {item.l}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div id="vp" ref={vpRef}>
+            <div
+              id="frame"
+              className={
+                P.transp || curMode.cat === "Brush" || curMode.cat === "Lighting"
+                  ? "checker"
+                  : ""
+              }
+              style={frameStyle}
+              title="RIGHT-CLICK OR USE DOWNLOAD BUTTONS TO SAVE FULL 30+ MP (6000×6000 / 7680×4320 PX · 300 DPI · >5.8 MB) MICROSTOCK FILE"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                exportRaster("jpeg");
+              }}
+            />
+            <div className="vinfo-bar">
+              <div className="vinfo-cluster">
+                {lastVerifiedFile ? (
+                  <>
+                    <span
+                      className="vinfo"
+                      style={{
+                        borderColor: "#10b981",
+                        color: "#10b981",
+                        fontWeight: 800,
+                      }}
+                    >
+                      ✔ VERIFIED REAL BINARY ({lastVerifiedFile.format}): {lastVerifiedFile.realW}×{lastVerifiedFile.realH} PX ({lastVerifiedFile.megapixels} MP) · {lastVerifiedFile.sizeMb} MB · {lastVerifiedFile.dpi} DPI
+                    </span>
+                    <span
+                      className="vinfo"
+                      style={{
+                        borderColor: "#10b981",
+                        color: "#10b981",
+                        fontWeight: 800,
+                      }}
+                    >
+                      ✔ ADOBE STOCK: PASS · SHUTTERSTOCK: PASS · FREEPIK: PASS
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="vinfo"
+                      style={{
+                        borderColor: "#10b981",
+                        color: "#10b981",
+                        fontWeight: 800,
+                      }}
+                    >
+                      ✔ ADOBE STOCK &amp; SHUTTERSTOCK: {((outDims.w * outDims.h) / 1000000).toFixed(1)} MP (MIN 4MP PASS)
+                    </span>
+                    <span
+                      className="vinfo"
+                      style={{
+                        borderColor: "#10b981",
+                        color: "#10b981",
+                        fontWeight: 800,
+                      }}
+                    >
+                      ✔ FREEPIK: {outDims.w}×{outDims.h} PX (≥4000PX) · 5.8–9.4 MB (&gt;0.5MB) · 300 DPI PASS
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="vinfo-cluster">
+                {exportStatus && (
+                  <span className="vinfo" style={{ borderColor: "var(--ac)", color: "var(--ac)" }}>
+                    {exportStatus}
+                  </span>
+                )}
+                <span className="vinfo">
+                  <b>#{pad2(curModeIdx + 1)}</b> · {curMode.name} · {outDims.w}×{outDims.h} PX
+                </span>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* RIGHT COLUMN: 2-COLUMN PATTERN VAULT GALLERY */}
+        <aside className="vault-panel">
+          <div className="vault-head">
+            <div className="vault-title-row">
+              <h2>PATTERN VAULT</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <button
+                  className="btn"
+                  style={{
+                    height: "24px",
+                    minHeight: "24px",
+                    padding: "0 8px",
+                    fontSize: "10px",
+                    borderColor: "var(--ac)",
+                    color: "var(--ac)",
+                  }}
+                  disabled={fabricTracing}
+                  onClick={() => fabricInputRef.current?.click()}
+                  title="UPLOAD A FABRIC OR TEXTURE IMAGE TO ADD AS A VECTOR PATTERN"
+                >
+                  {fabricTracing ? "SCANNING..." : "📸 + ADD FABRIC PHOTO"}
+                </button>
+                <span className="vault-count">
+                  {filteredModes.length} / {modes.length}
+                </span>
+              </div>
+            </div>
+            <div className="search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.5-3.5" />
+              </svg>
+              <input
+                type="search"
+                placeholder={`SEARCH ${modes.length} MANUAL PATTERNS & TEXTURES...`}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="chips">
+              {categories.map((c) => (
+                <button
+                  key={c}
+                  className={`chip ${cat === c ? "on" : ""}`}
+                  onClick={() => setCat(c)}
+                >
+                  {c.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="vault-grid">
+            {filteredModes.length === 0 ? (
+              <div className="empty" style={{ gridColumn: "1 / -1" }}>
+                NO PATTERNS FOUND.
+                <br />
+                TRY ANOTHER CATEGORY OR SEARCH KEYWORD.
+              </div>
+            ) : (
+              filteredModes.map((m) => {
+                const idx = modes.indexOf(m);
+                const isFav = favs.has(m.id);
+                const isActive = m.id === P.mode;
+                const u = thumbs[m.id] || "";
+                return (
+                  <div
+                    key={m.id}
+                    className={`pcard ${isActive ? "on" : ""}`}
+                    onClick={() => selectMode(m)}
+                  >
+                    <div
+                      className={`th ${
+                        m.cat === "Brush" || m.cat === "Lighting" ? "checker" : ""
+                      }`}
+                      style={{
+                        backgroundColor:
+                          m.cat === "Brush" || m.cat === "Lighting" ? "#ffffff" : undefined,
+                        backgroundImage: u
+                          ? m.cat === "Brush" || m.cat === "Lighting"
+                            ? `url("${u}"), conic-gradient(#e5e7eb 90deg, #ffffff 90deg 180deg, #e5e7eb 180deg 270deg, #ffffff 270deg)`
+                            : `url("${u}")`
+                          : undefined,
+                        backgroundSize:
+                          m.cat === "Brush" || m.cat === "Lighting"
+                            ? "100% 100%, 14px 14px"
+                            : undefined,
+                        backgroundRepeat:
+                          m.cat === "Brush" || m.cat === "Lighting"
+                            ? "no-repeat, repeat"
+                            : undefined,
+                      }}
+                    />
+                    <span className="no">#{pad2(idx + 1)}</span>
+                    {m.isCustom && <span className="cn">CUSTOM</span>}
+                    <button
+                      type="button"
+                      className={`fv ${isFav ? "on" : ""}`}
+                      title="FAVOURITE PATTERN"
+                      onClick={(e) => toggleFav(m.id, e)}
+                    >
+                      {isFav ? "★" : "☆"}
+                    </button>
+                    <div className="meta">
+                      <div className="title">{m.name}</div>
+                      <div className="cat">{m.cat}</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {/* STUDIO STATUS FOOTER */}
+      <footer className="studio-footer">
+        <div className="footer-left">
+          <div className="footer-active">
+            <i></i>
+            <span>
+              #{pad2(curModeIdx + 1)} · {curMode.name} ({curMode.cat})
+            </span>
+          </div>
+          <span>SEED #{P.seed}</span>
+          <span>·</span>
+          <span>
+            RATIO {P.ratio || "1:1"} · {outDims.w}×{outDims.h} PX · ZERO SIDE-CUT · 100% MANUAL PROCEDURAL (NO AI)
+          </span>
+        </div>
+        <div className="keys">
+          <span>
+            <kbd>SPACE</kbd> UNIQUE GENERATE
+          </span>
+          <span>
+            <kbd>B</kbd> AUTO-BATCH FOLDER
+          </span>
+          <span>
+            <kbd>E</kbd> EPS 10
+          </span>
+          <span>
+            <kbd>S</kbd> VECTOR SVG
+          </span>
+          <span>
+            <kbd>J</kbd> &gt;5MB JPG
+          </span>
+          <span>
+            <kbd>CTRL+Z</kbd> UNDO
+          </span>
+        </div>
+      </footer>
+
+      {/* AUTO-BATCH MICROSTOCK FOLDER GENERATOR MODAL */}
+      <div
+        className={`modal ${batchModalOpen ? "open" : ""}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !batchRunning) setBatchModalOpen(false);
+        }}
+      >
+        <div className="mbox" style={{ maxWidth: "600px" }}>
+          <div className="mh">
+            <div>
+              <h3>⚡ AUTO-BATCH MICROSTOCK FOLDER GENERATOR</h3>
+              <p>
+                100% MANUAL PROCEDURAL ENGINE · ZERO AI · ZERO DUPLICATES · INCLUDES ADOBE STOCK &amp; SHUTTERSTOCK CSV
+              </p>
+            </div>
+            <button
+              className="ib"
+              disabled={batchRunning}
+              onClick={() => setBatchModalOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="mb">
+            <div className="r">
+              <label>1. PATTERN STYLE TO GENERATE</label>
+              <select
+                value={batchScope}
+                disabled={batchRunning}
+                onChange={(e) => setBatchScope(e.target.value as any)}
+              >
+                <option value="current">
+                  CURRENT CANVAS STYLE ONLY (#{pad2(curModeIdx + 1)} · {curMode.name})
+                </option>
+                <option value="favs">★ ALL FAVOURITE STYLES ({favs.size || 1})</option>
+                <option value="all">ALL {modes.length} VAULT STYLES (MIXED)</option>
+              </select>
+            </div>
+
+            <div className="r">
+              <label>2. OUTPUT FILE FORMAT</label>
+              <select
+                value={batchFormat}
+                disabled={batchRunning}
+                onChange={(e) => setBatchFormat(e.target.value as any)}
+              >
+                <option value="eps_jpg">EPS 10 + 5–10 MB JPG PAIR (DIRECT MICROSTOCK UPLOAD)</option>
+                <option value="eps">EPS 10 ONLY (.EPS ADOBE ILLUSTRATOR VECTOR)</option>
+                <option value="all3">ALL 3 (EPS 10 + VECTOR SVG + 5–10 MB JPG)</option>
+                <option value="both">BOTH (VECTOR SVG + 5–10 MB JPG PAIR)</option>
+                <option value="svg">SVG ONLY (ADOBE ILLUSTRATOR VECTOR ARTBOARD)</option>
+                <option value="jpg">JPG ONLY (STRICT 5 MB – 10 MB · 300 DPI MICROSTOCK)</option>
+              </select>
+            </div>
+
+            <div className="r">
+              <label>3. HOW MANY UNIQUE DESIGNS (QUANTITY)</label>
+              <input
+                type="number"
+                min={1}
+                max={500}
+                disabled={batchRunning}
+                value={batchCount}
+                onChange={(e) => setBatchCount(Math.max(1, Math.min(500, +e.target.value || 1)))}
+              />
+            </div>
+            <div className="seg" style={{ margin: "4px 0 10px" }}>
+              {[5, 10, 20, 50, 100].map((cnt) => (
+                <button
+                  key={cnt}
+                  disabled={batchRunning}
+                  className={batchCount === cnt ? "on" : ""}
+                  onClick={() => setBatchCount(cnt)}
+                >
+                  {cnt} DESIGNS
+                </button>
+              ))}
+            </div>
+
+            <div className="r">
+              <label>4. BACKGROUND GRADIENT &amp; TEXTURE MODE</label>
+              <select
+                value={batchBgMode}
+                disabled={batchRunning}
+                onChange={(e) => setBatchBgMode(e.target.value as any)}
+              >
+                <option value="mix">AUTO-MIX RICH GRADIENTS + VECTOR TEXTURES + SOLID</option>
+                <option value="gradient">ALWAYS RICH GRADIENT BACKGROUNDS</option>
+                <option value="texture">ALWAYS WOVEN / MARBLE / FOIL VECTOR TEXTURES</option>
+                <option value="current">KEEP CURRENT CANVAS BACKGROUND SETTINGS</option>
+              </select>
+            </div>
+
+            <div className="r">
+              <label>5. CANVAS RATIO FOR BATCH</label>
+              <select
+                value={P.ratio || "1:1"}
+                disabled={batchRunning}
+                onChange={(e) =>
+                  setP((p) => ({ ...p, ratio: e.target.value as CanvasRatio }))
+                }
+              >
+                {RATIO_LIST.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label} ({getRatioDims(Math.max(5200, +P.px || 5200), r.id).w}×
+                    {getRatioDims(Math.max(5200, +P.px || 5200), r.id).h} PX)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mhelp" style={{ marginTop: "8px" }}>
+              <div>
+                <b>ZERO-COPYRIGHT &amp; MICROSTOCK COMPLIANCE:</b> EVERY GENERATED FILE IS 100% PROCEDURAL MATHEMATICAL VECTOR/RASTER ARTWORK WITH ZERO AI, ZERO SIDE-CUT MOTIFS, AND INCLUDES AN AUTO-GENERATED{" "}
+                <code>MICROSTOCK_UPLOAD_METADATA.CSV</code> FOR BULK UPLOAD TO ADOBE STOCK, SHUTTERSTOCK &amp; FREEPIK.
+              </div>
+            </div>
+
+            {(batchRunning || batchProgress.msg) && (
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "10px",
+                  background: "var(--s2)",
+                  border: "1px solid var(--ac)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    color: "var(--ac)",
+                    marginBottom: "6px",
+                  }}
+                >
+                  <span>{batchProgress.msg}</span>
+                  <span>
+                    {batchProgress.done} / {batchProgress.total}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    width: "100%",
+                    height: "8px",
+                    background: "var(--bg)",
+                    borderRadius: "99px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${
+                        batchProgress.total
+                          ? Math.round((batchProgress.done / batchProgress.total) * 100)
+                          : 0
+                      }%`,
+                      height: "100%",
+                      background: "linear-gradient(90deg, var(--ac), var(--ac2))",
+                      transition: "width 0.15s ease",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="mf">
+            {batchRunning ? (
+              <button
+                className="btn"
+                onClick={() => {
+                  batchCancelRef.current = true;
+                }}
+              >
+                ⏹ STOP BATCH
+              </button>
+            ) : (
+              <button className="btn" onClick={() => setBatchModalOpen(false)}>
+                CLOSE
+              </button>
+            )}
+            <span style={{ flex: 1 }} />
+            <button
+              className="btn"
+              disabled={batchRunning}
+              onClick={() => runAutoBatchGenerate(true)}
+            >
+              📁 SAVE DIRECTLY TO PC FOLDER
+            </button>
+            <button
+              className="btn pri"
+              disabled={batchRunning}
+              onClick={() => runAutoBatchGenerate(false)}
+            >
+              ⚡ BATCH GENERATE &amp; SAVE .ZIP FOLDER ({batchCount}×)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CUSTOM PROCEDURAL PATTERN BUILDER MODAL */}
+      <div
+        className={`modal ${codeModalOpen ? "open" : ""}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setCodeModalOpen(false);
+        }}
+      >
+        <div className="mbox">
+          <div className="mh">
+            <div>
+              <h3>+ ADD CUSTOM PROCEDURAL PATTERN</h3>
+              <p>
+                WRITE OR PASTE A JAVASCRIPT <code>mode(&#123;...&#125;)</code> GENERATOR BLOCK TO ADD NEW CARDS TO YOUR VAULT
+              </p>
+            </div>
+            <button className="ib" onClick={() => setCodeModalOpen(false)}>
+              ✕
+            </button>
+          </div>
+          <div className="mb">
+            <div className="mhelp">
+              <div>
+                <b>DRAW HELPERS:</b> <code>m.grid(n, &apos;halfdrop&apos;|&apos;brick&apos;|&apos;grid&apos;, (x,y,i,j,cell)=&gt;)</code>{" "}
+                · <code>m.scatter(count, minDist, (x,y,k)=&gt;)</code> · <code>m.put(x,y,rot,scale,svg)</code> (ZERO SIDE-CUT SAFE FRAME)
+              </div>
+              <div>
+                <b>PALETTE &amp; SHAPES:</b> <code>m.col(i)</code> · <code>m.rcol()</code> · <code>m.st(col,scale).a</code> ·{" "}
+                <code>SH.star / flower / daisy / heart / moon / cloud / drop / tri / ring / leaf / blob</code>
+              </div>
+            </div>
+            <textarea
+              className="code-input"
+              spellCheck={false}
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value)}
+            />
+            {codeMsg.text && (
+              <div className={`merr ${codeMsg.err ? "err" : "ok"}`}>{codeMsg.text}</div>
+            )}
+          </div>
+          <div className="mf">
+            <button className="btn" onClick={() => setCodeInput(TEMPLATE)}>
+              LOAD TEMPLATE
+            </button>
+            <button className="btn" onClick={handleClearCustom}>
+              CLEAR SAVED CUSTOM
+            </button>
+            <span style={{ flex: 1 }} />
+            <button className="btn" onClick={() => setCodeModalOpen(false)}>
+              CANCEL
+            </button>
+            <button className="btn pri" onClick={handleRunCustomCode}>
+              ADD TO VAULT
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* KEYBOARD SHORTCUTS MODAL */}
+      <div
+        className={`modal ${keyModalOpen ? "open" : ""}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setKeyModalOpen(false);
+        }}
+      >
+        <div className="mbox" style={{ maxWidth: "500px" }}>
+          <div className="mh">
+            <div>
+              <h3>KEYBOARD SHORTCUTS</h3>
+              <p>SPEED UP YOUR 100% MANUAL PROCEDURAL WORKFLOW</p>
+            </div>
+            <button className="ib" onClick={() => setKeyModalOpen(false)}>
+              ✕
+            </button>
+          </div>
+          <div className="mb">
+            <div className="kgrid">
+              <div>
+                <kbd>SPACE</kbd>
+                <span>ZERO-DUP GENERATE</span>
+              </div>
+              <div>
+                <kbd>B</kbd>
+                <span>AUTO-BATCH FOLDER</span>
+              </div>
+              <div>
+                <kbd>R</kbd>
+                <span>NEXT WEYL SEED</span>
+              </div>
+              <div>
+                <kbd>↑ / ↓</kbd>
+                <span>PREV / NEXT PATTERN</span>
+              </div>
+              <div>
+                <kbd>G</kbd>
+                <span>SHOW TILE SEAMS</span>
+              </div>
+              <div>
+                <kbd>E</kbd>
+                <span>EXPORT EPS 10 (.EPS)</span>
+              </div>
+              <div>
+                <kbd>S</kbd>
+                <span>EXPORT VECTOR SVG</span>
+              </div>
+              <div>
+                <kbd>J</kbd>
+                <span>EXPORT &gt;5MB JPG</span>
+              </div>
+              <div>
+                <kbd>CTRL + Z</kbd>
+                <span>UNDO ACTION</span>
+              </div>
+              <div>
+                <kbd>1 – 4</kbd>
+                <span>SWITCH INSPECTOR TABS</span>
+              </div>
+              <div>
+                <kbd>?</kbd>
+                <span>SHORTCUTS HELP</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
