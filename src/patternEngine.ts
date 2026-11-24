@@ -6565,18 +6565,23 @@ registerMode({
     { k: "sheen", l: "Metallic Sheen %", min: 20, max: 95, def: 65 },
   ],
   draw(m: any, q: any) {
+    const sh = clamp01(q.sheen / 100);
     m.def(
-      `<linearGradient id="metal_sheen" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${m.bg}"/><stop offset="35%" stop-color="${m.col(
-        0
-      )}" stop-opacity="${(q.sheen / 100).toFixed(
-        2
-      )}"/><stop offset="50%" stop-color="${m.col(
-        2
-      )}" stop-opacity="0.75"/><stop offset="65%" stop-color="${m.col(
-        1
-      )}" stop-opacity="${(q.sheen / 100).toFixed(2)}"/><stop offset="100%" stop-color="${m.bg}"/></linearGradient>`
+      `<linearGradient id="metal_sheen" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${m.bg}"/><stop offset="35%" stop-color="${mixCol(
+        m.bg,
+        m.col(0),
+        sh
+      )}"/><stop offset="50%" stop-color="${mixCol(
+        m.bg,
+        m.col(2),
+        0.75
+      )}"/><stop offset="65%" stop-color="${mixCol(
+        m.bg,
+        m.col(1),
+        sh
+      )}"/><stop offset="100%" stop-color="${m.bg}"/></linearGradient>`
     );
-    m.raw(`<rect width="${T}" height="${T}" fill="url(#metal_sheen)"/>`);
+    m.raw(`<rect x="0" y="0" width="${T}" height="${T}" fill="url(#metal_sheen)"/>`);
     for (let i = 0; i < q.lines; i++) {
       const y = (i / Math.max(1, q.lines - 1)) * 1000;
       const x1 = m.rnd() * 120;
@@ -6951,14 +6956,14 @@ registerMode({
   draw(m: any, q: any) {
     for (let i = 0; i < q.sheen; i++) {
       const gid = `plat_sh_${i}`;
-      const cx = (18 + m.rnd() * 64).toFixed(1);
-      const cy = (18 + m.rnd() * 64).toFixed(1);
+      const cx = +(180 + m.rnd() * 640).toFixed(1);
+      const cy = +(180 + m.rnd() * 640).toFixed(1);
       m.def(
-        `<radialGradient id="${gid}" cx="${cx}%" cy="${cy}%" r="55%"><stop offset="0%" stop-color="${m.col(
+        `<radialGradient id="${gid}" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${m.col(
           i % 2 === 0 ? 2 : 0
         )}" stop-opacity="0.72"/><stop offset="100%" stop-color="${m.bg}" stop-opacity="0"/></radialGradient>`
       );
-      m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gid})"/>`);
+      m.raw(`<circle cx="${cx}" cy="${cy}" r="550" fill="url(#${gid})"/>`);
     }
     for (let b = 0; b < q.brush; b++) {
       const y = (b / Math.max(1, q.brush - 1)) * 1000;
@@ -24584,6 +24589,9 @@ function convertGradientToArtboardUserSpace(el: Element, outW: number, outH: num
     id === "PLAIN_MATCHA_G" ||
     id === "PLAIN_PLAT_RAD" ||
     id === "PLAIN_LUX_BG" ||
+    id === "PLAIN_LUX_LIN" ||
+    id === "PLAIN_WALNUT_BASE" ||
+    id === "metal_sheen" ||
     id === "sky_grad" ||
     id === "holo_base";
 
@@ -25480,7 +25488,7 @@ export function buildIllustratorSVG(
 
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${outW}" height="${outH}" viewBox="0 0 ${outW} ${outH}">\n` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${outW}px" height="${outH}px" viewBox="0 0 ${outW} ${outH}" enable-background="new 0 0 ${outW} ${outH}" xml:space="preserve">\n` +
     defsBlock +
     bgOut +
     texGroup +
@@ -25931,14 +25939,24 @@ export function buildIllustratorEPS10(
 
   // 100% Conforming Standard EPSF-3.0 / PostScript LanguageLevel 3 Header (Supports native shfill gradients!)
   // NOTE: Do NOT write "Adobe Illustrator" in %%Creator (that forces Illustrator into its private .ai parser!)
+  // Explicitly set DSC DocumentMedia, CropBox, AI5_ArtSize, PostScript setpagedevice PageSize & pdfmark /CropBox
+  // so Adobe Illustrator creates ONLY 1 single Artboard of exact size safeOutW x safeOutH (ZERO small default Letter artboard!)
+  const halfW = Math.round(safeOutW * 0.5);
+  const halfH = Math.round(safeOutH * 0.5);
   lines.push("%!PS-Adobe-3.0 EPSF-3.0");
   lines.push("%%Creator: PatternVault Vector Engine 3.0");
   lines.push(`%%Title: (${safeTitle})`);
   lines.push(`%%CreationDate: (${nowStr})`);
   lines.push(`%%BoundingBox: 0 0 ${safeOutW} ${safeOutH}`);
   lines.push(`%%HiResBoundingBox: 0.0000 0.0000 ${safeOutW.toFixed(4)} ${safeOutH.toFixed(4)}`);
+  lines.push(`%%CropBox: 0.0000 0.0000 ${safeOutW.toFixed(4)} ${safeOutH.toFixed(4)}`);
+  lines.push(`%%DocumentMedia: Plain ${safeOutW} ${safeOutH} 0 () ()`);
+  lines.push(`%AI3_TemplateBox: ${halfW} ${halfH} ${halfW} ${halfH}`);
+  lines.push(`%AI5_ArtSize: ${safeOutW} ${safeOutH}`);
+  lines.push("%AI5_RulerUnits: 6");
   lines.push("%%DocumentData: Clean7Bit");
   lines.push("%%LanguageLevel: 3");
+  lines.push("%%Pages: 1");
   lines.push("%%EndComments");
   lines.push("%%BeginProlog");
   lines.push("/PVDict 26 dict def");
@@ -25962,8 +25980,23 @@ export function buildIllustratorEPS10(
   lines.push("end");
   lines.push("%%EndProlog");
   lines.push("%%BeginSetup");
+  lines.push(
+    `/setpagedevice where { pop << /InputAttributes << 0 << /PageSize [${safeOutW} ${safeOutH}] >> >>`
+  );
+  lines.push(
+    `/PageSize [${safeOutW} ${safeOutH}] /Policies << /PageSize 3 >> >> /setpagedevice load stopped { pop } if } if`
+  );
+  lines.push(
+    `/pdfmark where { pop [ /CropBox [0 0 ${safeOutW} ${safeOutH}] /MediaBox [0 0 ${safeOutW} ${safeOutH}]`
+  );
+  lines.push(
+    `/ArtBox [0 0 ${safeOutW} ${safeOutH}] /TrimBox [0 0 ${safeOutW} ${safeOutH}] /PAGE pdfmark } if`
+  );
   lines.push("PVDict begin");
   lines.push("%%EndSetup");
+  lines.push("%%Page: 1 1");
+  lines.push(`%%PageBoundingBox: 0 0 ${safeOutW} ${safeOutH}`);
+  lines.push("%%PageMedia: Plain");
   lines.push("gs");
   // Clip strictly to Artboard BoundingBox 0 0 safeOutW safeOutH
   lines.push(`np 0 0 m ${safeOutW} 0 l ${safeOutW} ${safeOutH} l 0 ${safeOutH} l cp clip np`);
