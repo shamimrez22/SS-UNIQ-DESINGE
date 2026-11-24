@@ -10,6 +10,7 @@ import {
   BgGradientMode,
   SurfaceTextureMode,
   RATIO_LIST,
+  getMicrostockPosterRatio,
   getRatioDims,
   getExactTileGrid,
   buildBackgroundAndTextureSVG,
@@ -501,15 +502,7 @@ export default function App() {
         const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || (isLighting ? "1" : "4"));
         const defBgMode = String(m.params.find((p) => p.k === "bgMode")?.def || "split");
         const targetRatio: CanvasRatio = isPoster
-          ? defPcs === "1"
-            ? "3:4"
-            : defPcs === "4grid" || defPcs === "9"
-            ? "1:1"
-            : defPcs === "6grid" || defPcs === "8" || defPcs === "12"
-            ? "4:3"
-            : defPcs === "2" || defPcs === "3" || defPcs === "10"
-            ? "16:9"
-            : "2:1"
+          ? getMicrostockPosterRatio(defPcs)
           : isLighting
           ? defBgMode === "split" || defPcs === "8" || defPcs === "4" || defPcs === "6" || defPcs === "12"
             ? "2:1"
@@ -534,7 +527,8 @@ export default function App() {
         };
         if (m.look) {
           const L = m.look;
-          if (L.bg) next.bg = L.bg;
+          if (isPoster) next.bg = "#000000";
+          else if (L.bg) next.bg = L.bg;
           if (L.ink) next.ink = L.ink;
           if (L.cols) {
             next.ncol = L.ncol || Math.min(5, L.cols.length);
@@ -602,18 +596,8 @@ export default function App() {
         curMode.cat === "Poster"
           ? (MP[curMode.id]?.showText ?? true)
           : (MP[targetPoster.id]?.showText ?? true);
-      const targetRatio: CanvasRatio =
-        pcsVal === "1"
-          ? "3:4"
-          : pcsVal === "4grid" || pcsVal === "9"
-          ? "1:1"
-          : pcsVal === "6grid" || pcsVal === "8" || pcsVal === "12"
-          ? "4:3"
-          : pcsVal === "2" || pcsVal === "3" || pcsVal === "10"
-          ? "16:9"
-          : "2:1";
+      const targetRatio: CanvasRatio = getMicrostockPosterRatio(pcsVal);
       const d = getRatioDims(Math.max(5000, +P.px || 5000), targetRatio);
-      const boardBg = targetPoster.look?.bg || "#2e3136";
       setMP((prevMP) => ({
         ...prevMP,
         [targetPoster.id]: {
@@ -625,7 +609,7 @@ export default function App() {
       setP((prev) => ({
         ...prev,
         mode: targetPoster.id,
-        bg: boardBg,
+        bg: prev.mode === targetPoster.id && prev.bg ? prev.bg : "#000000",
         transp: false,
         bd: "none",
         mx: "none",
@@ -883,13 +867,21 @@ export default function App() {
           }
         }
 
+        const posterPcsVal = isPoster
+          ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "4")
+          : "";
+        const posterRatio = isPoster ? getMicrostockPosterRatio(posterPcsVal) : baseP.ratio;
+        const posterDims = isPoster
+          ? getRatioDims(Math.max(5200, +baseP.px || 5200), posterRatio)
+          : null;
+
         const testP: PatternState = {
           ...baseP,
           mode: targetMode.id,
           mx: isBrush || isPoster || isLighting || isFullBgCat ? "none" : cand.mx,
           seed: cand.seed,
-          bg: cand.bg,
-          bg2: cand.bg2,
+          bg: isPoster ? "#000000" : cand.bg,
+          bg2: isPoster ? "#000000" : cand.bg2,
           bgGrad,
           bgAngle: cand.bgAngle,
           ink: cand.ink,
@@ -909,6 +901,9 @@ export default function App() {
           svgStructure:
             isBrush || isPoster || isLighting || isFullBgCat ? "unified" : baseP.svgStructure,
           view: isBrush || isPoster || isLighting || isFullBgCat ? 1 : baseP.view,
+          ratio: isPoster ? posterRatio : baseP.ratio,
+          artW: isPoster && posterDims ? posterDims.w : baseP.artW,
+          artH: isPoster && posterDims ? posterDims.h : baseP.artH,
           safeEdge: baseP.safeEdge === true,
         };
         const designHash = computeDesignHash(testP, cand.q);
@@ -1095,16 +1090,7 @@ export default function App() {
           const effPcsPoster =
             prevPosterPcs !== undefined ? String(prevPosterPcs) : targetDefPcs;
           const prevColorSet = MP[targetMode.id]?.colorSet;
-          const posterRatio: CanvasRatio =
-            effPcsPoster === "1"
-              ? "3:4"
-              : effPcsPoster === "4grid" || effPcsPoster === "9"
-              ? "1:1"
-              : effPcsPoster === "6grid" || effPcsPoster === "8" || effPcsPoster === "12"
-              ? "4:3"
-              : effPcsPoster === "2" || effPcsPoster === "3" || effPcsPoster === "10"
-              ? "16:9"
-              : "2:1";
+          const posterRatio: CanvasRatio = getMicrostockPosterRatio(effPcsPoster);
           const posterDims = getRatioDims(Math.max(5200, +res.testP.px || 5200), posterRatio);
           res.testMP[targetMode.id] = {
             ...res.testMP[targetMode.id],
@@ -1113,7 +1099,7 @@ export default function App() {
             ...(prevColorSet !== undefined ? { colorSet: prevColorSet } : {}),
             ...(prevPosterShowText !== undefined ? { showText: prevPosterShowText } : {}),
           };
-          res.testP.bg = targetMode.look?.bg || "#2e3136";
+          res.testP.bg = "#000000";
           res.testP.transp = false;
           res.testP.ratio = posterRatio;
           res.testP.artW = posterDims.w;
@@ -1409,7 +1395,7 @@ export default function App() {
     const isLighting = curMode.cat === "Lighting";
     const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
     const exportP = isPoster
-      ? { ...P, bg: curMode.look?.bg || P.bg, transp: false }
+      ? { ...P, bg: P.bg || "#000000", transp: false }
       : { ...P, transp: omitBg };
     const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
     const vectorSvg = buildIllustratorSVG(cleanTileSvg, exportP, rep, outDims.w, outDims.h);
@@ -1445,7 +1431,7 @@ export default function App() {
     const isLighting = curMode.cat === "Lighting";
     const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
     const exportP = isPoster
-      ? { ...P, bg: curMode.look?.bg || P.bg, transp: false }
+      ? { ...P, bg: P.bg || "#000000", transp: false }
       : { ...P, transp: omitBg };
     const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
     const eps10Content = buildIllustratorEPS10(
@@ -1527,7 +1513,7 @@ export default function App() {
       const isLighting = curMode.cat === "Lighting";
       const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
       const exportP = isPoster
-        ? { ...P, bg: curMode.look?.bg || P.bg, transp: false }
+        ? { ...P, bg: P.bg || "#000000", transp: false }
         : { ...P, transp: omitBg };
       const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
       const eps10Content = buildIllustratorEPS10(cleanTileSvg, exportP, rep, W, H);

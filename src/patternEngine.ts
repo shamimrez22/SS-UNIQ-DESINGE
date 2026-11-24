@@ -68,6 +68,16 @@ export const RATIO_LIST: { id: CanvasRatio; label: string; rx: number; ry: numbe
   { id: "2:1", label: "2:1 BANNER", rx: 2, ry: 1 },
 ];
 
+export function getMicrostockPosterRatio(pcsVal: string): CanvasRatio {
+  const p = String(pcsVal || "4");
+  if (p === "1" || p === "4grid" || p === "9") return "3:4"; // 4800 × 6400 PX (3:4 Vertical Poster / 2×2 & 3×3 Vertical Grids)
+  if (p === "2" || p === "6grid") return "4:3";              // 6400 × 4800 PX (2 PCS & 3×2 Vertical Poster Grid)
+  if (p === "3" || p === "8") return "3:2";                  // 7200 × 4800 PX (3 PCS Triptych & 4×2 Vertical Poster Grid)
+  if (p === "4" || p === "10") return "16:9";                // 7680 × 4320 PX (4 PCS Quad Set & 5×2 Vertical Poster Grid)
+  if (p === "12") return "1:1";                              // 6000 × 6000 PX (4×3 Mega Bundle -> Each cell is exact 3:4 Vertical Poster)
+  return "2:1";                                              // 8000 × 4000 PX (5 PCS & 6 PCS Panoramic Showcase)
+}
+
 export function getRatioDims(basePx: number, ratio: CanvasRatio | string, customW?: number, customH?: number) {
   const MIN_SIDE_PX = 4000; // Strictly >= 4000px on EVERY side (2x Freepik's 2000px minimum!)
   const MIN_TOTAL_MP_PX = 30000000; // Strictly >= 30.0 MP (7.5x Adobe Stock & Shutterstock's 4.0 MP minimum!)
@@ -19683,7 +19693,7 @@ function renderMasterPosterCollection(
 
   const dims = getRatioDims(
     m.C?.px || 5000,
-    m.C?.ratio || (pcsMode === "1" ? "3:4" : "2:1"),
+    m.C?.ratio || getMicrostockPosterRatio(pcsMode),
     m.C?.artW,
     m.C?.artH
   );
@@ -19691,8 +19701,8 @@ function renderMasterPosterCollection(
 
   const parts: string[] = [];
 
-  // Mandatory Studio Presentation Background Board underneath ALL posters (even in 1 PCS & EPS 10!)
-  const boardBg = defaultBoardBg || POSTER_DEFAULT_BOARD_BG[defaultStyle] || "#2e3136";
+  // Default Pure Black (#000000) Studio Presentation Background Board underneath ALL posters, dynamically responds to P.bg colour picker!
+  const boardBg = normalizeIllustratorColor(m.bg || m.C?.bg || defaultBoardBg || "#000000", "#000000");
   parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${boardBg}" data-bg="1"/>`);
 
   // Helper to emit soft vector drop-shadow behind each poster card (100% pure flat vector rects for EPS 10)
@@ -19759,9 +19769,9 @@ function renderMasterPosterCollection(
   };
 
   if (pcsMode === "1") {
-    // 1 PCS SINGLE POSTER ON PRESENTATION BACKGROUND BOARD (with studio frame margin & soft drop-shadow!)
-    const cw = aspect >= 1.25 ? 540 : 760;
-    const ch = 840;
+    // 1 PCS SINGLE POSTER ON PURE BLACK PRESENTATION BOARD (Standard 3:4 Vertical Microstock Poster 4800×6400 PX)
+    const cw = aspect >= 1.25 ? 560 : 850;
+    const ch = 880;
     const cx0 = (T - cw) * 0.5;
     const cy0 = (T - ch) * 0.5;
     emitCardDropShadow(cx0, cy0, cw, ch);
@@ -19859,8 +19869,12 @@ function renderMasterPosterCollection(
     : 40;
   const cw = (T - outerPadX * 2 - gapX * (count - 1)) / count;
   const ch = isFlushTriptych
-    ? Math.min(935, Math.max(780, cw * aspect * 1.48))
-    : Math.min(835, Math.max(600, cw * aspect * (count === 3 ? 1.24 : 1.42)));
+    ? 920
+    : count <= 3
+    ? 860
+    : count === 4
+    ? 850
+    : 840;
   const cy0 = (T - ch) * 0.5;
 
   for (let i = 0; i < count; i++) {
@@ -20397,7 +20411,7 @@ for (let famIdx = 0; famIdx < CURATED_100_MICROSTOCK_POSTER_CATALOG.length; famI
     const setNum = 33 + msNum; // Set 34 .. Set 133
     const edTitle = fam.editions[subIdx];
     const defPcs = PCS_CYCLE_DEFAULTS[(famIdx + subIdx) % PCS_CYCLE_DEFAULTS.length];
-    const boardBg = fam.boardBgs[subIdx % fam.boardBgs.length];
+    const boardBg = "#000000";
     GENERATED_100_MICROSTOCK_POSTER_MODES.push({
       id: `poster_ms_${msNum}`,
       name: `Set ${setNum}: ${fam.familyName} — ${edTitle} (${defPcs} PCS)`,
@@ -20417,12 +20431,13 @@ export const MASTER_POSTER_MODES: MasterPosterModeSpec[] = [
 
 function registerMasterPosterCollection() {
   for (const pm of MASTER_POSTER_MODES) {
+    pm.boardBg = "#000000";
     registerMode({
       id: pm.id,
       name: pm.name,
       cat: "Poster",
       look: {
-        bg: pm.boardBg,
+        bg: "#000000",
         ink: "#ffffff",
         cols: ["#ff4b72", "#ffab2e", "#0cb6f5", "#6bc605", "#9e2eff"],
         style: "flat",
@@ -23509,7 +23524,7 @@ export function genCand(
   ];
 
   if (md.cat === "Poster") {
-    bg = L.bg || "#2e3136";
+    bg = "#000000";
     ink = "#ffffff";
   } else if (md.cat === "Lighting") {
     bg = "#000000";
@@ -24661,7 +24676,7 @@ export function buildIllustratorSVG(
   // Detect the true board background color from the rendered SVG (especially critical for Poster sets
   // where Ref 23/24 use #FFFFFF, Ref 22 uses #09090b, Ref 33 uses #e7e2d8, or Plain BG/Gradient modes
   // that emit their own full-tile 0 0 1000 1000 background rect inside LAYER_01_PATTERN_MOTIFS)
-  let detectedBoardBgHex = normalizeIllustratorColor(P.bg, "#FFFFFF");
+  let detectedBoardBgHex = normalizeIllustratorColor(P.bg, isPosterMode ? "#000000" : "#FFFFFF");
   let motifLayerHasOwnFullBgRect = false;
   const motifGroup = svgRoot.querySelector("#LAYER_01_PATTERN_MOTIFS") || svgRoot;
   const dataBgRects = Array.from(svgRoot.querySelectorAll('rect[data-bg="1"]'));
@@ -25488,7 +25503,7 @@ export function buildIllustratorSVG(
 
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${outW}px" height="${outH}px" viewBox="0 0 ${outW} ${outH}" enable-background="new 0 0 ${outW} ${outH}" xml:space="preserve">\n` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${outW}" height="${outH}" viewBox="0 0 ${outW} ${outH}" enable-background="new 0 0 ${outW} ${outH}" xml:space="preserve">\n` +
     defsBlock +
     bgOut +
     texGroup +
@@ -25499,10 +25514,9 @@ export function buildIllustratorSVG(
 
 /* =====================================================================
    DIRECT ADOBE ILLUSTRATOR / MICROSTOCK EPS 10 (.EPS) VECTOR GENERATOR
-   100% Conforming PostScript LanguageLevel 3 / EPSF-3.0 Vector Output
-   Native Smooth Shading (shfill /ShadingType 2 & 3) — Zero 48-Band Slicing,
-   Strictly <= 120 chars/line, Isolated Prolog Dict, Zero NaN/nocurrentpoint,
-   Zero Fake %AI Headers — Opens 100% Cleanly in Adobe Illustrator, CorelDRAW, PS & GS
+   Official Adobe Illustrator 7.0 / AI5 File Format Specification
+   Exact Single-Artboard Headers (%AI3_Cropmarks, %AI3_TemplateBox, %AI3_TileBox, %AI5_ArtSize)
+   Native AI5/AI7 Operators (Xa, XA, XR, m, l, c, f, F, s, S, b, B, *u, *U, u, U)
    ===================================================================== */
 function clamp01(v: number): number {
   if (!Number.isFinite(v)) return 0;
@@ -25727,11 +25741,12 @@ export function buildIllustratorEPS10(
 
   // Determine true baseBgHex from the actual ARTBOARD_BG_1 rect in flatSvg so Poster & Plain BG
   // designs with their own board background (like #FFFFFF on Ref 23/24) blend against their true background!
-  let baseBgHex = isLightingMode
-    ? "#000000"
-    : omitBg
-    ? "#FFFFFF"
-    : normalizeIllustratorColor(P.bg, "#FFFFFF");
+  let baseBgHex =
+    isLightingMode
+      ? "#000000"
+      : omitBg
+      ? "#FFFFFF"
+      : normalizeIllustratorColor(P.bg, isPosterMode ? "#000000" : "#FFFFFF");
   if (!isLightingMode && !omitBg && root && root.tagName.toLowerCase() !== "parsererror") {
     const bgEl = root.querySelector("#ARTBOARD_BG_1") || root.querySelector("rect");
     if (bgEl) {
@@ -25938,11 +25953,7 @@ export function buildIllustratorEPS10(
   };
 
   // 100% Conforming Standard EPSF-3.0 / PostScript LanguageLevel 3 Header (Supports native shfill gradients!)
-  // NOTE: Do NOT write "Adobe Illustrator" in %%Creator (that forces Illustrator into its private .ai parser!)
-  // Explicitly set DSC DocumentMedia, CropBox, AI5_ArtSize, PostScript setpagedevice PageSize & pdfmark /CropBox
-  // so Adobe Illustrator creates ONLY 1 single Artboard of exact size safeOutW x safeOutH (ZERO small default Letter artboard!)
-  const halfW = Math.round(safeOutW * 0.5);
-  const halfH = Math.round(safeOutH * 0.5);
+  // NOTE: Do NOT write "Adobe Illustrator" in %%Creator (that forces Illustrator into its legacy AI3/AI7 parser!)
   lines.push("%!PS-Adobe-3.0 EPSF-3.0");
   lines.push("%%Creator: PatternVault Vector Engine 3.0");
   lines.push(`%%Title: (${safeTitle})`);
@@ -25950,10 +25961,12 @@ export function buildIllustratorEPS10(
   lines.push(`%%BoundingBox: 0 0 ${safeOutW} ${safeOutH}`);
   lines.push(`%%HiResBoundingBox: 0.0000 0.0000 ${safeOutW.toFixed(4)} ${safeOutH.toFixed(4)}`);
   lines.push(`%%CropBox: 0.0000 0.0000 ${safeOutW.toFixed(4)} ${safeOutH.toFixed(4)}`);
-  lines.push(`%%DocumentMedia: Plain ${safeOutW} ${safeOutH} 0 () ()`);
-  lines.push(`%AI3_TemplateBox: ${halfW} ${halfH} ${halfW} ${halfH}`);
+  lines.push(`%%TemplateBox: 0 0 ${safeOutW} ${safeOutH}`);
+  lines.push("%%AI3_Margin: 0 0 0 0");
+  lines.push(`%AI3_Cropmarks: 0 0 ${safeOutW} ${safeOutH}`);
+  lines.push(`%AI3_TileBox: 0 0 ${safeOutW} ${safeOutH}`);
   lines.push(`%AI5_ArtSize: ${safeOutW} ${safeOutH}`);
-  lines.push("%AI5_RulerUnits: 6");
+  lines.push(`%%DocumentMedia: Plain ${safeOutW} ${safeOutH} 0 () ()`);
   lines.push("%%DocumentData: Clean7Bit");
   lines.push("%%LanguageLevel: 3");
   lines.push("%%Pages: 1");
@@ -25998,7 +26011,7 @@ export function buildIllustratorEPS10(
   lines.push(`%%PageBoundingBox: 0 0 ${safeOutW} ${safeOutH}`);
   lines.push("%%PageMedia: Plain");
   lines.push("gs");
-  // Clip strictly to Artboard BoundingBox 0 0 safeOutW safeOutH
+  // Clip strictly to Artboard BoundingBox 0 0 safeOutW safeOutH (groups entire design cleanly inside the artboard!)
   lines.push(`np 0 0 m ${safeOutW} 0 l ${safeOutW} ${safeOutH} l 0 ${safeOutH} l cp clip np`);
 
   const KAPPA = 0.5522847498;
