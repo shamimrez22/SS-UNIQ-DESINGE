@@ -636,39 +636,42 @@ export function buildBackgroundAndTextureSVG(C: PatternState, transp: boolean) {
   if (!transp) {
     if (gMode === "linear") {
       gradDefs.push(
-        `<linearGradient id="PV_BG_GRAD" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${bg1}"/><stop offset="100%" stop-color="${bg2}"/></linearGradient>`
+        `<linearGradient id="PV_BG_GRAD" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${bg1}"/><stop offset="100%" stop-color="${bg2}"/></linearGradient>`
       );
       bgRect = `<rect width="${T}" height="${T}" fill="url(#PV_BG_GRAD)"/>`;
     } else if (gMode === "diagonal") {
       gradDefs.push(
-        `<linearGradient id="PV_BG_GRAD" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${bg1}"/><stop offset="52%" stop-color="${bg2}"/><stop offset="100%" stop-color="${bg1}"/></linearGradient>`
+        `<linearGradient id="PV_BG_GRAD" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${bg1}"/><stop offset="52%" stop-color="${bg2}"/><stop offset="100%" stop-color="${bg1}"/></linearGradient>`
       );
       bgRect = `<rect width="${T}" height="${T}" fill="url(#PV_BG_GRAD)"/>`;
     } else if (gMode === "radial") {
       gradDefs.push(
-        `<radialGradient id="PV_BG_GRAD" cx="50%" cy="50%" r="72%"><stop offset="0%" stop-color="${bg2}"/><stop offset="100%" stop-color="${bg1}"/></radialGradient>`
+        `<radialGradient id="PV_BG_GRAD" gradientUnits="userSpaceOnUse" cx="50%" cy="50%" r="72%"><stop offset="0%" stop-color="${bg2}"/><stop offset="100%" stop-color="${bg1}"/></radialGradient>`
       );
       bgRect = `<rect width="${T}" height="${T}" fill="url(#PV_BG_GRAD)"/>`;
     } else if (gMode === "aurora") {
+      const aurMid1 = mixCol(bg1, cMid, 0.38);
+      const aurMid2 = mixCol(bg2, bg1, 0.25);
       gradDefs.push(
-        `<linearGradient id="PV_BG_GRAD" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${bg1}"/><stop offset="50%" stop-color="${bg2}"/><stop offset="100%" stop-color="${bg1}"/></linearGradient>` +
-          `<radialGradient id="PV_BG_AUR1" cx="25%" cy="25%" r="60%"><stop offset="0%" stop-color="${cMid}" stop-opacity="0.38"/><stop offset="100%" stop-color="${bg1}" stop-opacity="0"/></radialGradient>` +
-          `<radialGradient id="PV_BG_AUR2" cx="78%" cy="74%" r="58%"><stop offset="0%" stop-color="${bg2}" stop-opacity="0.45"/><stop offset="100%" stop-color="${bg1}" stop-opacity="0"/></radialGradient>`
+        `<linearGradient id="PV_BG_GRAD" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${aurMid1}"/><stop offset="50%" stop-color="${aurMid2}"/><stop offset="100%" stop-color="${bg1}"/></linearGradient>` +
+          `<radialGradient id="PV_BG_AUR1" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${cMid}" stop-opacity="0.38"/><stop offset="100%" stop-color="${bg1}" stop-opacity="0"/></radialGradient>` +
+          `<radialGradient id="PV_BG_AUR2" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${bg2}" stop-opacity="0.45"/><stop offset="100%" stop-color="${bg1}" stop-opacity="0"/></radialGradient>`
       );
       bgRect =
         `<rect width="${T}" height="${T}" fill="url(#PV_BG_GRAD)"/>` +
-        `<rect width="${T}" height="${T}" fill="url(#PV_BG_AUR1)"/>` +
-        `<rect width="${T}" height="${T}" fill="url(#PV_BG_AUR2)"/>`;
+        `<circle cx="${T * 0.25}" cy="${T * 0.25}" r="${T * 0.6}" fill="url(#PV_BG_AUR1)"/>` +
+        `<circle cx="${T * 0.78}" cy="${T * 0.74}" r="${T * 0.58}" fill="url(#PV_BG_AUR2)"/>`;
     } else if (gMode === "duotone") {
       gradDefs.push(
-        `<linearGradient id="PV_BG_GRAD" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${bg1}"/><stop offset="48%" stop-color="${bg1}"/><stop offset="52%" stop-color="${bg2}"/><stop offset="100%" stop-color="${bg2}"/></linearGradient>`
+        `<linearGradient id="PV_BG_GRAD" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${bg1}"/><stop offset="48%" stop-color="${bg1}"/><stop offset="52%" stop-color="${bg2}"/><stop offset="100%" stop-color="${bg2}"/></linearGradient>`
       );
       bgRect = `<rect width="${T}" height="${T}" fill="url(#PV_BG_GRAD)"/>`;
     } else if (gMode === "sunburst") {
+      const sunMid = mixCol(bg1, cMid, 0.45);
       gradDefs.push(
-        `<radialGradient id="PV_BG_GRAD" cx="50%" cy="50%" r="70%"><stop offset="0%" stop-color="${bg2}"/><stop offset="45%" stop-color="${cMid}" stop-opacity="0.45"/><stop offset="100%" stop-color="${bg1}"/></radialGradient>`
+        `<radialGradient id="PV_BG_GRAD" gradientUnits="userSpaceOnUse" cx="50%" cy="50%" r="70%"><stop offset="0%" stop-color="${bg2}"/><stop offset="45%" stop-color="${sunMid}"/><stop offset="100%" stop-color="${bg1}"/></radialGradient>`
       );
-      bgRect = `<rect width="${T}" height="${T}" fill="${bg1}"/><rect width="${T}" height="${T}" fill="url(#PV_BG_GRAD)"/>`;
+      bgRect = `<rect width="${T}" height="${T}" fill="url(#PV_BG_GRAD)"/>`;
     } else {
       bgRect = `<rect width="${T}" height="${T}" fill="${bg1}"/>`;
     }
@@ -6125,13 +6128,14 @@ registerMode({
   draw(m: any, q: any) {
     for (let i = 0; i < q.orbs; i++) {
       const gid = `aur_orb_${i}`;
-      const cx = (18 + m.rnd() * 64).toFixed(1);
-      const cy = (18 + m.rnd() * 64).toFixed(1);
+      const cxVal = 180 + m.rnd() * 640;
+      const cyVal = 180 + m.rnd() * 640;
+      const radPx = (q.rad / 100) * T;
       const c1 = m.col(i);
       m.def(
-        `<radialGradient id="${gid}" cx="${cx}%" cy="${cy}%" r="${q.rad}%"><stop offset="0%" stop-color="${c1}" stop-opacity="0.65"/><stop offset="55%" stop-color="${c1}" stop-opacity="0.22"/><stop offset="100%" stop-color="${m.bg}" stop-opacity="0"/></radialGradient>`
+        `<radialGradient id="${gid}" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${c1}" stop-opacity="0.65"/><stop offset="55%" stop-color="${c1}" stop-opacity="0.22"/><stop offset="100%" stop-color="${m.bg}" stop-opacity="0"/></radialGradient>`
       );
-      m.raw(`<rect x="0" y="0" width="${T}" height="${T}" fill="url(#${gid})"/>`);
+      m.raw(`<circle cx="${f1(cxVal)}" cy="${f1(cyVal)}" r="${f1(radPx)}" fill="url(#${gid})"/>`);
     }
     for (let w = 0; w < q.waves; w++) {
       const y0 = 140 + (w / Math.max(1, q.waves - 1)) * 720;
@@ -6267,17 +6271,17 @@ registerMode({
   ],
   draw(m: any, q: any) {
     m.def(
-      `<linearGradient id="sky_grad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${m.bg}"/><stop offset="55%" stop-color="${m.col(
+      `<linearGradient id="sky_grad" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${m.bg}"/><stop offset="55%" stop-color="${m.col(
         2
       )}"/><stop offset="100%" stop-color="${m.col(0)}"/></linearGradient>` +
-        `<radialGradient id="sun_glow" cx="50%" cy="32%" r="38%"><stop offset="0%" stop-color="${m.col(
+        `<radialGradient id="sun_glow" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${m.col(
           1
         )}" stop-opacity="0.95"/><stop offset="55%" stop-color="${m.col(
           0
         )}" stop-opacity="0.4"/><stop offset="100%" stop-color="${m.bg}" stop-opacity="0"/></radialGradient>`
     );
     m.raw(
-      `<rect width="${T}" height="${T}" fill="url(#sky_grad)"/><rect width="${T}" height="${T}" fill="url(#sun_glow)"/><circle cx="500" cy="320" r="${q.sun}" fill="${m.col(
+      `<rect width="${T}" height="${T}" fill="url(#sky_grad)"/><circle cx="500" cy="320" r="380" fill="url(#sun_glow)"/><circle cx="500" cy="320" r="${q.sun}" fill="${m.col(
         1
       )}" opacity="0.82"/>`
     );
@@ -6315,14 +6319,21 @@ registerMode({
     { k: "curve", l: "Flow Curvature", min: 40, max: 200, def: 120 },
   ],
   draw(m: any, q: any) {
+    const bgHex = m.bg || "#f8fafc";
     m.def(
-      `<linearGradient id="holo_base" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${m.col(
-        0
-      )}" stop-opacity="0.35"/><stop offset="50%" stop-color="${m.col(
-        1
-      )}" stop-opacity="0.35"/><stop offset="100%" stop-color="${m.col(
-        2
-      )}" stop-opacity="0.35"/></linearGradient>`
+      `<linearGradient id="holo_base" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${mixCol(
+        bgHex,
+        m.col(0),
+        0.35
+      )}"/><stop offset="50%" stop-color="${mixCol(
+        bgHex,
+        m.col(1),
+        0.35
+      )}"/><stop offset="100%" stop-color="${mixCol(
+        bgHex,
+        m.col(2),
+        0.35
+      )}"/></linearGradient>`
     );
     m.raw(`<rect width="${T}" height="${T}" fill="url(#holo_base)"/>`);
     for (let i = 0; i < q.bands; i++) {
@@ -6336,15 +6347,15 @@ registerMode({
           i + 2
         )}" stop-opacity="0.52"/></linearGradient>`
       );
-      const y = 120 + (i / Math.max(1, q.bands - 1)) * 760;
+      const y = 80 + (i / Math.max(1, q.bands - 1)) * 840;
       const c1 = (m.rnd() - 0.5) * q.curve * 2;
       const c2 = (m.rnd() - 0.5) * q.curve * 2;
       m.raw(
-        `<path d="M 55 ${f1(y)} C 340 ${f1(y + c1)}, 660 ${f1(y + c2)}, 945 ${f1(
+        `<path d="M 0 ${f1(y)} C 340 ${f1(y + c1)}, 660 ${f1(y + c2)}, 1000 ${f1(
           y
         )}" fill="none" stroke="url(#${gid})" stroke-width="${f1(
           650 / q.bands
-        )}" stroke-linecap="round"/>`
+        )}" stroke-linecap="butt"/>`
       );
     }
   },
@@ -6417,9 +6428,9 @@ registerMode({
       );
       const y = (i + 0.5) * step;
       m.raw(
-        `<rect x="60" y="${f1(y - w / 2)}" width="880" height="${f1(
-          w
-        )}" rx="${f1(w * 0.45)}" fill="url(#${gid})"/>`
+        `<rect x="0" y="${f1(Math.max(0, y - w / 2))}" width="1000" height="${f1(
+          Math.min(1000 - Math.max(0, y - w / 2), w)
+        )}" fill="url(#${gid})"/>`
       );
     }
   },
@@ -6481,9 +6492,9 @@ registerMode({
   ],
   draw(m: any, q: any) {
     const N = q.threads;
-    const step = (T - 100) / N;
+    const step = T / N;
     for (let i = 0; i <= N; i++) {
-      const p = 50 + i * step;
+      const p = i * step;
       const c1 = m.col(i);
       const c2 = m.col(i + 1);
       const sw1 = 1.2 + m.rnd() * (q.slub / 22);
@@ -6491,12 +6502,12 @@ registerMode({
       const op1 = (0.25 + m.rnd() * 0.45).toFixed(2);
       const op2 = (0.25 + m.rnd() * 0.45).toFixed(2);
       m.raw(
-        `<line x1="${f1(p)}" y1="50" x2="${f1(p)}" y2="950" stroke="${c1}" stroke-width="${f1(
+        `<line x1="${f1(p)}" y1="0" x2="${f1(p)}" y2="1000" stroke="${c1}" stroke-width="${f1(
           sw1
-        )}" opacity="${op1}" stroke-linecap="round"/>` +
-          `<line x1="50" y1="${f1(p)}" x2="950" y2="${f1(p)}" stroke="${c2}" stroke-width="${f1(
+        )}" opacity="${op1}"/>` +
+          `<line x1="0" y1="${f1(p)}" x2="1000" y2="${f1(p)}" stroke="${c2}" stroke-width="${f1(
             sw2
-          )}" opacity="${op2}" stroke-linecap="round"/>`
+          )}" opacity="${op2}"/>`
       );
     }
   },
@@ -6519,13 +6530,13 @@ registerMode({
   draw(m: any, q: any) {
     for (let v = 0; v < q.veins; v++) {
       const steps = 8;
-      let y = 80 + m.rnd() * 840;
-      let d = `M 60 ${f1(y)}`;
+      let y = 30 + m.rnd() * 940;
+      let d = `M 0 ${f1(y)}`;
       for (let s = 1; s <= steps; s++) {
-        const x = 60 + (s / steps) * 880;
-        y = Math.max(60, Math.min(940, y + (m.rnd() - 0.5) * q.jagged * 1.4));
-        const cx = x - 880 / steps / 2;
-        const cy = Math.max(60, Math.min(940, y + (m.rnd() - 0.5) * q.jagged));
+        const x = (s / steps) * 1000;
+        y = Math.max(20, Math.min(980, y + (m.rnd() - 0.5) * q.jagged * 1.4));
+        const cx = x - 1000 / steps / 2;
+        const cy = Math.max(20, Math.min(980, y + (m.rnd() - 0.5) * q.jagged));
         d += ` Q ${f1(cx)} ${f1(cy)} ${f1(x)} ${f1(y)}`;
       }
       const col = m.col(v);
@@ -6567,9 +6578,9 @@ registerMode({
     );
     m.raw(`<rect width="${T}" height="${T}" fill="url(#metal_sheen)"/>`);
     for (let i = 0; i < q.lines; i++) {
-      const y = 45 + (i / q.lines) * 910;
-      const x1 = 45 + m.rnd() * 140;
-      const x2 = 955 - m.rnd() * 140;
+      const y = (i / Math.max(1, q.lines - 1)) * 1000;
+      const x1 = m.rnd() * 120;
+      const x2 = 1000 - m.rnd() * 120;
       const sw = 0.8 + m.rnd() * 2.2;
       m.raw(
         `<line x1="${f1(x1)}" y1="${f1(y)}" x2="${f1(x2)}" y2="${f1(
@@ -6599,12 +6610,12 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let i = 0; i < q.fibers; i++) {
-      const x = 75 + m.rnd() * 850;
-      const y = 75 + m.rnd() * 850;
+      const x = 15 + m.rnd() * 970;
+      const y = 15 + m.rnd() * 970;
       const a = m.rnd() * Math.PI * 2;
       const L = q.len * (0.5 + m.rnd() * 0.7);
-      const x2 = Math.max(55, Math.min(945, x + Math.cos(a) * L));
-      const y2 = Math.max(55, Math.min(945, y + Math.sin(a) * L));
+      const x2 = Math.max(5, Math.min(995, x + Math.cos(a) * L));
+      const y2 = Math.max(5, Math.min(995, y + Math.sin(a) * L));
       const cx = (x + x2) / 2 + (m.rnd() - 0.5) * 24;
       const cy = (y + y2) / 2 + (m.rnd() - 0.5) * 24;
       m.raw(
@@ -6699,14 +6710,14 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let i = 0; i < q.rings; i++) {
-      const yBase = 65 + (i / Math.max(1, q.rings - 1)) * 870;
+      const yBase = 25 + (i / Math.max(1, q.rings - 1)) * 950;
       const k1 = Math.sin((i / q.rings) * Math.PI) * q.swirl * 1.4;
       const k2 = Math.cos((i / q.rings) * Math.PI * 2) * q.swirl;
       const sw = 2.5 + m.rnd() * 4.5;
       m.raw(
-        `<path d="M 55 ${f1(yBase)} C 320 ${f1(
-          Math.max(55, Math.min(945, yBase + k1))
-        )}, 680 ${f1(Math.max(55, Math.min(945, yBase - k2)))}, 945 ${f1(
+        `<path d="M 0 ${f1(yBase)} C 320 ${f1(
+          Math.max(10, Math.min(990, yBase + k1))
+        )}, 680 ${f1(Math.max(10, Math.min(990, yBase - k2)))}, 1000 ${f1(
           yBase
         )}" fill="none" stroke="${m.col(i)}" stroke-width="${f1(
           sw
@@ -6736,7 +6747,7 @@ registerMode({
     const baseAngles: number[] = [];
     for (let k = 0; k < seedPts; k++) baseAngles.push((m.rnd() - 0.5) * (q.irr / 100));
     for (let rIdx = 1; rIdx <= q.rings; rIdx++) {
-      const R = (rIdx / q.rings) * 410;
+      const R = (rIdx / q.rings) * 465;
       const pts: [number, number][] = [];
       for (let k = 0; k < seedPts; k++) {
         const a = (k / seedPts) * Math.PI * 2;
@@ -6774,10 +6785,10 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let i = 0; i < q.soft; i++) {
-      const cx = 120 + m.rnd() * 760;
-      const cy = 120 + m.rnd() * 760;
-      const rx = 110 + m.rnd() * 140;
-      const ry = 80 + m.rnd() * 120;
+      const cx = 80 + m.rnd() * 840;
+      const cy = 80 + m.rnd() * 840;
+      const rx = 140 + m.rnd() * 180;
+      const ry = 100 + m.rnd() * 140;
       m.put(
         cx,
         cy,
@@ -6788,8 +6799,8 @@ registerMode({
       );
     }
     for (let i = 0; i < q.grain; i++) {
-      const gx = 45 + m.rnd() * 910;
-      const gy = 45 + m.rnd() * 910;
+      const gx = 10 + m.rnd() * 980;
+      const gy = 10 + m.rnd() * 980;
       const r = 2.2 + m.rnd() * 6.5;
       m.raw(
         `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="${f1(r)}" fill="${m.col(i)}" opacity="${(
@@ -6799,12 +6810,12 @@ registerMode({
       );
     }
     for (let f = 0; f < q.flecks; f++) {
-      const fx = 55 + m.rnd() * 890;
-      const fy = 55 + m.rnd() * 890;
+      const fx = 15 + m.rnd() * 970;
+      const fy = 15 + m.rnd() * 970;
       const ang = m.rnd() * Math.PI * 2;
       const len = 12 + m.rnd() * 28;
-      const x2 = Math.max(45, Math.min(955, fx + Math.cos(ang) * len));
-      const y2 = Math.max(45, Math.min(955, fy + Math.sin(ang) * len));
+      const x2 = Math.max(5, Math.min(995, fx + Math.cos(ang) * len));
+      const y2 = Math.max(5, Math.min(995, fy + Math.sin(ang) * len));
       m.raw(
         `<path d="M ${f1(fx)} ${f1(fy)} L ${f1(x2)} ${f1(y2)}" stroke="${m.col(
           f + 1
@@ -6842,12 +6853,12 @@ registerMode({
       );
     });
     for (let i = 0; i < q.tufts; i++) {
-      const x = 50 + m.rnd() * 900;
-      const y = 50 + m.rnd() * 900;
+      const x = 15 + m.rnd() * 970;
+      const y = 15 + m.rnd() * 970;
       const a = m.rnd() * Math.PI * 2;
       const L = (14 + m.rnd() * 32) * (q.scale / 100);
-      const x2 = Math.max(45, Math.min(955, x + Math.cos(a) * L));
-      const y2 = Math.max(45, Math.min(955, y + Math.sin(a) * L));
+      const x2 = Math.max(5, Math.min(995, x + Math.cos(a) * L));
+      const y2 = Math.max(5, Math.min(995, y + Math.sin(a) * L));
       const cx = (x + x2) / 2 + (m.rnd() - 0.5) * 16;
       const cy = (y + y2) / 2 + (m.rnd() - 0.5) * 16;
       m.raw(
@@ -6879,17 +6890,17 @@ registerMode({
   draw(m: any, q: any) {
     const N = q.planks;
     for (let i = 0; i < N; i++) {
-      const y0 = 45 + (i / N) * 910;
-      const h = (910 / N) * (0.7 + m.rnd() * 0.65);
+      const y0 = (i / N) * 1000;
+      const h = (1000 / N) * (0.7 + m.rnd() * 0.65);
       const w1 = (m.rnd() - 0.5) * 42;
       const w2 = (m.rnd() - 0.5) * 42;
       m.raw(
-        `<path d="M 45 ${f1(y0)} C 340 ${f1(y0 + w1)}, 660 ${f1(
+        `<path d="M 0 ${f1(y0)} C 340 ${f1(y0 + w1)}, 660 ${f1(
           y0 + w2
-        )}, 955 ${f1(y0)} L 955 ${f1(Math.min(955, y0 + h))} C 660 ${f1(
-          Math.min(955, y0 + h + w2)
-        )}, 340 ${f1(Math.min(955, y0 + h + w1))}, 45 ${f1(
-          Math.min(955, y0 + h)
+        )}, 1000 ${f1(y0)} L 1000 ${f1(Math.min(1000, y0 + h))} C 660 ${f1(
+          Math.min(1000, y0 + h + w2)
+        )}, 340 ${f1(Math.min(1000, y0 + h + w1))}, 0 ${f1(
+          Math.min(1000, y0 + h)
         )} Z" fill="${m.col(i)}" opacity="${(0.45 + m.rnd() * 0.45).toFixed(2)}"/>`
       );
     }
@@ -6908,12 +6919,12 @@ registerMode({
       }
     });
     for (let p = 0; p < q.pores; p++) {
-      const px = 60 + m.rnd() * 880;
-      const py = 55 + m.rnd() * 890;
+      const px = 10 + m.rnd() * 960;
+      const py = 10 + m.rnd() * 980;
       const plen = 18 + m.rnd() * 55;
       m.raw(
         `<line x1="${f1(px)}" y1="${f1(py)}" x2="${f1(
-          Math.min(950, px + plen)
+          Math.min(1000, px + plen)
         )}" y2="${f1(py)}" stroke="${m.col(3)}" stroke-width="${f1(
           1.2 + m.rnd() * 2.2
         )}" stroke-linecap="round" opacity="0.58"/>`
@@ -6940,19 +6951,19 @@ registerMode({
   draw(m: any, q: any) {
     for (let i = 0; i < q.sheen; i++) {
       const gid = `plat_sh_${i}`;
-      const cx = (22 + m.rnd() * 56).toFixed(1);
-      const cy = (22 + m.rnd() * 56).toFixed(1);
+      const cx = (18 + m.rnd() * 64).toFixed(1);
+      const cy = (18 + m.rnd() * 64).toFixed(1);
       m.def(
         `<radialGradient id="${gid}" cx="${cx}%" cy="${cy}%" r="55%"><stop offset="0%" stop-color="${m.col(
           i % 2 === 0 ? 2 : 0
         )}" stop-opacity="0.72"/><stop offset="100%" stop-color="${m.bg}" stop-opacity="0"/></radialGradient>`
       );
-      m.raw(`<rect x="40" y="40" width="920" height="920" rx="12" fill="url(#${gid})"/>`);
+      m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gid})"/>`);
     }
     for (let b = 0; b < q.brush; b++) {
-      const y = 50 + (b / q.brush) * 900;
-      const x1 = 50 + m.rnd() * 120;
-      const x2 = 950 - m.rnd() * 120;
+      const y = (b / Math.max(1, q.brush - 1)) * 1000;
+      const x1 = m.rnd() * 100;
+      const x2 = 1000 - m.rnd() * 100;
       m.raw(
         `<line x1="${f1(x1)}" y1="${f1(y)}" x2="${f1(x2)}" y2="${f1(
           y
@@ -6962,8 +6973,8 @@ registerMode({
       );
     }
     for (let g = 0; g < q.grain; g++) {
-      const gx = 50 + m.rnd() * 900;
-      const gy = 50 + m.rnd() * 900;
+      const gx = 10 + m.rnd() * 980;
+      const gy = 10 + m.rnd() * 980;
       m.raw(
         `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="${f1(
           1.6 + m.rnd() * 3.8
@@ -6990,30 +7001,30 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let i = 0; i < q.ribbons; i++) {
-      const yBase = 75 + (i / Math.max(1, q.ribbons - 1)) * 850;
+      const yBase = 30 + (i / Math.max(1, q.ribbons - 1)) * 940;
       const a1 = (m.rnd() - 0.5) * q.swirl * 1.8;
       const a2 = (m.rnd() - 0.5) * q.swirl * 1.8;
       const a3 = (m.rnd() - 0.5) * q.swirl * 1.8;
-      const y1 = Math.max(55, Math.min(945, yBase + a1));
-      const y2 = Math.max(55, Math.min(945, yBase + a2));
-      const y3 = Math.max(55, Math.min(945, yBase + a3));
+      const y1 = Math.max(15, Math.min(985, yBase + a1));
+      const y2 = Math.max(15, Math.min(985, yBase + a2));
+      const y3 = Math.max(15, Math.min(985, yBase + a3));
       const sw = 12 + m.rnd() * 38;
       m.raw(
-        `<path d="M 55 ${f1(yBase)} C 280 ${f1(y1)}, 520 ${f1(y2)}, 740 ${f1(
+        `<path d="M 0 ${f1(yBase)} C 280 ${f1(y1)}, 520 ${f1(y2)}, 740 ${f1(
           y3
-        )} S 890 ${f1(y1)}, 945 ${f1(yBase)}" fill="none" stroke="${m.col(
+        )} S 890 ${f1(y1)}, 1000 ${f1(yBase)}" fill="none" stroke="${m.col(
           i
-        )}" stroke-width="${f1(sw)}" stroke-linecap="round" opacity="${(
+        )}" stroke-width="${f1(sw)}" stroke-linecap="butt" opacity="${(
           0.55 +
           m.rnd() * 0.4
         ).toFixed(2)}"/>`
       );
       m.raw(
-        `<path d="M 55 ${f1(yBase)} C 280 ${f1(y1)}, 520 ${f1(y2)}, 740 ${f1(
+        `<path d="M 0 ${f1(yBase)} C 280 ${f1(y1)}, 520 ${f1(y2)}, 740 ${f1(
           y3
-        )} S 890 ${f1(y1)}, 945 ${f1(yBase)}" fill="none" stroke="${m.col(
+        )} S 890 ${f1(y1)}, 1000 ${f1(yBase)}" fill="none" stroke="${m.col(
           i + 2
-        )}" stroke-width="${f1(sw * 0.28)}" stroke-linecap="round" opacity="0.82"/>`
+        )}" stroke-width="${f1(sw * 0.28)}" stroke-linecap="butt" opacity="0.82"/>`
       );
     }
     m.scatter(q.pools, 110, (x: number, y: number, k: number) => {
@@ -7048,14 +7059,14 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let i = 0; i < q.bands; i++) {
-      const y = 70 + (i / Math.max(1, q.bands - 1)) * 860;
+      const y = 30 + (i / Math.max(1, q.bands - 1)) * 940;
       const amp = 45 + m.rnd() * 75;
       m.raw(
-        `<path d="M 55 ${f1(y)} Q 320 ${f1(
-          Math.max(55, y - amp)
-        )} 500 ${f1(y)} T 945 ${f1(y)}" fill="none" stroke="${m.col(
+        `<path d="M 0 ${f1(y)} Q 320 ${f1(
+          Math.max(15, y - amp)
+        )} 500 ${f1(y)} T 1000 ${f1(y)}" fill="none" stroke="${m.col(
           i
-        )}" stroke-width="${f1(420 / q.bands)}" stroke-linecap="round" opacity="0.52"/>`
+        )}" stroke-width="${f1(420 / q.bands)}" stroke-linecap="butt" opacity="0.52"/>`
       );
     }
     m.scatter(q.flecks, 45, (x: number, y: number, k: number) => {
@@ -7112,17 +7123,17 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let i = 0; i < q.strata; i++) {
-      const y = 60 + (i / q.strata) * 880;
-      const h = 45 + m.rnd() * 65;
+      const y = (i / q.strata) * 1000;
+      const h = 55 + m.rnd() * 75;
       m.raw(
-        `<rect x="50" y="${f1(y)}" width="900" height="${f1(
-          Math.min(950 - y, h)
-        )}" rx="10" fill="${m.col(i)}" opacity="0.48"/>`
+        `<rect x="0" y="${f1(y)}" width="1000" height="${f1(
+          Math.min(1000 - y, h)
+        )}" fill="${m.col(i)}" opacity="0.48"/>`
       );
     }
     for (let g = 0; g < q.grit; g++) {
-      const gx = 55 + m.rnd() * 890;
-      const gy = 55 + m.rnd() * 890;
+      const gx = 10 + m.rnd() * 980;
+      const gy = 10 + m.rnd() * 980;
       m.raw(
         `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="${f1(
           2 + m.rnd() * 5.5
@@ -7160,15 +7171,15 @@ registerMode({
       );
     });
     for (let i = 0; i < q.fibers; i++) {
-      const fx = 55 + m.rnd() * 890;
-      const fy = 55 + m.rnd() * 890;
+      const fx = 15 + m.rnd() * 970;
+      const fy = 15 + m.rnd() * 970;
       const a = m.rnd() * Math.PI * 2;
       const len = 14 + m.rnd() * 26;
       m.raw(
         `<line x1="${f1(fx)}" y1="${f1(fy)}" x2="${f1(
-          Math.max(50, Math.min(950, fx + Math.cos(a) * len))
+          Math.max(5, Math.min(995, fx + Math.cos(a) * len))
         )}" y2="${f1(
-          Math.max(50, Math.min(950, fy + Math.sin(a) * len))
+          Math.max(5, Math.min(995, fy + Math.sin(a) * len))
         )}" stroke="${m.col(i)}" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>`
       );
     }
@@ -7242,11 +7253,11 @@ registerMode({
       );
     });
     for (let v = 0; v < q.veins; v++) {
-      let y = 75 + m.rnd() * 850;
-      let d = `M 55 ${f1(y)}`;
+      let y = 30 + m.rnd() * 940;
+      let d = `M 0 ${f1(y)}`;
       for (let s = 1; s <= 7; s++) {
-        const x = 55 + (s / 7) * 890;
-        y = Math.max(55, Math.min(945, y + (m.rnd() - 0.5) * 140));
+        const x = (s / 7) * 1000;
+        y = Math.max(15, Math.min(985, y + (m.rnd() - 0.5) * 140));
         d += ` L ${f1(x)} ${f1(y)}`;
       }
       m.raw(
@@ -7274,14 +7285,14 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let i = 0; i < q.drapes; i++) {
-      const x = 70 + (i / Math.max(1, q.drapes - 1)) * 860;
+      const x = 35 + (i / Math.max(1, q.drapes - 1)) * 930;
       const w = 45 + m.rnd() * 55;
       m.raw(
-        `<path d="M ${f1(x)} 55 C ${f1(x - w)} 350, ${f1(
+        `<path d="M ${f1(x)} 0 C ${f1(x - w)} 350, ${f1(
           x + w
-        )} 650, ${f1(x)} 945" fill="none" stroke="${m.col(
+        )} 650, ${f1(x)} 1000" fill="none" stroke="${m.col(
           i
-        )}" stroke-width="${f1(w)}" stroke-linecap="round" opacity="0.45"/>`
+        )}" stroke-width="${f1(w)}" stroke-linecap="butt" opacity="0.45"/>`
       );
     }
     m.scatter(q.sheen, 75, (x: number, y: number, k: number) => {
@@ -7313,7 +7324,7 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let r = q.bands; r >= 1; r--) {
-      const rad = (r / q.bands) * 410;
+      const rad = (r / q.bands) * 465;
       const pts: [number, number][] = [];
       for (let k = 0; k < 12; k++) {
         const a = (k / 12) * Math.PI * 2;
@@ -7366,8 +7377,8 @@ registerMode({
       );
     });
     for (let i = 0; i < q.grit; i++) {
-      const gx = 50 + m.rnd() * 900;
-      const gy = 50 + m.rnd() * 900;
+      const gx = 10 + m.rnd() * 980;
+      const gy = 10 + m.rnd() * 980;
       m.raw(
         `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="${f1(
           1.8 + m.rnd() * 4.2
@@ -7406,9 +7417,9 @@ registerMode({
       );
     });
     for (let b = 0; b < q.brush; b++) {
-      const y = 50 + (b / q.brush) * 900;
+      const y = (b / Math.max(1, q.brush - 1)) * 1000;
       m.raw(
-        `<line x1="50" y1="${f1(y)}" x2="950" y2="${f1(y)}" stroke="${m.col(
+        `<line x1="0" y1="${f1(y)}" x2="1000" y2="${f1(y)}" stroke="${m.col(
           b
         )}" stroke-width="1.4" opacity="0.38"/>`
       );
@@ -7432,17 +7443,17 @@ registerMode({
   ],
   draw(m: any, q: any) {
     for (let i = 0; i < q.strata; i++) {
-      const y = 65 + (i / Math.max(1, q.strata - 1)) * 870;
+      const y = 25 + (i / Math.max(1, q.strata - 1)) * 950;
       const a1 = (m.rnd() - 0.5) * q.wave * 1.5;
       const a2 = (m.rnd() - 0.5) * q.wave * 1.5;
       m.raw(
-        `<path d="M 55 ${f1(y)} C 320 ${f1(
-          Math.max(55, Math.min(945, y + a1))
-        )}, 680 ${f1(Math.max(55, Math.min(945, y + a2)))}, 945 ${f1(
+        `<path d="M 0 ${f1(y)} C 320 ${f1(
+          Math.max(15, Math.min(985, y + a1))
+        )}, 680 ${f1(Math.max(15, Math.min(985, y + a2)))}, 1000 ${f1(
           y
         )}" fill="none" stroke="${m.col(i)}" stroke-width="${f1(
           520 / q.strata
-        )}" stroke-linecap="round" opacity="0.72"/>`
+        )}" stroke-linecap="butt" opacity="0.72"/>`
       );
     }
   },
@@ -7493,17 +7504,17 @@ registerMode({
   ],
   draw(m: any, q: any) {
     const N = q.n;
-    const step = 880 / N;
+    const step = 1000 / N;
     for (let i = 0; i <= N; i++) {
-      const p = 60 + i * step;
+      const p = i * step;
       const sw = (step * 0.42) * (0.85 + (m.rnd() * q.rough) / 150);
       m.raw(
-        `<line x1="${f1(p)}" y1="60" x2="${f1(p)}" y2="940" stroke="${m.col(
+        `<line x1="${f1(p)}" y1="0" x2="${f1(p)}" y2="1000" stroke="${m.col(
           i
-        )}" stroke-width="${f1(sw)}" stroke-linecap="round" opacity="0.62"/>` +
-          `<line x1="60" y1="${f1(p)}" x2="940" y2="${f1(p)}" stroke="${m.col(
+        )}" stroke-width="${f1(sw)}" opacity="0.62"/>` +
+          `<line x1="0" y1="${f1(p)}" x2="1000" y2="${f1(p)}" stroke="${m.col(
             i + 1
-          )}" stroke-width="${f1(sw)}" stroke-linecap="round" opacity="0.62"/>`
+          )}" stroke-width="${f1(sw)}" opacity="0.62"/>`
       );
     }
   },
@@ -7538,13 +7549,13 @@ registerMode({
       );
     });
     for (let g = 0; g < q.gold; g++) {
-      const y = 80 + (g / q.gold) * 840;
+      const y = 30 + (g / q.gold) * 940;
       const a1 = (m.rnd() - 0.5) * 140;
       const a2 = (m.rnd() - 0.5) * 140;
       m.raw(
-        `<path d="M 55 ${f1(y)} C 320 ${f1(
-          Math.max(55, Math.min(945, y + a1))
-        )}, 680 ${f1(Math.max(55, Math.min(945, y + a2)))}, 945 ${f1(
+        `<path d="M 0 ${f1(y)} C 320 ${f1(
+          Math.max(15, Math.min(985, y + a1))
+        )}, 680 ${f1(Math.max(15, Math.min(985, y + a2)))}, 1000 ${f1(
           y
         )}" fill="none" stroke="${m.col(1)}" stroke-width="3.2" stroke-linecap="round" opacity="0.88"/>`
       );
@@ -7730,37 +7741,52 @@ registerMode({
     const op = +(q.op / 100).toFixed(2);
     const bgHex = m.bg || "#dec293";
     if (q.mode === "pure" || op <= 0) {
-      m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="${m.col(0)}" opacity="${+(op * 0.35).toFixed(2)}"/>`);
+      const pureCol = op > 0 ? mixCol(bgHex, m.col(0), +(op * 0.35).toFixed(2)) : bgHex;
+      m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="${pureCol}"/>`);
     } else if (q.mode === "softglow") {
       const gid = "PLAIN_UNIFIED_GLOW";
       m.def(
-        `<radialGradient id="${gid}" cx="50%" cy="50%" r="72%"><stop offset="0%" stop-color="${m.col(
-          3
-        )}" stop-opacity="${op}"/><stop offset="55%" stop-color="${m.col(
-          0
-        )}" stop-opacity="${+(op * 0.45).toFixed(2)}"/><stop offset="100%" stop-color="${bgHex}" stop-opacity="0"/></radialGradient>`
+        `<radialGradient id="${gid}" gradientUnits="userSpaceOnUse" cx="50%" cy="50%" r="72%"><stop offset="0%" stop-color="${mixCol(
+          bgHex,
+          m.col(3),
+          op
+        )}"/><stop offset="55%" stop-color="${mixCol(
+          bgHex,
+          m.col(0),
+          +(op * 0.45).toFixed(2)
+        )}"/><stop offset="100%" stop-color="${bgHex}"/></radialGradient>`
       );
       m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gid})"/>`);
     } else if (q.mode === "vignette") {
       const gid = "PLAIN_UNIFIED_VIG";
       m.def(
-        `<radialGradient id="${gid}" cx="50%" cy="50%" r="75%"><stop offset="0%" stop-color="${bgHex}" stop-opacity="0"/><stop offset="65%" stop-color="${m.col(
-          1
-        )}" stop-opacity="${+(op * 0.5).toFixed(2)}"/><stop offset="100%" stop-color="${m.col(
-          4
-        )}" stop-opacity="${op}"/></radialGradient>`
+        `<radialGradient id="${gid}" gradientUnits="userSpaceOnUse" cx="50%" cy="50%" r="75%"><stop offset="0%" stop-color="${bgHex}"/><stop offset="65%" stop-color="${mixCol(
+          bgHex,
+          m.col(1),
+          +(op * 0.5).toFixed(2)
+        )}"/><stop offset="100%" stop-color="${mixCol(
+          bgHex,
+          m.col(4),
+          op
+        )}"/></radialGradient>`
       );
       m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gid})"/>`);
     } else {
       const gid = "PLAIN_UNIFIED_SILK";
       m.def(
-        `<linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${m.col(
-          0
-        )}" stop-opacity="${op}"/><stop offset="50%" stop-color="${m.col(
-          3
-        )}" stop-opacity="${+(op * 0.65).toFixed(2)}"/><stop offset="100%" stop-color="${m.col(
-          2
-        )}" stop-opacity="${op}"/></linearGradient>`
+        `<linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${mixCol(
+          bgHex,
+          m.col(0),
+          op
+        )}"/><stop offset="50%" stop-color="${mixCol(
+          bgHex,
+          m.col(3),
+          +(op * 0.65).toFixed(2)
+        )}"/><stop offset="100%" stop-color="${mixCol(
+          bgHex,
+          m.col(2),
+          op
+        )}"/></linearGradient>`
       );
       m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gid})"/>`);
     }
@@ -7786,16 +7812,23 @@ registerMode({
     { k: "dens", l: "Grain / Texture Density", min: 6, max: 32, def: 18 },
   ],
   draw(m: any, q: any) {
+    const bgHex = m.bg || "#e0c596";
     const wOp = +(q.warmth / 100).toFixed(2);
     const sOp = +(q.sheen / 100).toFixed(2);
     m.def(
-      `<linearGradient id="PLAIN_KRAFT_L" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${m.col(
-        0
-      )}" stop-opacity="${wOp}"/><stop offset="50%" stop-color="${m.col(
-        3
-      )}" stop-opacity="${sOp}"/><stop offset="100%" stop-color="${m.col(
-        1
-      )}" stop-opacity="${wOp}"/></linearGradient>`
+      `<linearGradient id="PLAIN_KRAFT_L" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${mixCol(
+        bgHex,
+        m.col(0),
+        wOp
+      )}"/><stop offset="50%" stop-color="${mixCol(
+        bgHex,
+        m.col(3),
+        sOp
+      )}"/><stop offset="100%" stop-color="${mixCol(
+        bgHex,
+        m.col(1),
+        wOp
+      )}"/></linearGradient>`
     );
     m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#PLAIN_KRAFT_L)"/>`);
     drawPlainBgGrainAndTexture(m, q.tex || "none", q.grain ?? 45, q.dens || 18);
@@ -7820,20 +7853,27 @@ registerMode({
     { k: "dens", l: "Grain / Texture Density", min: 6, max: 32, def: 18 },
   ],
   draw(m: any, q: any) {
+    const bgHex = m.bg || "#9db053";
     const op = +(q.glow / 100).toFixed(2);
     const rad = (q.angle * Math.PI) / 180;
     const x2 = Math.round(50 + Math.cos(rad) * 50);
     const y2 = Math.round(50 + Math.sin(rad) * 50);
     m.def(
-      `<linearGradient id="PLAIN_MATCHA_G" x1="${100 - x2}%" y1="${
+      `<linearGradient id="PLAIN_MATCHA_G" gradientUnits="userSpaceOnUse" x1="${100 - x2}%" y1="${
         100 - y2
-      }%" x2="${x2}%" y2="${y2}%"><stop offset="0%" stop-color="${m.col(
-        0
-      )}" stop-opacity="${op}"/><stop offset="50%" stop-color="${m.col(
-        4
-      )}" stop-opacity="${+(op * 0.45).toFixed(2)}"/><stop offset="100%" stop-color="${m.col(
-        3
-      )}" stop-opacity="${op}"/></linearGradient>`
+      }%" x2="${x2}%" y2="${y2}%"><stop offset="0%" stop-color="${mixCol(
+        bgHex,
+        m.col(0),
+        op
+      )}"/><stop offset="50%" stop-color="${mixCol(
+        bgHex,
+        m.col(4),
+        +(op * 0.45).toFixed(2)
+      )}"/><stop offset="100%" stop-color="${mixCol(
+        bgHex,
+        m.col(3),
+        op
+      )}"/></linearGradient>`
     );
     m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#PLAIN_MATCHA_G)"/>`);
     drawPlainBgGrainAndTexture(m, q.tex || "none", q.grain ?? 45, q.dens || 18);
@@ -7858,16 +7898,23 @@ registerMode({
     { k: "dens", l: "Grain / Texture Density", min: 6, max: 32, def: 18 },
   ],
   draw(m: any, q: any) {
+    const bgHex = m.bg || "#d2d5da";
     const sh = +(q.shine / 100).toFixed(2);
     const vg = +(q.vignette / 100).toFixed(2);
     m.def(
-      `<radialGradient id="PLAIN_PLAT_RAD" cx="50%" cy="48%" r="72%"><stop offset="0%" stop-color="${m.col(
-        2
-      )}" stop-opacity="${sh}"/><stop offset="58%" stop-color="${m.col(
-        0
-      )}" stop-opacity="${+(sh * 0.4).toFixed(2)}"/><stop offset="100%" stop-color="${m.col(
-        3
-      )}" stop-opacity="${vg}"/></radialGradient>`
+      `<radialGradient id="PLAIN_PLAT_RAD" gradientUnits="userSpaceOnUse" cx="50%" cy="48%" r="72%"><stop offset="0%" stop-color="${mixCol(
+        bgHex,
+        m.col(2),
+        sh
+      )}"/><stop offset="58%" stop-color="${mixCol(
+        bgHex,
+        m.col(0),
+        +(sh * 0.4).toFixed(2)
+      )}"/><stop offset="100%" stop-color="${mixCol(
+        bgHex,
+        m.col(3),
+        vg
+      )}"/></radialGradient>`
     );
     m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#PLAIN_PLAT_RAD)"/>`);
     drawPlainBgGrainAndTexture(m, q.tex || "none", q.grain ?? 45, q.dens || 18);
@@ -7899,12 +7946,12 @@ registerMode({
     const y2 = Math.round(50 + Math.sin(rad) * 50);
     const gl = +(q.glow / 100).toFixed(2);
     m.def(
-      `<linearGradient id="PLAIN_LUX_LIN" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"><stop offset="0%" stop-color="${m.col(
+      `<linearGradient id="PLAIN_LUX_LIN" gradientUnits="userSpaceOnUse" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"><stop offset="0%" stop-color="${m.col(
         0
       )}"/><stop offset="35%" stop-color="${m.col(4)}"/><stop offset="70%" stop-color="${m.col(
         1
       )}"/><stop offset="100%" stop-color="${m.col(2)}"/></linearGradient>` +
-        `<radialGradient id="PLAIN_LUX_HALO" cx="35%" cy="35%" r="68%"><stop offset="0%" stop-color="${m.col(
+        `<radialGradient id="PLAIN_LUX_HALO" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${m.col(
           3
         )}" stop-opacity="${gl}"/><stop offset="100%" stop-color="${m.col(
           0
@@ -7912,7 +7959,7 @@ registerMode({
     );
     m.raw(
       `<rect x="0" y="0" width="1000" height="1000" fill="url(#PLAIN_LUX_LIN)"/>` +
-        `<rect x="0" y="0" width="1000" height="1000" fill="url(#PLAIN_LUX_HALO)"/>`
+        `<circle cx="350" cy="350" r="680" fill="url(#PLAIN_LUX_HALO)"/>`
     );
     drawPlainBgGrainAndTexture(m, q.tex || "none", q.grain ?? 45, q.dens || 18);
   },
@@ -7938,7 +7985,7 @@ registerMode({
   draw(m: any, q: any) {
     const op = +(q.soft / 100).toFixed(2);
     m.def(
-      `<linearGradient id="PLAIN_WALNUT_BASE" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${m.col(
+      `<linearGradient id="PLAIN_WALNUT_BASE" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${m.col(
         0
       )}"/><stop offset="35%" stop-color="${m.col(1)}"/><stop offset="68%" stop-color="${m.col(
         2
@@ -13087,23 +13134,71 @@ function rotatePosterHexHue(hex: string, degShift: number, satScale = 1, lightDe
   return `#${toH(r2)}${toH(g2)}${toH(b2)}`;
 }
 
+function pushCompoundRingPoly(
+  parts: string[],
+  cx0: number,
+  cy0: number,
+  cx1: number,
+  cy1: number,
+  outPts: [number, number][],
+  inPts: [number, number][],
+  fillCol: string
+) {
+  const cOut = clipPosterPolygon(outPts, cx0, cy0, cx1, cy1);
+  if (cOut.length < 3) return;
+  const cIn = clipPosterPolygon(inPts, cx0, cy0, cx1, cy1);
+  if (cIn.length >= 3) {
+    parts.push(`<path d="${polyToSvgPath(cOut)}${polyToSvgPath(cIn)}" fill="${fillCol}" fill-rule="evenodd"/>`);
+  } else {
+    parts.push(`<path d="${polyToSvgPath(cOut)}" fill="${fillCol}"/>`);
+  }
+}
+
 function makePosterVar(m: any, variant: number, cardIdx: number, colorSet: string) {
   const isVar = variant > 0;
   const isPal = colorSet === "palette";
-  // Deterministic golden-angle hue rotation per variant (uniform across all cards in the set for studio harmony!)
-  const baseHue = isVar ? ((variant * 137.508) % 360) : 0;
-  const satM = isVar ? 0.98 + ((variant % 3) * 0.04) : 1;
+  // Deterministic golden-angle hue rotation + curated harmonic palette spread per variant
+  const baseHue = isVar ? ((variant * 137.508 + Math.floor(variant / 4) * 41 + cardIdx * 17) % 360) : 0;
+  const satM = isVar ? 0.92 + ((variant % 6) * 0.04) : 1;
+  const waveSeed = variant * 2.3999632 + cardIdx * 1.6180339;
+  const colorSetAnchors: Record<string, string[]> = {
+    sunset: ["#9b2fae", "#ff3d57", "#ff7b00", "#ffb700", "#e01e5a", "#673ab7"],
+    ocean: ["#00b4f5", "#00897b", "#1e88e5", "#43a047", "#3949ab", "#00acc1"],
+    pastel: ["#b388ff", "#80d8ff", "#b9f6ca", "#ffe57f", "#ff9e80", "#f8bbd0"],
+  };
   return {
     isVar,
     vCol: (hex: string, palSlot = 0, preserveLum = false): string => {
-      if (!isVar && !isPal) return hex;
-      if (isPal) return mixCol(hex, m.col((palSlot + cardIdx) % 5), isVar ? 0.72 : 0.82);
-      return rotatePosterHexHue(hex, baseHue, satM, preserveLum ? 0 : 0);
+      if (!isVar && !isPal && !colorSetAnchors[colorSet]) return hex;
+      if (isPal) {
+        const slotIdx = (palSlot + cardIdx * 2 + variant) % 5;
+        return mixCol(hex, m.col(slotIdx), isVar ? 0.78 : 0.82);
+      }
+      let targetHex = hex;
+      const anchors = colorSetAnchors[colorSet];
+      if (anchors && isVar) {
+        const aCol = anchors[(palSlot + cardIdx + variant) % anchors.length];
+        targetHex = mixCol(hex, aCol, 0.36);
+      }
+      const harmonicSpread = [0, 34, -38, 72, -64, 115][(palSlot + variant) % 6];
+      const slotHueShift = isVar ? harmonicSpread + ((palSlot * 23 * (variant % 5)) % 54) - 22 : 0;
+      const lumShift = preserveLum
+        ? 0
+        : isVar
+        ? Math.sin(variant * 1.91 + palSlot * 1.37 + cardIdx * 0.7) * 0.065
+        : 0;
+      return rotatePosterHexHue(targetHex, (baseHue + slotHueShift + 360) % 360, satM, lumShift);
     },
-    // Keep structural layout coordinates 100% crisp, symmetrical & un-broken (zero random coordinate distortion!)
-    vVal: (base: number, _span: number): number => base,
-    vAng: (baseDeg: number, _spanDeg = 45): number => (isVar ? baseDeg + ((variant % 4) - 1.5) * 18 : baseDeg),
-    vInt: (base: number, _minV: number, _maxV: number): number => base,
+    // Smooth, balanced structural variation within the same poster architecture when variant > 0
+    vVal: (base: number, span: number): number =>
+      isVar ? base + Math.sin(waveSeed) * span * 0.55 : base,
+    vAng: (baseDeg: number, spanDeg = 45): number =>
+      isVar ? baseDeg + Math.sin(waveSeed * 0.85) * spanDeg * 0.75 : baseDeg,
+    vInt: (base: number, minV: number, maxV: number): number => {
+      if (!isVar || maxV <= minV) return base;
+      const span = maxV - minV + 1;
+      return minV + ((base - minV + variant * 3 + cardIdx) % span + span) % span;
+    },
     vPick: <T>(arr: T[], defIdx: number): T => arr[(defIdx + variant) % arr.length],
   };
 }
@@ -16008,6 +16103,1984 @@ function drawRef21SwissBwTypoArchCard(
   }
 }
 
+// ============================================================================
+// REF SET 22: 3 PCS 2027 HAPPY NEW YEAR MODULAR RIBBON & FIREWORKS TRIPTYCH
+// (Exact 100% Habuhu match to image_f11dece1.png: Cream, Deep Plum & Vibrant Pink panels)
+// ============================================================================
+function drawRef22Ny2027FireworksRibbonCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cx1 = cx0 + cw;
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 3;
+
+  const cream = pv.vCol("#f5efe1", 0, true);
+  const plum = pv.vCol("#3b1e4a", 1);
+  const pink = pv.vCol("#ec5389", 2);
+  const gold = pv.vCol("#b69848", 3);
+  const orange = pv.vCol("#ec6b2e", 4);
+
+  const bgCol = sub === 0 ? cream : sub === 1 ? plum : pink;
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bgCol}"/>`);
+
+  const makeCircle = (ox: number, oy: number, rx: number, steps = 20): [number, number][] => {
+    const ry = (rx * cw * aspect) / Math.max(1, ch);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      pts.push([ox + Math.cos(a) * rx, oy + Math.sin(a) * ry]);
+    }
+    return pts;
+  };
+
+  // 4-point concave sparkle star
+  const drawSparkleStar4 = (ox: number, oy: number, radX: number, col: string) => {
+    const radY = (radX * cw * aspect) / Math.max(1, ch);
+    const inX = radX * 0.28;
+    const inY = radY * 0.28;
+    pushPoly(
+      [
+        [ox, oy - radY],
+        [ox + inX, oy - inY],
+        [ox + radX, oy],
+        [ox + inX, oy + inY],
+        [ox, oy + radY],
+        [ox - inX, oy + inY],
+        [ox - radX, oy],
+        [ox - inX, oy - inY],
+      ],
+      col
+    );
+  };
+
+  // Radial starburst firework with tapered rays and dotted tips
+  const drawFireworkBurst = (
+    ox: number,
+    oy: number,
+    radX: number,
+    rayCount: number,
+    rayCol: string,
+    dotCol: string
+  ) => {
+    const radY = (radX * cw * aspect) / Math.max(1, ch);
+    for (let i = 0; i < rayCount; i++) {
+      const a = (i / rayCount) * Math.PI * 2;
+      const isLong = i % 2 === 0;
+      const r0 = isLong ? 0.14 : 0.26;
+      const r1 = isLong ? 0.88 : 0.72;
+      const sx = ox + Math.cos(a) * radX * r0;
+      const sy = oy + Math.sin(a) * radY * r0;
+      const ex = ox + Math.cos(a) * radX * r1;
+      const ey = oy + Math.sin(a) * radY * r1;
+      const nx = -Math.sin(a) * radX * 0.018;
+      const ny = Math.cos(a) * radY * 0.018;
+      pushPoly(
+        [
+          [sx, sy],
+          [ex + nx, ey + ny],
+          [ex - nx, ey - ny],
+        ],
+        rayCol
+      );
+      if (isLong) {
+        const dx = ox + Math.cos(a) * radX * 0.98;
+        const dy = oy + Math.sin(a) * radY * 0.98;
+        pushPoly(makeCircle(dx, dy, radX * 0.042, 12), dotCol);
+      }
+    }
+  };
+
+  // Modular ribbon-folded "2" inside box [bx, by, bw, bh]
+  const drawModularRibbon2 = (
+    bx: number,
+    by: number,
+    bw: number,
+    bh: number,
+    topArchCol: string,
+    diagCol: string,
+    baseCol: string,
+    foldDividerCol: string
+  ) => {
+    const strokeH = bh * 0.25;
+    // 1. Top rounded arch cap (left vertical drop + top semi-circular dome)
+    const archPts: [number, number][] = [];
+    const steps = 22;
+    const cxA = bx + bw * 0.5;
+    const cyA = by + bh * 0.27;
+    const rxOut = bw * 0.48;
+    const ryOut = bh * 0.27;
+    for (let i = 0; i <= steps; i++) {
+      const a = Math.PI + (i / steps) * (Math.PI * 0.85);
+      archPts.push([cxA + Math.cos(a) * rxOut, cyA + Math.sin(a) * ryOut]);
+    }
+    archPts.push([bx + bw * 0.42, by + bh * 0.44], [bx + bw * 0.02, by + bh * 0.44]);
+    pushPoly(archPts, topArchCol);
+
+    // 2. Diagonal ribbon bar from top-right curve down to bottom-left base
+    pushPoly(
+      [
+        [bx + bw * 0.96, by + bh * 0.20],
+        [bx + bw * 0.98, by + bh * 0.45],
+        [bx + bw * 0.44, by + bh * 0.74],
+        [bx + bw * 0.02, by + bh * 0.74],
+        [bx + bw * 0.02, by + bh * 0.62],
+      ],
+      diagCol
+    );
+
+    // 3. Bottom horizontal ribbon bar
+    pushPoly(
+      [
+        [bx + bw * 0.02, by + bh * 0.755],
+        [bx + bw * 0.98, by + bh * 0.755],
+        [bx + bw * 0.98, by + bh],
+        [bx + bw * 0.02, by + bh],
+      ],
+      baseCol
+    );
+
+    // Subtle geometric ribbon fold cut line
+    pushPoly(
+      [
+        [bx + bw * 0.02, by + bh * 0.738],
+        [bx + bw * 0.56, by + bh * 0.738],
+        [bx + bw * 0.54, by + bh * 0.758],
+        [bx + bw * 0.02, by + bh * 0.758],
+      ],
+      foldDividerCol
+    );
+    void strokeH;
+  };
+
+  // Modular capsule "0" with 4-point star cutout in center
+  const drawModularZeroWithStar = (
+    bx: number,
+    by: number,
+    bw: number,
+    bh: number,
+    zeroCol: string,
+    starHoleCol: string
+  ) => {
+    const rad = bw * 0.48;
+    pushPoly(buildPosterRoundedRectPoly(bx + bw * 0.02, by, bw * 0.96, bh, rad, rad, rad, rad, aspect), zeroCol);
+    drawSparkleStar4(bx + bw * 0.5, by + bh * 0.5, bw * 0.28, starHoleCol);
+  };
+
+  // Modular ribbon-folded "7" with 3 color segments (top bar, upper diagonal, lower diagonal)
+  const drawModularRibbon7 = (
+    bx: number,
+    by: number,
+    bw: number,
+    bh: number,
+    topBarCol: string,
+    midDiagCol: string,
+    botDiagCol: string,
+    foldDividerCol: string
+  ) => {
+    // 1. Top horizontal bar
+    pushPoly(
+      [
+        [bx + bw * 0.02, by],
+        [bx + bw * 0.98, by],
+        [bx + bw * 0.62, by + bh * 0.26],
+        [bx + bw * 0.02, by + bh * 0.26],
+      ],
+      topBarCol
+    );
+    // 2. Upper diagonal ribbon segment
+    pushPoly(
+      [
+        [bx + bw * 0.98, by + bh * 0.01],
+        [bx + bw * 0.98, by + bh * 0.28],
+        [bx + bw * 0.74, by + bh * 0.57],
+        [bx + bw * 0.30, by + bh * 0.57],
+      ],
+      midDiagCol
+    );
+    // 3. Lower diagonal stem segment
+    pushPoly(
+      [
+        [bx + bw * 0.30, by + bh * 0.585],
+        [bx + bw * 0.73, by + bh * 0.585],
+        [bx + bw * 0.46, by + bh],
+        [bx + bw * 0.02, by + bh],
+      ],
+      botDiagCol
+    );
+    // Crisp fold seam line
+    pushPoly(
+      [
+        [bx + bw * 0.29, by + bh * 0.568],
+        [bx + bw * 0.74, by + bh * 0.568],
+        [bx + bw * 0.73, by + bh * 0.588],
+        [bx + bw * 0.29, by + bh * 0.588],
+      ],
+      foldDividerCol
+    );
+  };
+
+  // Central 2x2 grid for "2 0 / 2 7" (with subtle balanced scale/offset variation when variant > 0)
+  const varScale = pv.isVar ? 0.94 + ((variant + cardIdx) % 4) * 0.04 : 1;
+  const gridW = cw * 0.72 * Math.min(1.15, Math.max(0.85, bScale * varScale));
+  const gridH = ch * 0.45 * Math.min(1.15, Math.max(0.85, bScale * varScale));
+  const gx0 = cx0 + (cw - gridW) * 0.5;
+  const gy0 = cy0 + (ch - gridH) * (pv.isVar ? 0.46 + ((variant % 3) - 1) * 0.03 : 0.49);
+  const cellW = gridW * 0.465;
+  const cellH = gridH * 0.465;
+  const colRightX = gx0 + gridW - cellW;
+  const rowBotY = gy0 + gridH - cellH;
+  const fwScale = pv.isVar ? 0.88 + ((variant * 3 + cardIdx) % 5) * 0.06 : 1;
+  const rayDelta = pv.isVar ? ((variant % 3) - 1) * 4 : 0;
+
+  if (sub === 0) {
+    // Panel 1: Cream Background
+    const cA = pv.isVar && variant % 2 === 1 ? orange : gold;
+    const cB = pv.isVar && variant % 3 === 1 ? plum : pink;
+    drawModularRibbon2(gx0, gy0, cellW, cellH, cA, pink, cB, bgCol);
+    drawModularZeroWithStar(colRightX, gy0, cellW, cellH, orange, bgCol);
+    drawModularRibbon2(gx0, rowBotY, cellW, cellH, plum, cB, orange, bgCol);
+    drawModularRibbon7(colRightX, rowBotY, cellW, cellH, pink, cA, plum, bgCol);
+
+    drawFireworkBurst(cx0 + cw * 0.25, cy0 + ch * 0.14, cw * 0.19 * fwScale, 24 + rayDelta, gold, pink);
+    drawFireworkBurst(cx0 + cw * 0.77, cy0 + ch * 0.15, cw * 0.15 * fwScale, 20 + rayDelta, pink, orange);
+    drawFireworkBurst(cx0 + cw * 0.87, cy0 + ch * 0.26, cw * 0.06 * fwScale, 14, orange, gold);
+    drawFireworkBurst(cx0 + cw * 0.89, cy0 + ch * 0.44, cw * 0.065 * fwScale, 14, gold, pink);
+    drawFireworkBurst(cx0 + cw * 0.09, cy0 + ch * 0.61, cw * 0.055 * fwScale, 12, pink, orange);
+    drawFireworkBurst(cx0 + cw * 0.25, cy0 + ch * 0.84, cw * 0.19 * fwScale, 24 + rayDelta, gold, pink);
+    drawFireworkBurst(cx0 + cw * 0.76, cy0 + ch * 0.80, cw * 0.14 * fwScale, 20 + rayDelta, pink, orange);
+    drawFireworkBurst(cx0 + cw * 0.86, cy0 + ch * 0.91, cw * 0.075 * fwScale, 16, gold, pink);
+
+    drawSparkleStar4(cx0 + cw * 0.55, cy0 + ch * 0.10, cw * 0.045 * fwScale, gold);
+    drawSparkleStar4(cx0 + cw * 0.55, cy0 + ch * 0.21, cw * 0.042 * fwScale, orange);
+    drawSparkleStar4(cx0 + cw * 0.09, cy0 + ch * 0.37, cw * 0.042 * fwScale, gold);
+    drawSparkleStar4(cx0 + cw * 0.88, cy0 + ch * 0.62, cw * 0.052 * fwScale, gold);
+    drawSparkleStar4(cx0 + cw * 0.53, cy0 + ch * 0.77, cw * 0.036 * fwScale, pink);
+    drawSparkleStar4(cx0 + cw * 0.59, cy0 + ch * 0.89, cw * 0.052 * fwScale, gold);
+  } else if (sub === 1) {
+    // Panel 2: Deep Plum Background
+    const cTop = pv.isVar && variant % 2 === 1 ? cream : gold;
+    drawModularRibbon2(gx0, gy0, cellW, cellH, cTop, pink, pink, bgCol);
+    drawModularZeroWithStar(colRightX, gy0, cellW, cellH, orange, cream);
+    drawModularRibbon2(gx0, rowBotY, cellW, cellH, pink, gold, cTop, bgCol);
+    drawModularRibbon7(colRightX, rowBotY, cellW, cellH, cream, orange, pink, bgCol);
+
+    drawFireworkBurst(cx0 + cw * 0.25, cy0 + ch * 0.14, cw * 0.19 * fwScale, 24 + rayDelta, cream, pink);
+    drawFireworkBurst(cx0 + cw * 0.77, cy0 + ch * 0.15, cw * 0.15 * fwScale, 20 + rayDelta, pink, orange);
+    drawFireworkBurst(cx0 + cw * 0.88, cy0 + ch * 0.26, cw * 0.06 * fwScale, 14, pink, cream);
+    drawFireworkBurst(cx0 + cw * 0.89, cy0 + ch * 0.44, cw * 0.065 * fwScale, 14, orange, gold);
+    drawFireworkBurst(cx0 + cw * 0.09, cy0 + ch * 0.61, cw * 0.055 * fwScale, 12, orange, pink);
+    drawFireworkBurst(cx0 + cw * 0.25, cy0 + ch * 0.84, cw * 0.19 * fwScale, 24 + rayDelta, cream, orange);
+    drawFireworkBurst(cx0 + cw * 0.76, cy0 + ch * 0.80, cw * 0.14 * fwScale, 20 + rayDelta, pink, gold);
+    drawFireworkBurst(cx0 + cw * 0.86, cy0 + ch * 0.91, cw * 0.075 * fwScale, 16, pink, cream);
+
+    drawSparkleStar4(cx0 + cw * 0.55, cy0 + ch * 0.10, cw * 0.045 * fwScale, pink);
+    drawSparkleStar4(cx0 + cw * 0.55, cy0 + ch * 0.21, cw * 0.042 * fwScale, cream);
+    drawSparkleStar4(cx0 + cw * 0.09, cy0 + ch * 0.37, cw * 0.042 * fwScale, orange);
+    drawSparkleStar4(cx0 + cw * 0.09, cy0 + ch * 0.51, cw * 0.038 * fwScale, cream);
+    drawSparkleStar4(cx0 + cw * 0.88, cy0 + ch * 0.62, cw * 0.052 * fwScale, cream);
+    drawSparkleStar4(cx0 + cw * 0.53, cy0 + ch * 0.77, cw * 0.038 * fwScale, orange);
+    drawSparkleStar4(cx0 + cw * 0.53, cy0 + ch * 0.89, cw * 0.052 * fwScale, cream);
+  } else {
+    // Panel 3: Vibrant Rose Pink Background + Cream Numerals + HAPPY NEW YEAR
+    const cAcc = pv.isVar && variant % 2 === 1 ? gold : cream;
+    drawModularRibbon2(gx0, gy0, cellW, cellH, cream, cAcc, cream, bgCol);
+    drawModularZeroWithStar(colRightX, gy0, cellW, cellH, cream, bgCol);
+    drawModularRibbon2(gx0, rowBotY, cellW, cellH, cAcc, cream, cream, bgCol);
+    drawModularRibbon7(colRightX, rowBotY, cellW, cellH, cream, cAcc, cream, bgCol);
+
+    drawFireworkBurst(cx0 + cw * 0.25, cy0 + ch * 0.14, cw * 0.19 * fwScale, 24 + rayDelta, cream, plum);
+    drawFireworkBurst(cx0 + cw * 0.77, cy0 + ch * 0.15, cw * 0.15 * fwScale, 20 + rayDelta, plum, cream);
+    drawFireworkBurst(cx0 + cw * 0.88, cy0 + ch * 0.26, cw * 0.06 * fwScale, 14, plum, cream);
+    drawFireworkBurst(cx0 + cw * 0.89, cy0 + ch * 0.44, cw * 0.065 * fwScale, 14, plum, orange);
+    drawFireworkBurst(cx0 + cw * 0.09, cy0 + ch * 0.61, cw * 0.055 * fwScale, 12, cream, plum);
+    drawFireworkBurst(cx0 + cw * 0.25, cy0 + ch * 0.83, cw * 0.19 * fwScale, 24 + rayDelta, cream, plum);
+    drawFireworkBurst(cx0 + cw * 0.79, cy0 + ch * 0.77, cw * 0.12 * fwScale, 18, plum, cream);
+
+    drawSparkleStar4(cx0 + cw * 0.55, cy0 + ch * 0.10, cw * 0.045 * fwScale, plum);
+    drawSparkleStar4(cx0 + cw * 0.55, cy0 + ch * 0.21, cw * 0.042 * fwScale, orange);
+    drawSparkleStar4(cx0 + cw * 0.09, cy0 + ch * 0.37, cw * 0.042 * fwScale, orange);
+    drawSparkleStar4(cx0 + cw * 0.10, cy0 + ch * 0.68, cw * 0.038 * fwScale, plum);
+    drawSparkleStar4(cx0 + cw * 0.89, cy0 + ch * 0.62, cw * 0.052 * fwScale, orange);
+    drawSparkleStar4(cx0 + cw * 0.55, cy0 + ch * 0.80, cw * 0.045 * fwScale, plum);
+
+    if (showText) {
+      parts.push(
+        drawPosterVectorTextString("HAPPY", cx0 + cw * 0.74, cy0 + ch * 0.865, ch * 0.022, aspect, "bold", plum, "center")
+      );
+      parts.push(
+        drawPosterVectorTextString("NEW YEAR", cx0 + cw * 0.74, cy0 + ch * 0.898, ch * 0.022, aspect, "bold", plum, "center")
+      );
+    }
+  }
+
+  // Confetti dots
+  const dots: [number, number, string][] = [
+    [0.10, 0.29, pink],
+    [0.48, 0.18, gold],
+    [0.64, 0.25, orange],
+    [0.91, 0.36, pink],
+    [0.11, 0.45, orange],
+    [0.83, 0.53, cream],
+    [0.49, 0.64, orange],
+    [0.14, 0.73, gold],
+    [0.45, 0.92, pink],
+  ];
+  for (const [dx, dy, dc] of dots) {
+    const colUse = dc === bgCol ? (sub === 0 ? plum : cream) : dc;
+    pushPoly(makeCircle(cx0 + cw * dx, cy0 + ch * dy, cw * 0.012, 10), colUse);
+  }
+}
+
+// ============================================================================
+// REF SET 23: 4 PCS 2027 SWISS BAUHAUS INTERLOCKING TYPOGRAPHY POSTER SET
+// (Exact 100% Habuhu match to image_ca83aca4.png: Slate Blue, Soft Peach, Terracotta & Deep Navy)
+// ============================================================================
+function drawRef23Ny2027SwissInterlockCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 4;
+
+  const slateBlue = pv.vCol("#5b689e", 0);
+  const deepNavy = pv.vCol("#344278", 1);
+  const peachCream = pv.vCol("#fae5d3", 2, true);
+  const terracotta = pv.vCol("#dc7958", 3);
+  const mutedBlue = mixCol(slateBlue, deepNavy, 0.38);
+
+  // Geometric Bauhaus "2" with clean circular upper loop, sharp diagonal stem & horizontal foot
+  const drawBauhausDigit2 = (
+    bx: number,
+    by: number,
+    bw: number,
+    bh: number,
+    col: string,
+    invert180 = false
+  ) => {
+    const t = bw * 0.27;
+    const rx = bw * 0.47;
+    const ry = bh * 0.28;
+    const cxA = bx + bw * 0.50;
+    const cyA = by + ry;
+    const pts: [number, number][] = [];
+    // Outer arc from left (195 deg) around top to right-bottom (35 deg)
+    const steps = 28;
+    for (let i = 0; i <= steps; i++) {
+      const a = (195 * Math.PI) / 180 + (i / steps) * ((200 * Math.PI) / 180);
+      pts.push([cxA + Math.cos(a) * rx, cyA + Math.sin(a) * ry]);
+    }
+    // Diagonal down to bottom-left corner
+    pts.push(
+      [bx + t * 1.15, by + bh - t * 0.82],
+      [bx + bw, by + bh - t * 0.82],
+      [bx + bw, by + bh],
+      [bx, by + bh],
+      [bx, by + bh - t * 0.22]
+    );
+    // Inner diagonal up to inner arc
+    const rInX = Math.max(bw * 0.14, rx - t);
+    const rInY = Math.max(bh * 0.09, ry - t * 0.78);
+    for (let i = steps; i >= 0; i--) {
+      const a = (195 * Math.PI) / 180 + (i / steps) * ((200 * Math.PI) / 180);
+      pts.push([cxA + Math.cos(a) * rInX, cyA + Math.sin(a) * rInY]);
+    }
+    if (invert180) {
+      const midX = bx + bw * 0.5;
+      const midY = by + bh * 0.5;
+      pushPoly(
+        pts.map(([px, py]) => [2 * midX - px, 2 * midY - py]),
+        col
+      );
+    } else {
+      pushPoly(pts, col);
+    }
+  };
+
+  // Geometric Bauhaus "0" (thick circular/oval ring as native Illustrator compound path)
+  const drawBauhausDigit0 = (
+    ox: number,
+    oy: number,
+    rxOut: number,
+    ryOut: number,
+    thickRatio: number,
+    col: string
+  ) => {
+    const steps = 44;
+    const outPts: [number, number][] = [];
+    const inPts: [number, number][] = [];
+    const rxIn = rxOut * (1 - thickRatio);
+    const ryIn = ryOut * (1 - thickRatio);
+    for (let i = 0; i < steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      outPts.push([ox + Math.cos(a) * rxOut, oy + Math.sin(a) * ryOut]);
+      inPts.push([ox + Math.cos(a) * rxIn, oy + Math.sin(a) * ryIn]);
+    }
+    pushCompoundRingPoly(parts, cx0, cy0, cx0 + cw, cy0 + ch, outPts, inPts, col);
+  };
+
+  // Geometric Bauhaus "7" (sharp horizontal top bar + angled diagonal stem; optional 180deg L-flip)
+  const drawBauhausDigit7 = (
+    bx: number,
+    by: number,
+    bw: number,
+    bh: number,
+    col: string,
+    invert180 = false
+  ) => {
+    const barH = bh * 0.21;
+    const stemW = bw * 0.34;
+    const pts: [number, number][] = [
+      [bx, by],
+      [bx + bw, by],
+      [bx + stemW * 1.32, by + bh],
+      [bx + stemW * 0.28, by + bh],
+      [bx + bw - stemW * 0.85, by + barH],
+      [bx, by + barH],
+    ];
+    if (invert180) {
+      const midX = bx + bw * 0.5;
+      const midY = by + bh * 0.5;
+      pushPoly(
+        pts.map(([px, py]) => [2 * midX - px, 2 * midY - py]),
+        col
+      );
+    } else {
+      pushPoly(pts, col);
+    }
+  };
+
+  const varSc = pv.isVar ? 0.94 + ((variant + cardIdx) % 4) * 0.035 : 1;
+  const sc = Math.min(1.18, Math.max(0.84, bScale * varSc));
+  const dw = cw * 0.36 * sc;
+  const dh = ch * 0.36 * sc;
+  const xJit = pv.isVar ? ((variant % 3) - 1) * cw * 0.025 : 0;
+  const yJit = pv.isVar ? (((variant + cardIdx) % 3) - 1) * ch * 0.02 : 0;
+
+  if (sub === 0) {
+    // Card 1: Slate Blue bg + Deep Navy "2", Peach "0", Peach "2", Terracotta "7" interlocking
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${slateBlue}"/>`);
+    drawBauhausDigit2(cx0 + cw * 0.12 + xJit, cy0 + ch * 0.20 + yJit, dw, dh, deepNavy, false);
+    drawBauhausDigit0(cx0 + cw * 0.67 - xJit, cy0 + ch * 0.35 - yJit, dw * 0.58, dh * 0.45, 0.44, peachCream);
+    drawBauhausDigit2(cx0 + cw * 0.12 - xJit, cy0 + ch * 0.47 - yJit, dw, dh, peachCream, false);
+    drawBauhausDigit7(cx0 + cw * 0.46 + xJit, cy0 + ch * 0.47 + yJit, dw * 1.05, dh, terracotta, false);
+  } else if (sub === 1) {
+    // Card 2: Soft Peach Cream bg + Cascading Terracotta "2", Slate Blue "0", Deep Navy "2", Inverted Slate Blue "7"
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${peachCream}"/>`);
+    drawBauhausDigit2(cx0 + cw * 0.16 + xJit, cy0 + ch * 0.08 + yJit, dw, dh, terracotta, false);
+    drawBauhausDigit0(cx0 + cw * 0.67 - xJit, cy0 + ch * 0.41, dw * 0.56, dh * 0.43, 0.44, slateBlue);
+    drawBauhausDigit7(cx0 + cw * 0.45 + xJit, cy0 + ch * 0.59 - yJit, dw * 1.02, dh * 0.96, slateBlue, true);
+    drawBauhausDigit2(cx0 + cw * 0.23 - xJit, cy0 + ch * 0.45 + yJit, dw, dh, deepNavy, false);
+  } else if (sub === 2) {
+    // Card 3: Terracotta Coral bg + Three Soft Peach "2, 0, 2" & Deep Navy "7"
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${terracotta}"/>`);
+    drawBauhausDigit2(cx0 + cw * 0.12 + xJit, cy0 + ch * 0.13 + yJit, dw, dh, peachCream, false);
+    drawBauhausDigit0(cx0 + cw * 0.65 - xJit, cy0 + ch * 0.41 - yJit, dw * 0.56, dh * 0.43, 0.44, peachCream);
+    drawBauhausDigit2(cx0 + cw * 0.19 - xJit, cy0 + ch * 0.44 + yJit, dw, dh, peachCream, false);
+    drawBauhausDigit7(cx0 + cw * 0.54 + xJit, cy0 + ch * 0.53 - yJit, dw * 1.02, dh * 0.96, deepNavy, false);
+  } else {
+    // Card 4: Deep Navy bg + Giant Watermark Muted Slate "0" & Inverted "2" + Foreground Terracotta "2" & Peach "7"
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${deepNavy}"/>`);
+    // Background oversized "0" and inverted "2"
+    drawBauhausDigit0(cx0 + cw * 0.44 + xJit, cy0 + ch * 0.29 + yJit, dw * 0.72, dh * 0.56, 0.38, mutedBlue);
+    drawBauhausDigit2(cx0 + cw * 0.18 - xJit, cy0 + ch * 0.51 - yJit, dw * 1.28, dh * 1.15, mutedBlue, true);
+    // Foreground "2" and "7"
+    drawBauhausDigit2(cx0 + cw * 0.11 + xJit, cy0 + ch * 0.28 - yJit, dw * 0.96, dh * 0.92, terracotta, false);
+    drawBauhausDigit7(cx0 + cw * 0.48 - xJit, cy0 + ch * 0.21 + yJit, dw * 1.16, dh * 1.08, peachCream, false);
+    // Interlocking loop arc of the "0" over the left bar of "7"
+    const rOutX = dw * 0.72;
+    const rOutY = dh * 0.56;
+    const rInX = rOutX * 0.62;
+    const rInY = rOutY * 0.62;
+    const arcOut: [number, number][] = [];
+    const arcIn: [number, number][] = [];
+    for (let s = 0; s <= 14; s++) {
+      const a = -0.35 + (s / 14) * 0.95;
+      arcOut.push([cx0 + cw * 0.44 + xJit + Math.cos(a) * rOutX, cy0 + ch * 0.29 + yJit + Math.sin(a) * rOutY]);
+      arcIn.unshift([cx0 + cw * 0.44 + xJit + Math.cos(a) * rInX, cy0 + ch * 0.29 + yJit + Math.sin(a) * rInY]);
+    }
+    pushPoly(arcOut.concat(arcIn), mutedBlue);
+  }
+  void showText;
+}
+
+// ============================================================================
+// REF SET 24: 5 PCS 2027 HOLLY JOLLY CHRISTMAS & FESTIVE HOLIDAY VECTOR SET
+// (Exact 100% Habuhu match to image_a1d68172.png: Ribbon 2027, Candy 2027, Gift Boxes, Bauble & Rocking Horse, Origami Tree)
+// ============================================================================
+function drawRef24Ny2027HollyJollyChristmasCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cx1 = cx0 + cw;
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 5;
+
+  const emerald = pv.vCol("#117a43", 0);
+  const forest = pv.vCol("#12663a", 0);
+  const royalBlue = pv.vCol("#1f43c7", 1);
+  const festiveRed = pv.vCol("#e82c2a", 2);
+  const candyPink = pv.vCol("#f393b8", 3);
+  const warmGold = pv.vCol("#dfb15b", 4);
+  const snowWhite = "#ffffff";
+  const creamBauble = "#fae8e0";
+
+  const makeCircle = (ox: number, oy: number, rx: number, steps = 24): [number, number][] => {
+    const ry = (rx * cw * aspect) / Math.max(1, ch);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      pts.push([ox + Math.cos(a) * rx, oy + Math.sin(a) * ry]);
+    }
+    return pts;
+  };
+
+  // Multi-point starburst / snowflake badge
+  const drawStarburst = (ox: number, oy: number, radX: number, points: number, innerRatio: number, col: string) => {
+    const radY = (radX * cw * aspect) / Math.max(1, ch);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < points * 2; i++) {
+      const a = -Math.PI * 0.5 + (i / (points * 2)) * Math.PI * 2;
+      const r = i % 2 === 0 ? 1 : innerRatio;
+      pts.push([ox + Math.cos(a) * radX * r, oy + Math.sin(a) * radY * r]);
+    }
+    pushPoly(pts, col);
+  };
+
+  // 6-branch festive vector snowflake
+  const drawSnowflake = (ox: number, oy: number, radX: number, col: string) => {
+    const radY = (radX * cw * aspect) / Math.max(1, ch);
+    const lwX = radX * 0.11;
+    const lwY = radY * 0.11;
+    for (let b = 0; b < 6; b++) {
+      const a = (b / 6) * Math.PI * 2;
+      const ca = Math.cos(a);
+      const sa = Math.sin(a);
+      const nx = -sa * lwX;
+      const ny = ca * lwY;
+      // Main branch
+      pushPoly(
+        [
+          [ox + nx, oy + ny],
+          [ox + ca * radX + nx, oy + sa * radY + ny],
+          [ox + ca * radX - nx, oy + sa * radY - ny],
+          [ox - nx, oy - ny],
+        ],
+        col
+      );
+      // Chevron twigs at 60% radius
+      for (const side of [-1, 1]) {
+        const bx = ox + ca * radX * 0.56;
+        const by = oy + sa * radY * 0.56;
+        const ta = a + side * (Math.PI / 3);
+        const tx = bx + Math.cos(ta) * radX * 0.36;
+        const ty = by + Math.sin(ta) * radY * 0.36;
+        pushPoly(
+          [
+            [bx, by],
+            [tx + nx * 0.7, ty + ny * 0.7],
+            [tx - nx * 0.7, ty - ny * 0.7],
+          ],
+          col
+        );
+      }
+    }
+    pushPoly(makeCircle(ox, oy, radX * 0.22, 12), col);
+  };
+
+  if (sub === 0) {
+    // Card 1: Emerald Green bg + Giant Full-Bleed Polka-Dot Red & Bubblegum Pink Ribbon "2027" + HAPPY NEW YEAR
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${emerald}"/>`);
+
+    // Top-right giant tilted bubblegum pink "0" oval ring (clipped separately as compound path so boundary clipping never twists!)
+    const ox0 = cx0 + cw * 0.73;
+    const oy0 = cy0 + ch * 0.22;
+    const out0: [number, number][] = [];
+    const in0: [number, number][] = [];
+    for (let i = 0; i < 36; i++) {
+      const a = (i / 36) * Math.PI * 2;
+      const tilt = -0.22;
+      const lxOut = Math.cos(a) * cw * 0.29;
+      const lyOut = Math.sin(a) * ch * 0.25;
+      const lxIn = Math.cos(a) * cw * 0.13;
+      const lyIn = Math.sin(a) * ch * 0.14;
+      out0.push([ox0 + lxOut * Math.cos(tilt) - lyOut * Math.sin(tilt), oy0 + lxOut * Math.sin(tilt) + lyOut * Math.cos(tilt)]);
+      in0.push([ox0 + lxIn * Math.cos(tilt) - lyIn * Math.sin(tilt), oy0 + lxIn * Math.sin(tilt) + lyIn * Math.cos(tilt)]);
+    }
+    pushCompoundRingPoly(parts, cx0, cy0, cx1, cy1, out0, in0, candyPink);
+
+    // Top-left red polka-dot ribbon "2"
+    const r2Top: [number, number][] = [
+      [cx0, cy0],
+      [cx0 + cw * 0.18, cy0],
+      [cx0 + cw * 0.14, cy0 + ch * 0.08],
+      [cx0, cy0 + ch * 0.11],
+    ];
+    pushPoly(r2Top, festiveRed);
+    const r2Diag: [number, number][] = [
+      [cx0 + cw * 0.34, cy0],
+      [cx0 + cw * 0.45, cy0],
+      [cx0 + cw * 0.42, cy0 + ch * 0.16],
+      [cx0 + cw * 0.08, cy0 + ch * 0.36],
+      [cx0, cy0 + ch * 0.36],
+      [cx0, cy0 + ch * 0.26],
+    ];
+    pushPoly(r2Diag, festiveRed);
+    // Wavy horizontal tail of top-left "2"
+    const r2Base: [number, number][] = [
+      [cx0, cy0 + ch * 0.38],
+      [cx0 + cw * 0.28, cy0 + ch * 0.34],
+      [cx0 + cw * 0.48, cy0 + ch * 0.36],
+      [cx0 + cw * 0.44, cy0 + ch * 0.46],
+      [cx0 + cw * 0.22, cy0 + ch * 0.49],
+      [cx0, cy0 + ch * 0.43],
+    ];
+    pushPoly(r2Base, festiveRed);
+
+    // Bottom-left giant bubblegum pink curly "2"
+    const b2Arch: [number, number][] = [];
+    for (let i = 0; i <= 28; i++) {
+      const u = i / 28;
+      const a = Math.PI * 1.15 - u * Math.PI * 1.35;
+      b2Arch.push([cx0 + cw * 0.24 + Math.cos(a) * cw * 0.28, cy0 + ch * 0.58 - Math.sin(a) * ch * 0.19]);
+    }
+    b2Arch.push(
+      [cx0 + cw * 0.12, cy0 + ch * 0.88],
+      [cx0 + cw * 0.44, cy0 + ch * 0.87],
+      [cx0 + cw * 0.39, cy1],
+      [cx0, cy1],
+      [cx0, cy0 + ch * 0.74],
+      [cx0 + cw * 0.33, cy0 + ch * 0.60],
+      [cx0 + cw * 0.25, cy0 + ch * 0.48],
+      [cx0 + cw * 0.06, cy0 + ch * 0.59],
+      [cx0, cy0 + ch * 0.52]
+    );
+    pushPoly(b2Arch, candyPink);
+
+    // Bottom-right red polka-dot ribbon "7"
+    const r7Top: [number, number][] = [
+      [cx0 + cw * 0.54, cy0 + ch * 0.45],
+      [cx0 + cw * 0.78, cy0 + ch * 0.40],
+      [cx1, cy0 + ch * 0.48],
+      [cx1, cy0 + ch * 0.56],
+      [cx0 + cw * 0.72, cy0 + ch * 0.56],
+      [cx0 + cw * 0.48, cy0 + ch * 0.53],
+    ];
+    pushPoly(r7Top, festiveRed);
+    const r7Stem: [number, number][] = [
+      [cx1, cy0 + ch * 0.49],
+      [cx1, cy0 + ch * 0.65],
+      [cx0 + cw * 0.75, cy1],
+      [cx0 + cw * 0.55, cy1],
+      [cx0 + cw * 0.68, cy0 + ch * 0.74],
+      [cx0 + cw * 0.88, cy0 + ch * 0.54],
+    ];
+    pushPoly(r7Stem, festiveRed);
+
+    // Crisp white polka dots across the red "2" and "7"
+    const polkaCoords: [number, number][] = [
+      [0.09, 0.05], [0.36, 0.07], [0.27, 0.15], [0.37, 0.21], [0.16, 0.21], [0.26, 0.27],
+      [0.08, 0.29], [0.18, 0.37], [0.32, 0.37], [0.43, 0.39], [0.10, 0.43], [0.24, 0.46],
+      [0.68, 0.42], [0.58, 0.47], [0.71, 0.48], [0.84, 0.49], [0.95, 0.51], [0.64, 0.54],
+      [0.98, 0.56], [0.91, 0.63], [0.85, 0.72], [0.76, 0.76], [0.78, 0.83], [0.68, 0.88], [0.69, 0.96],
+    ];
+    for (const [px, py] of polkaCoords) {
+      pushPoly(makeCircle(cx0 + cw * px, cy0 + ch * py, cw * 0.025, 14), snowWhite);
+    }
+
+    if (showText) {
+      parts.push(
+        drawPosterVectorTextString("HAPPY NEW YEAR", cx0 + cw * 0.5, cy0 + ch * 0.825, ch * 0.017, aspect, "wide", snowWhite, "center")
+      );
+    }
+  } else if (sub === 1) {
+    // Card 2: Royal Cobalt Blue bg + "MERRY CHRISTMAS" + Square Block of "2027" (Gold 2, Candy-Striped 0 & 2, White 7) + "HAPPY NEW YEAR"
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${royalBlue}"/>`);
+
+    const bx0 = cx0 + cw * 0.22;
+    const by0 = cy0 + ch * 0.27;
+    const bw = cw * 0.56;
+    const bh = ch * 0.51;
+    const cellW = bw * 0.48;
+    const cellH = bh * 0.48;
+
+    // Top-left Gold "2"
+    pushPoly(
+      [
+        [bx0, by0],
+        [bx0 + cellW * 0.92, by0],
+        [bx0 + cellW, by0 + cellH * 0.24],
+        [bx0 + cellW * 0.92, by0 + cellH * 0.48],
+        [bx0 + cellW * 0.28, by0 + cellH * 0.78],
+        [bx0 + cellW, by0 + cellH * 0.78],
+        [bx0 + cellW * 0.94, by0 + cellH],
+        [bx0, by0 + cellH],
+        [bx0, by0 + cellH * 0.76],
+        [bx0 + cellW * 0.64, by0 + cellH * 0.38],
+        [bx0 + cellW * 0.56, by0 + cellH * 0.22],
+        [bx0 + cellW * 0.14, by0 + cellH * 0.34],
+      ],
+      warmGold
+    );
+
+    // Top-right Candy-Striped "0" (Pink base + strictly clipped Red diagonal stripes + Blue center hole)
+    const z0x = bx0 + bw - cellW * 0.48;
+    const z0y = by0 + cellH * 0.50;
+    const zRx = cellW * 0.48;
+    const z0OuterPoly = makeCircle(z0x, z0y, zRx, 32);
+    const z0InnerPoly = makeCircle(z0x, z0y, zRx * 0.44, 24);
+    pushPoly(z0OuterPoly, candyPink);
+    for (let st = -3; st <= 3; st++) {
+      const sy = z0y + st * cellH * 0.17;
+      const rawStripe: [number, number][] = [
+        [z0x - zRx * 1.1, sy - cellH * 0.08],
+        [z0x + zRx * 1.1, sy + cellH * 0.06],
+        [z0x + zRx * 1.1, sy + cellH * 0.14],
+        [z0x - zRx * 1.1, sy],
+      ];
+      const clippedStripe = clipPolyAgainstConvexPoly(rawStripe, z0OuterPoly);
+      if (clippedStripe.length >= 3) {
+        pushPoly(clippedStripe, festiveRed);
+      }
+    }
+    pushPoly(z0InnerPoly, royalBlue);
+
+    // Bottom-left Red & Pink Candy-Striped "2" (decomposed into 3 convex pieces so pink diagonal stripes are 100% clipped inside "2")
+    const b2y = by0 + bh - cellH;
+    const b2ConvTop: [number, number][] = [
+      [bx0, b2y + cellH * 0.18],
+      [bx0 + cellW * 0.35, b2y],
+      [bx0 + cellW * 0.85, b2y],
+      [bx0 + cellW, b2y + cellH * 0.28],
+      [bx0 + cellW * 0.55, b2y + cellH * 0.24],
+      [bx0 + cellW * 0.22, b2y + cellH * 0.40],
+    ];
+    const b2ConvStem: [number, number][] = [
+      [bx0 + cellW * 0.55, b2y + cellH * 0.24],
+      [bx0 + cellW, b2y + cellH * 0.28],
+      [bx0 + cellW * 0.88, b2y + cellH * 0.54],
+      [bx0 + cellW * 0.32, b2y + cellH * 0.80],
+      [bx0, b2y + cellH * 0.78],
+      [bx0 + cellW * 0.62, b2y + cellH * 0.44],
+    ];
+    const b2ConvFoot: [number, number][] = [
+      [bx0, b2y + cellH * 0.78],
+      [bx0 + cellW * 0.95, b2y + cellH * 0.80],
+      [bx0 + cellW * 0.88, b2y + cellH],
+      [bx0, b2y + cellH],
+    ];
+    const b2Pieces = [b2ConvTop, b2ConvStem, b2ConvFoot];
+    for (const pc of b2Pieces) {
+      pushPoly(pc, festiveRed);
+    }
+    for (let st = -1; st <= 5; st++) {
+      const sy = b2y + st * cellH * 0.19;
+      const rawPinkStripe: [number, number][] = [
+        [bx0 - cellW * 0.05, sy],
+        [bx0 + cellW * 1.05, sy + cellH * 0.14],
+        [bx0 + cellW * 1.05, sy + cellH * 0.19],
+        [bx0 - cellW * 0.05, sy + cellH * 0.05],
+      ];
+      for (const pc of b2Pieces) {
+        const cl = clipPolyAgainstConvexPoly(rawPinkStripe, pc);
+        if (cl.length >= 3) pushPoly(cl, candyPink);
+      }
+    }
+
+    // Bottom-right Crisp White "7"
+    const b7x = bx0 + bw - cellW;
+    const b7y = by0 + bh - cellH;
+    pushPoly(
+      [
+        [b7x, b7y + cellH * 0.06],
+        [b7x + cellW * 0.45, b7y - cellH * 0.04],
+        [b7x + cellW, b7y + cellH * 0.12],
+        [b7x + cellW, b7y + cellH * 0.28],
+        [b7x + cellW * 0.54, b7y + cellH],
+        [b7x + cellW * 0.18, b7y + cellH],
+        [b7x + cellW * 0.68, b7y + cellH * 0.28],
+        [b7x, b7y + cellH * 0.26],
+      ],
+      snowWhite
+    );
+
+    if (showText) {
+      parts.push(
+        drawPosterVectorTextString("MERRY CHRISTMAS", cx0 + cw * 0.5, cy0 + ch * 0.145, ch * 0.032, aspect, "bold", snowWhite, "center")
+      );
+      parts.push(
+        drawPosterVectorTextString("HAPPY NEW YEAR", cx0 + cw * 0.5, cy0 + ch * 0.855, ch * 0.017, aspect, "wide", snowWhite, "center")
+      );
+    }
+  } else if (sub === 2) {
+    // Card 3: Deep Forest Green bg + "HAVE A HOLLY JOLLY CHRISTMAS" + Stacked Wrapped Christmas Gift Boxes & Snowflake Ribbons
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${forest}"/>`);
+
+    // 1. Right tall Pink & Red Candy-Striped Gift Box (stripes strictly clipped to box rect!)
+    const rx0 = cx0 + cw * 0.64;
+    const ry0 = cy0 + ch * 0.41;
+    const rw = cw * 0.36;
+    const rh = ch * 0.59;
+    const rBoxPoly: [number, number][] = [[rx0, ry0], [rx0 + rw, ry0], [rx0 + rw, ry0 + rh], [rx0, ry0 + rh]];
+    pushPoly(rBoxPoly, candyPink);
+    for (let st = -4; st <= 8; st++) {
+      const sy = ry0 + st * ch * 0.075;
+      const cl = clipPolyAgainstConvexPoly(
+        [
+          [rx0, sy],
+          [rx0 + rw, sy + ch * 0.12],
+          [rx0 + rw, sy + ch * 0.145],
+          [rx0, sy + ch * 0.025],
+        ],
+        rBoxPoly
+      );
+      if (cl.length >= 3) pushPoly(cl, festiveRed);
+    }
+    // Forest green ribbon cross + White 12-point starburst bow
+    pushPoly([[rx0 + rw * 0.30, ry0], [rx0 + rw * 0.40, ry0], [rx0 + rw * 0.40, ry0 + rh], [rx0 + rw * 0.30, ry0 + rh]], forest);
+    pushPoly([[rx0, ry0 + rh * 0.24], [rx0 + rw, ry0 + rh * 0.24], [rx0 + rw, ry0 + rh * 0.28], [rx0, ry0 + rh * 0.28]], forest);
+    drawStarburst(rx0 + rw * 0.35, ry0 + rh * 0.26, cw * 0.11, 12, 0.65, snowWhite);
+
+    // 2. Left Pink & White Striped Gift Box (stripes strictly clipped to box rect!)
+    const lx0 = cx0;
+    const ly0 = cy0 + ch * 0.64;
+    const lw = cw * 0.24;
+    const lh = ch * 0.36;
+    const lBoxPoly: [number, number][] = [[lx0, ly0], [lx0 + lw, ly0], [lx0 + lw, ly0 + lh], [lx0, ly0 + lh]];
+    pushPoly(lBoxPoly, candyPink);
+    for (let st = -2; st <= 5; st++) {
+      const sy = ly0 + st * ch * 0.07;
+      const cl = clipPolyAgainstConvexPoly(
+        [
+          [lx0, sy + ch * 0.09],
+          [lx0 + lw, sy],
+          [lx0 + lw, sy + ch * 0.032],
+          [lx0, sy + ch * 0.122],
+        ],
+        lBoxPoly
+      );
+      if (cl.length >= 3) pushPoly(cl, snowWhite);
+    }
+    pushPoly([[lx0 + lw * 0.34, ly0], [lx0 + lw * 0.44, ly0], [lx0 + lw * 0.44, ly0 + lh], [lx0 + lw * 0.34, ly0 + lh]], warmGold);
+    drawStarburst(lx0 + lw * 0.39, ly0 + lh * 0.26, cw * 0.07, 12, 0.62, festiveRed);
+
+    // Hanging red & gold bauble above left box
+    const bxOrn = cx0 + cw * 0.145;
+    const byOrn = cy0 + ch * 0.59;
+    pushPoly([[bxOrn - cw * 0.005, cy0 + ch * 0.52], [bxOrn + cw * 0.005, cy0 + ch * 0.52], [bxOrn + cw * 0.005, byOrn], [bxOrn - cw * 0.005, byOrn]], candyPink);
+    pushPoly(makeCircle(bxOrn, byOrn, cw * 0.062, 22), festiveRed);
+    for (let d = -1; d <= 1; d++) {
+      const dx = bxOrn + d * cw * 0.034;
+      pushPoly([[dx, byOrn - ch * 0.022], [dx + cw * 0.015, byOrn], [dx, byOrn + ch * 0.022], [dx - cw * 0.015, byOrn]], d === 0 ? snowWhite : warmGold);
+    }
+
+    // 3. Top Hexagonal Gold & White Triangle-Patterned Gift Box
+    const hx = cx0 + cw * 0.47;
+    const hy = cy0 + ch * 0.455;
+    const hrX = cw * 0.16;
+    const hrY = ch * 0.105;
+    const hexPts: [number, number][] = [];
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      hexPts.push([hx + Math.cos(a) * hrX, hy + Math.sin(a) * hrY]);
+    }
+    pushPoly(hexPts, warmGold);
+    for (let r = -1; r <= 1; r++) {
+      for (let c = -2; c <= 2; c++) {
+        const tx = hx + c * cw * 0.045;
+        const ty = hy + r * ch * 0.044;
+        if (Math.hypot((tx - hx) / hrX, (ty - hy) / hrY) < 0.78) {
+          pushPoly([[tx, ty - ch * 0.015], [tx + cw * 0.018, ty + ch * 0.015], [tx - cw * 0.018, ty + ch * 0.015]], snowWhite);
+        }
+      }
+    }
+    drawStarburst(hx, hy, cw * 0.085, 10, 0.58, festiveRed);
+
+    // 4. Center Front Red Gift Box with White Snowflakes & Pink Ribbon Bow
+    const fx0 = cx0 + cw * 0.21;
+    const fy0 = cy0 + ch * 0.55;
+    const fw = cw * 0.48;
+    const fh = ch * 0.45;
+    pushPoly([[fx0, fy0], [fx0 + fw, fy0], [fx0 + fw, fy0 + fh], [fx0, fy0 + fh]], festiveRed);
+    const sfCoords: [number, number][] = [
+      [0.24, 0.19], [0.72, 0.19],
+      [0.48, 0.52], [0.90, 0.52],
+      [0.24, 0.86], [0.72, 0.86],
+    ];
+    for (const [sx, sy] of sfCoords) {
+      drawSnowflake(fx0 + fw * sx, fy0 + fh * sy, cw * 0.048, snowWhite);
+    }
+    // Pink thin ribbon cross & bow on front red gift box
+    pushPoly([[fx0 + fw * 0.49, fy0], [fx0 + fw * 0.51, fy0], [fx0 + fw * 0.51, fy0 + fh], [fx0 + fw * 0.49, fy0 + fh]], candyPink);
+    pushPoly([[fx0, fy0 + fh * 0.41], [fx0 + fw, fy0 + fh * 0.41], [fx0 + fw, fy0 + fh * 0.43], [fx0, fy0 + fh * 0.43]], candyPink);
+    drawStarburst(fx0 + fw * 0.50, fy0 + fh * 0.42, cw * 0.065, 8, 0.45, candyPink);
+
+    if (showText) {
+      parts.push(drawPosterVectorTextString("HAVE A", cx0 + cw * 0.5, cy0 + ch * 0.13, ch * 0.016, aspect, "regular", warmGold, "center"));
+      parts.push(drawPosterVectorTextString("HOLLY JOLLY", cx0 + cw * 0.5, cy0 + ch * 0.175, ch * 0.038, aspect, "bold", snowWhite, "center"));
+      parts.push(drawPosterVectorTextString("CHRISTMAS", cx0 + cw * 0.5, cy0 + ch * 0.238, ch * 0.017, aspect, "wide", warmGold, "center"));
+    }
+  } else if (sub === 3) {
+    // Card 4: Polka-Dot Royal Blue bg + Giant Ribbed Cream/Pink Christmas Bauble with Flowing Red & Gold Bow + Folk Rocking Horse
+    const brightBlue = pv.vCol("#2b62d9", 1);
+    const dotBlue = mixCol(brightBlue, "#0d256e", 0.30);
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${brightBlue}"/>`);
+
+    // Subtle polka-dot grid background
+    for (let r = 0; r < 7; r++) {
+      for (let c = 0; c < 5; c++) {
+        const dx = cx0 + (c + 0.35) * (cw / 4.4);
+        const dy = cy0 + (r + 0.3) * (ch / 6.3);
+        pushPoly(makeCircle(dx, dy, cw * 0.052, 16), dotBlue);
+      }
+    }
+
+    // Giant Ribbed Onion-Dome Bauble Ornament
+    const bx = cx0 + cw * 0.55;
+    const by = cy0 + ch * 0.56;
+    const brX = cw * 0.285 * bScale;
+    const brY = ch * 0.22 * bScale;
+    const onionPts: [number, number][] = [];
+    const steps = 40;
+    for (let i = 0; i < steps; i++) {
+      const a = -Math.PI * 0.5 + (i / steps) * Math.PI * 2;
+      const pinch = Math.sin(a) < -0.5 ? 1 + Math.pow(Math.abs(Math.sin(a)) - 0.5, 1.5) * 0.55 : 1;
+      onionPts.push([bx + Math.cos(a) * brX * (1 - 0.12 * Math.pow(Math.sin(a), 2)), by + Math.sin(a) * brY * pinch]);
+    }
+    pushPoly(onionPts, creamBauble);
+    // Vertical pink ribs across the bauble (strictly inside bauble height -0.96 .. 0.96)
+    for (let k = -6; k <= 6; k++) {
+      const frac = k / 7;
+      const ribPts: [number, number][] = [];
+      for (let s = 0; s <= 18; s++) {
+        const v = -0.96 + (s / 18) * 1.92;
+        const wAtV = Math.sqrt(Math.max(0, 1 - v * v));
+        const rx = bx + frac * brX * 0.88 * wAtV;
+        const ry = by + v * brY * 0.98;
+        ribPts.push([rx, ry]);
+      }
+      for (let s = 18; s >= 0; s--) {
+        const v = -0.96 + (s / 18) * 1.92;
+        const wAtV = Math.sqrt(Math.max(0, 1 - v * v));
+        const rx = bx + (frac + 0.025) * brX * 0.88 * wAtV;
+        const ry = by + v * brY * 0.98;
+        ribPts.push([rx, ry]);
+      }
+      pushPoly(ribPts, candyPink);
+    }
+    // Golden crown cap on top of bauble
+    pushPoly(
+      [
+        [bx - cw * 0.038, by - brY * 1.18],
+        [bx + cw * 0.038, by - brY * 1.18],
+        [bx + cw * 0.038, by - brY * 1.02],
+        [bx - cw * 0.038, by - brY * 1.02],
+      ],
+      warmGold
+    );
+    // Flowing Double-Loop Red & Gold Ribbon Bow at Top
+    const bowY = by - brY * 1.38;
+    pushPoly([[bx - cw * 0.008, cy0], [bx + cw * 0.008, cy0], [bx + cw * 0.008, bowY], [bx - cw * 0.008, bowY]], festiveRed);
+    // Gold ribbon tails
+    pushPoly([[bx, bowY], [bx - cw * 0.22, bowY + ch * 0.05], [bx - cw * 0.27, bowY + ch * 0.26], [bx - cw * 0.21, bowY + ch * 0.30], [bx - cw * 0.18, bowY + ch * 0.09], [bx, bowY + ch * 0.03]], warmGold);
+    pushPoly([[bx, bowY], [bx + cw * 0.25, bowY + ch * 0.11], [bx1(cx1), bowY + ch * 0.13], [bx1(cx1), bowY + ch * 0.17], [bx + cw * 0.20, bowY + ch * 0.14], [bx, bowY + ch * 0.03]], warmGold);
+    // Red bow loops (left and right open ribbon loops as true compound rings)
+    for (const side of [-1, 1]) {
+      const loopOut: [number, number][] = [];
+      const loopIn: [number, number][] = [];
+      for (let s = 0; s < 22; s++) {
+        const a = (s / 22) * Math.PI * 2;
+        const lx = bx + side * cw * 0.17 + Math.cos(a) * cw * 0.15;
+        const ly = bowY - ch * 0.04 + Math.sin(a) * ch * 0.065;
+        loopOut.push([lx, ly]);
+        const lxi = bx + side * cw * 0.17 + Math.cos(a) * cw * 0.11;
+        const lyi = bowY - ch * 0.04 + Math.sin(a) * ch * 0.042;
+        loopIn.push([lxi, lyi]);
+      }
+      pushCompoundRingPoly(parts, cx0, cy0, cx1, cy1, loopOut, loopIn, festiveRed);
+    }
+
+    // Folk-Art Red & Gold Rocking Horse in Foreground
+    const hx = cx0 + cw * 0.38;
+    const hy = cy0 + ch * 0.74;
+    // Golden mane & tail
+    pushPoly(
+      [
+        [hx - cw * 0.22, hy - ch * 0.06],
+        [hx - cw * 0.36, hy - ch * 0.12],
+        [hx - cw * 0.38, hy - ch * 0.05],
+        [hx - cw * 0.24, hy - ch * 0.02],
+      ],
+      warmGold
+    );
+    pushPoly(
+      buildPosterRoundedRectPoly(hx + cw * 0.02, hy - ch * 0.21, cw * 0.20, ch * 0.14, cw * 0.09, cw * 0.09, 0, 0, aspect),
+      warmGold
+    );
+    // Red horse body, neck, head & legs
+    const horsePoly: [number, number][] = [
+      [hx - cw * 0.29, hy + ch * 0.12], // back hoof
+      [hx - cw * 0.22, hy - ch * 0.06], // croup
+      [hx + cw * 0.02, hy - ch * 0.06], // back
+      [hx + cw * 0.08, hy - ch * 0.18], // neck back
+      [hx + cw * 0.18, hy - ch * 0.19], // poll/ears
+      [hx + cw * 0.29, hy - ch * 0.12], // muzzle top
+      [hx + cw * 0.24, hy - ch * 0.04], // muzzle tip
+      [hx + cw * 0.18, hy - ch * 0.09], // jaw
+      [hx + cw * 0.16, hy - ch * 0.01], // chest
+      [hx + cw * 0.28, hy + ch * 0.11], // front hoof outer
+      [hx + cw * 0.20, hy + ch * 0.13], // front hoof inner
+      [hx + cw * 0.08, hy + ch * 0.03], // belly front
+      [hx - cw * 0.10, hy + ch * 0.03], // belly back
+      [hx - cw * 0.21, hy + ch * 0.14], // back hoof inner
+    ];
+    pushPoly(horsePoly, festiveRed);
+    // Golden semi-circular saddle fan on horse back (pure lower semi-circle so zero red masking box overlaps the bauble!)
+    const sadCx = hx - cw * 0.07;
+    const sadCy = hy - ch * 0.06;
+    const sadRx = cw * 0.095;
+    const sadRy = (sadRx * cw * aspect) / Math.max(1, ch);
+    const saddlePts: [number, number][] = [];
+    for (let s = 0; s <= 14; s++) {
+      const a = (s / 14) * Math.PI;
+      saddlePts.push([sadCx + Math.cos(a) * sadRx, sadCy + Math.sin(a) * sadRy]);
+    }
+    pushPoly(saddlePts, warmGold);
+    // Red curved rocker runner at bottom
+    const rockerOut: [number, number][] = [];
+    const rockerIn: [number, number][] = [];
+    for (let s = 0; s <= 24; s++) {
+      const a = (0.18 + (s / 24) * 0.64) * Math.PI;
+      rockerOut.push([hx - cw * 0.02 + Math.cos(a) * cw * 0.46, hy - ch * 0.08 + Math.sin(a) * ch * 0.29]);
+      rockerIn.unshift([hx - cw * 0.02 + Math.cos(a) * cw * 0.40, hy - ch * 0.08 + Math.sin(a) * ch * 0.24]);
+    }
+    pushPoly(rockerOut.concat(rockerIn), festiveRed);
+    // Gold folk floral dots along rocker
+    for (let f = -1; f <= 1; f++) {
+      drawStarburst(hx - cw * 0.02 + f * cw * 0.09, hy + ch * 0.185, cw * 0.026, 8, 0.5, warmGold);
+    }
+  } else {
+    // Card 5: Bold Diagonal Red & Bubblegum Pink Candy-Striped bg + Layered Origami Emerald Green Christmas Tree + Gold Star + Snowflakes
+    parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${candyPink}"/>`);
+    // Broad diagonal red candy stripes
+    for (let st = -2; st <= 4; st++) {
+      const yOff = cy0 + st * ch * 0.34;
+      pushPoly(
+        [
+          [cx0, yOff],
+          [cx1, yOff + ch * 0.42],
+          [cx1, yOff + ch * 0.59],
+          [cx0, yOff + ch * 0.17],
+        ],
+        festiveRed
+      );
+    }
+
+    // Layered 4-Tier Origami / Ribbed Emerald Christmas Tree
+    const tx = cx0 + cw * 0.5;
+    const treeTopY = cy0 + ch * 0.205;
+    const treeBotY = cy0 + ch * 0.715;
+    const treeH = treeBotY - treeTopY;
+    const tiers: [number, number, number][] = [
+      [0.0, 0.29, 0.22],
+      [0.21, 0.52, 0.29],
+      [0.44, 0.76, 0.34],
+      [0.66, 1.0, 0.39],
+    ];
+    const darkEmerald = mixCol(emerald, "#052e16", 0.32);
+
+    // Draw 6 vertical facet bands inside each scalloped tree tier
+    for (const [v0, v1, halfW] of tiers) {
+      const y0 = treeTopY + v0 * treeH;
+      const y1 = treeTopY + v1 * treeH;
+      const wSpan = cw * halfW * bScale;
+      const bands = 6;
+      for (let b = 0; b < bands; b++) {
+        const u0 = -1 + (b / bands) * 2;
+        const u1 = -1 + ((b + 1) / bands) * 2;
+        const colFacet = b % 2 === 0 ? emerald : darkEmerald;
+        const topW0 = v0 === 0 ? 0 : wSpan * 0.38;
+        const botCurve0 = Math.sqrt(Math.max(0, 1 - u0 * u0 * 0.45));
+        const botCurve1 = Math.sqrt(Math.max(0, 1 - u1 * u1 * 0.45));
+        pushPoly(
+          [
+            [tx + u0 * topW0, y0],
+            [tx + u1 * topW0, y0],
+            [tx + u1 * wSpan, y0 + (y1 - y0) * (0.48 + 0.52 * botCurve1)],
+            [tx + u0 * wSpan, y0 + (y1 - y0) * (0.48 + 0.52 * botCurve0)],
+          ],
+          colFacet
+        );
+      }
+    }
+
+    // 5-Point Gold Star on top of the Christmas Tree
+    drawStarburst(tx, treeTopY - ch * 0.038, cw * 0.056, 5, 0.44, warmGold);
+
+    // 2 White Geometric Snowflakes flanking the tree
+    drawSnowflake(cx0 + cw * 0.20, cy0 + ch * 0.28, cw * 0.048, snowWhite);
+    drawSnowflake(cx0 + cw * 0.82, cy0 + ch * 0.70, cw * 0.048, snowWhite);
+
+    if (showText) {
+      parts.push(drawPosterVectorTextString("HAVE A", cx0 + cw * 0.5, cy0 + ch * 0.775, ch * 0.015, aspect, "regular", warmGold, "center"));
+      parts.push(drawPosterVectorTextString("HOLLY JOLLY", cx0 + cw * 0.5, cy0 + ch * 0.815, ch * 0.036, aspect, "bold", snowWhite, "center"));
+      parts.push(drawPosterVectorTextString("CHRISTMAS", cx0 + cw * 0.5, cy0 + ch * 0.875, ch * 0.016, aspect, "wide", warmGold, "center"));
+    }
+  }
+}
+
+function bx1(v: number): number {
+  return v;
+}
+
+// ============================================================================
+// REF SET 25: 4 PCS 2027 ROARING ART DECO GOLD FOIL & EMERALD GALA SET
+// ============================================================================
+function drawRef25Ny2027ArtDecoGalaCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cx1 = cx0 + cw;
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 4;
+
+  const bgs = ["#0b1320", "#072a24", "#28111c", "#f5efe1"];
+  const bg = pv.vCol(bgs[sub], 0);
+  const gold = pv.vCol("#d4af37", 1);
+  const champagne = pv.vCol("#f3e5ab", 2, true);
+  const deepGold = pv.vCol("#9a7b2c", 3);
+  const isLight = sub === 3;
+  const inkCol = isLight ? "#0b1320" : champagne;
+
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bg}"/>`);
+
+  // Stepped Art Deco double outer frame
+  const padX = cw * 0.07;
+  const padY = ch * 0.055;
+  parts.push(drawPosterOutlineFrame(cx0 + padX, cy0 + padY, cw - padX * 2, ch - padY * 2, cw * 0.012, ch * 0.008, gold, 0));
+  parts.push(drawPosterOutlineFrame(cx0 + padX * 1.45, cy0 + padY * 1.45, cw - padX * 2.9, ch - padY * 2.9, cw * 0.006, ch * 0.004, deepGold, 0));
+
+  // Art Deco Sunburst Fan rays at top & bottom corners
+  const ox = cx0 + cw * 0.5;
+  const oy = sub % 2 === 0 ? cy0 + ch * 0.34 : cy0 + ch * 0.66;
+  const rays = 16;
+  for (let i = 0; i < rays; i++) {
+    const a0 = -Math.PI + (i / rays) * Math.PI * (sub % 2 === 0 ? 1 : -1);
+    const a1 = a0 + (Math.PI / rays) * 0.48 * (sub % 2 === 0 ? 1 : -1);
+    const r = cw * (0.34 + (i % 2) * 0.08) * bScale;
+    const ry = (r * cw * aspect) / Math.max(1, ch);
+    pushPoly(
+      [
+        [ox, oy],
+        [ox + Math.cos(a0) * r, oy + Math.sin(a0) * ry],
+        [ox + Math.cos(a1) * r, oy + Math.sin(a1) * ry],
+      ],
+      i % 2 === 0 ? gold : deepGold
+    );
+  }
+
+  // Central Art Deco Diamond / Octagon Medallion
+  const mrX = cw * 0.32 * bScale;
+  const mrY = ch * 0.19 * bScale;
+  pushPoly(
+    [
+      [ox, oy - mrY],
+      [ox + mrX, oy],
+      [ox, oy + mrY],
+      [ox - mrX, oy],
+    ],
+    gold
+  );
+  pushPoly(
+    [
+      [ox, oy - mrY * 0.86],
+      [ox + mrX * 0.86, oy],
+      [ox, oy + mrY * 0.86],
+      [ox - mrX * 0.86, oy],
+    ],
+    bg
+  );
+
+  // Oversized Art Deco "2027" display typography
+  parts.push(drawPosterVectorTextString("2027", ox, oy - ch * 0.045, ch * 0.088, aspect, "bold", inkCol, "center"));
+  if (showText) {
+    parts.push(
+      drawPosterVectorTextString(
+        sub % 2 === 0 ? "HAPPY NEW YEAR" : "GRAND GALA NIGHT",
+        ox,
+        sub % 2 === 0 ? cy1 - ch * 0.18 : cy0 + ch * 0.14,
+        ch * 0.022,
+        aspect,
+        "wide",
+        gold,
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "CELEBRATION",
+        ox,
+        sub % 2 === 0 ? cy1 - ch * 0.135 : cy0 + ch * 0.185,
+        ch * 0.016,
+        aspect,
+        "wide",
+        inkCol,
+        "center"
+      )
+    );
+  }
+}
+
+// ============================================================================
+// REF SET 26: 4 PCS 2027 RETRO 70S GROOVY RAINBOW ARCH, DAISY & FUNK SET
+// ============================================================================
+function drawRef26Ny2027RetroGroovy70sCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cx1 = cx0 + cw;
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 4;
+
+  const cream = "#f7efe0";
+  const mustard = pv.vCol("#eab308", 0);
+  const orange = pv.vCol("#ea580c", 1);
+  const coral = pv.vCol("#e11d48", 2);
+  const teal = pv.vCol("#0d9488", 3);
+  const espresso = "#291d12";
+
+  const bgList = [cream, espresso, teal, mustard];
+  const bg = bgList[sub];
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bg}"/>`);
+
+  // 5-Track Groovy S-Wave Rainbow Ribbon across card
+  const trackCols = [mustard, orange, coral, teal, cream];
+  const steps = 32;
+  for (let t = 0; t < 4; t++) {
+    const topP: [number, number][] = [];
+    const botP: [number, number][] = [];
+    const bandH = ch * 0.055 * bScale;
+    for (let s = 0; s <= steps; s++) {
+      const u = s / steps;
+      const x = cx0 + u * cw;
+      const yCenter =
+        cy0 +
+        ch * (0.28 + t * 0.052) +
+        Math.sin(u * Math.PI * 2 + sub * 1.4) * ch * 0.12 * bScale;
+      topP.push([x, yCenter]);
+      botP.unshift([x, yCenter + bandH]);
+    }
+    pushPoly(topP.concat(botP), trackCols[(t + sub) % 4]);
+  }
+
+  // Retro 70s Daisy Flowers & Sparkle Stars
+  const makeCircle = (ox: number, oy: number, rx: number, st = 18): [number, number][] => {
+    const ry = (rx * cw * aspect) / Math.max(1, ch);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < st; i++) {
+      const a = (i / st) * Math.PI * 2;
+      pts.push([ox + Math.cos(a) * rx, oy + Math.sin(a) * ry]);
+    }
+    return pts;
+  };
+  for (const [fx, fy, sc] of [
+    [0.22, 0.20, 0.09],
+    [0.78, 0.74, 0.10],
+  ]) {
+    const ox = cx0 + cw * fx;
+    const oy = cy0 + ch * fy;
+    const pr = cw * sc * bScale;
+    const prY = (pr * cw * aspect) / Math.max(1, ch);
+    for (let p = 0; p < 8; p++) {
+      const a = (p / 8) * Math.PI * 2;
+      pushPoly(makeCircle(ox + Math.cos(a) * pr * 0.65, oy + Math.sin(a) * prY * 0.65, pr * 0.38), cream);
+    }
+    pushPoly(makeCircle(ox, oy, pr * 0.42), mustard);
+  }
+
+  // Bold stacked "2027" with hard retro 70s offset shadow
+  const txtCol = sub === 0 || sub === 3 ? espresso : cream;
+  const shCol = sub === 0 ? orange : coral;
+  parts.push(drawPosterVectorTextString("20", cx0 + cw * 0.515, cy0 + ch * 0.415, ch * 0.14, aspect, "bold", shCol, "center"));
+  parts.push(drawPosterVectorTextString("20", cx0 + cw * 0.5, cy0 + ch * 0.40, ch * 0.14, aspect, "bold", txtCol, "center"));
+  parts.push(drawPosterVectorTextString("27", cx0 + cw * 0.515, cy0 + ch * 0.585, ch * 0.14, aspect, "bold", shCol, "center"));
+  parts.push(drawPosterVectorTextString("27", cx0 + cw * 0.5, cy0 + ch * 0.57, ch * 0.14, aspect, "bold", txtCol, "center"));
+
+  if (showText) {
+    parts.push(
+      drawPosterVectorTextString("GROOVY NEW YEAR", cx0 + cw * 0.5, cy1 - ch * 0.12, ch * 0.022, aspect, "bold", txtCol, "center")
+    );
+  }
+}
+
+// ============================================================================
+// REF SET 27: 5 PCS NORDIC SCANDI CHRISTMAS REINDEER, BAUBLES, SNOWGLOBE & PINE
+// ============================================================================
+function drawRef27NordicScandiChristmasCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 5;
+
+  const pine = pv.vCol("#0f5132", 0);
+  const crimson = pv.vCol("#c1121f", 1);
+  const navy = pv.vCol("#1d3557", 2);
+  const gold = pv.vCol("#e09f3e", 3);
+  const linen = "#f8f4ec";
+
+  const bgCols = [linen, crimson, navy, pine, linen];
+  const bg = bgCols[sub];
+  const isLight = sub === 0 || sub === 4;
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bg}"/>`);
+
+  const makeCircle = (ox: number, oy: number, rx: number, st = 28): [number, number][] => {
+    const ry = (rx * cw * aspect) / Math.max(1, ch);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < st; i++) {
+      const a = (i / st) * Math.PI * 2;
+      pts.push([ox + Math.cos(a) * rx, oy + Math.sin(a) * ry]);
+    }
+    return pts;
+  };
+
+  const ox = cx0 + cw * 0.5;
+  const oy = cy0 + ch * 0.48;
+
+  if (sub === 0) {
+    // Card 1: Linen bg + 3 Hanging Scandi Geometric Ornaments (Diamond, Sphere, Tear-Drop)
+    const cords = [
+      [0.24, 0.42, crimson, gold],
+      [0.50, 0.56, pine, crimson],
+      [0.76, 0.38, gold, pine],
+    ] as [number, number, string, string][];
+    for (let i = 0; i < cords.length; i++) {
+      const [rx, ry, cMain, cAcc] = cords[i];
+      const bx = cx0 + cw * rx;
+      const by = cy0 + ch * ry;
+      pushPoly([[bx - cw * 0.006, cy0], [bx + cw * 0.006, cy0], [bx + cw * 0.006, by], [bx - cw * 0.006, by]], gold);
+      if (i === 1) {
+        pushPoly(
+          [
+            [bx, by - ch * 0.14 * bScale],
+            [bx + cw * 0.16 * bScale, by],
+            [bx, by + ch * 0.14 * bScale],
+            [bx - cw * 0.16 * bScale, by],
+          ],
+          cMain
+        );
+        pushPoly(makeCircle(bx, by, cw * 0.06 * bScale), cAcc);
+      } else {
+        pushPoly(makeCircle(bx, by, cw * 0.14 * bScale), cMain);
+        pushPoly([[bx - cw * 0.13 * bScale, by - ch * 0.015], [bx + cw * 0.13 * bScale, by - ch * 0.015], [bx + cw * 0.13 * bScale, by + ch * 0.015], [bx - cw * 0.13 * bScale, by + ch * 0.015]], linen);
+      }
+    }
+  } else if (sub === 1) {
+    // Card 2: Crimson bg + Nordic Geometric Folk Reindeer & Golden Antlers
+    // Reindeer body, legs, neck & head
+    pushPoly([[ox - cw * 0.18, oy + ch * 0.04], [ox + cw * 0.12, oy + ch * 0.04], [ox + cw * 0.16, oy + ch * 0.16], [ox - cw * 0.22, oy + ch * 0.16]], linen);
+    pushPoly([[ox + cw * 0.04, oy - ch * 0.14], [ox + cw * 0.14, oy - ch * 0.14], [ox + cw * 0.14, oy + ch * 0.06], [ox + cw * 0.04, oy + ch * 0.06]], linen);
+    pushPoly([[ox + cw * 0.04, oy - ch * 0.18], [ox + cw * 0.26, oy - ch * 0.14], [ox + cw * 0.24, oy - ch * 0.08], [ox + cw * 0.04, oy - ch * 0.10]], linen);
+    // Legs
+    for (const lx of [-0.18, -0.10, 0.05, 0.12]) {
+      pushPoly([[ox + cw * lx, oy + ch * 0.14], [ox + cw * (lx + 0.035), oy + ch * 0.14], [ox + cw * (lx + 0.025), oy + ch * 0.30], [ox + cw * (lx - 0.01), oy + ch * 0.30]], linen);
+    }
+    // Golden geometric branching antlers
+    pushPoly([[ox + cw * 0.07, oy - ch * 0.18], [ox + cw * 0.09, oy - ch * 0.18], [ox - cw * 0.06, oy - ch * 0.32], [ox - cw * 0.08, oy - ch * 0.30]], gold);
+    for (let t = 0; t < 3; t++) {
+      const ax = ox + cw * (0.03 - t * 0.04);
+      const ay = oy - ch * (0.21 + t * 0.035);
+      pushPoly([[ax, ay], [ax + cw * 0.02, ay], [ax + cw * 0.02, ay - ch * 0.06], [ax, ay - ch * 0.06]], gold);
+    }
+    // Folk saddle blanket
+    pushPoly([[ox - cw * 0.12, oy + ch * 0.04], [ox + cw * 0.02, oy + ch * 0.04], [ox + cw * 0.02, oy + ch * 0.12], [ox - cw * 0.12, oy + ch * 0.12]], pine);
+  } else if (sub === 2) {
+    // Card 3: Midnight Navy bg + Winter Snowglobe with Layered Pine Trees & Golden Star
+    pushPoly(makeCircle(ox, oy - ch * 0.02, cw * 0.34 * bScale, 36), mixCol(navy, "#60a5fa", 0.32));
+    // Snowglobe pedestal base
+    pushPoly(
+      [
+        [ox - cw * 0.22, oy + ch * 0.18],
+        [ox + cw * 0.22, oy + ch * 0.18],
+        [ox + cw * 0.28, oy + ch * 0.28],
+        [ox - cw * 0.28, oy + ch * 0.28],
+      ],
+      gold
+    );
+    // 3 Layered Triangle Pine Tiers inside snowglobe
+    for (let t = 0; t < 3; t++) {
+      const ty = oy - ch * 0.18 + t * ch * 0.09;
+      const tw = cw * (0.12 + t * 0.06) * bScale;
+      pushPoly([[ox, ty], [ox + tw, ty + ch * 0.14], [ox - tw, ty + ch * 0.14]], pine);
+    }
+    pushPoly(makeCircle(ox, oy - ch * 0.20, cw * 0.035), gold);
+  } else if (sub === 3) {
+    // Card 4: Deep Pine Green bg + Botanical Holiday Wreath Ring with Red Berries & Gold Bow
+    const rOut = cw * 0.32 * bScale;
+    const rIn = cw * 0.17 * bScale;
+    pushPoly(makeCircle(ox, oy, rOut, 36), mixCol(pine, "#4ade80", 0.35));
+    pushPoly(makeCircle(ox, oy, rIn, 32), pine);
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      const rx = ox + Math.cos(a) * (rOut + rIn) * 0.5;
+      const ry = oy + Math.sin(a) * (((rOut + rIn) * 0.5 * cw * aspect) / Math.max(1, ch));
+      pushPoly(makeCircle(rx, ry, cw * 0.028, 12), k % 2 === 0 ? crimson : gold);
+    }
+  } else {
+    // Card 5: Linen bg + 3 Stacked Nordic Minimalist Pine Trees + 2027 Holiday Stamp
+    const treeSpecs: [number, number, number, string][] = [
+      [0.26, 0.55, 0.16, pine],
+      [0.74, 0.55, 0.16, gold],
+      [0.50, 0.48, 0.22, crimson],
+    ];
+    for (const [txR, tyR, sc, tCol] of treeSpecs) {
+      const tx = cx0 + cw * txR;
+      const ty = cy0 + ch * tyR;
+      for (let l = 0; l < 3; l++) {
+        const ly = ty - ch * 0.16 + l * ch * 0.08;
+        const lw = cw * sc * (0.55 + l * 0.25) * bScale;
+        pushPoly([[tx, ly], [tx + lw, ly + ch * 0.13], [tx - lw, ly + ch * 0.13]], tCol);
+      }
+    }
+  }
+
+  if (showText) {
+    const tCol = isLight ? crimson : linen;
+    const sCol = isLight ? pine : gold;
+    parts.push(drawPosterVectorTextString("MERRY CHRISTMAS", ox, cy0 + ch * 0.11, ch * 0.024, aspect, "bold", tCol, "center"));
+    parts.push(drawPosterVectorTextString("2027", ox, cy1 - ch * 0.15, ch * 0.052, aspect, "bold", sCol, "center"));
+  }
+}
+
+// ============================================================================
+// REF SET 28: 4 PCS 2027 CYBER NEON SYNTHWAVE GRID & HOLOGRAPHIC PORTAL SET
+// ============================================================================
+function drawRef28Ny2027CyberNeonSynthwaveCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cx1 = cx0 + cw;
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 4;
+
+  const darkBg = pv.vCol(["#090618", "#071022", "#14061f", "#05141c"][sub], 0);
+  const neonPink = pv.vCol("#ff2a85", 1);
+  const neonCyan = pv.vCol("#00f0ff", 2);
+  const neonGold = pv.vCol("#ffd000", 3);
+  const neonViolet = pv.vCol("#9d4edd", 4);
+
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${darkBg}"/>`);
+
+  const horizonY = cy0 + ch * 0.62;
+  const ox = cx0 + cw * 0.5;
+
+  // Segmented Retro-Futuristic Synthwave Sunset Disc above horizon
+  const sunR = cw * 0.30 * bScale;
+  const sunRY = (sunR * cw * aspect) / Math.max(1, ch);
+  const sunY = horizonY - sunRY * 0.45;
+  const sunPts: [number, number][] = [];
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2;
+    sunPts.push([ox + Math.cos(a) * sunR, sunY + Math.sin(a) * sunRY]);
+  }
+  pushPoly(sunPts, sub % 2 === 0 ? neonPink : neonGold);
+  // Horizontal scanline cutouts across lower half of sun
+  for (let s = 0; s < 5; s++) {
+    const sy = sunY + (s / 5) * sunRY * 0.85;
+    const sh = ch * (0.008 + s * 0.004);
+    pushPoly([[ox - sunR * 1.1, sy], [ox + sunR * 1.1, sy], [ox + sunR * 1.1, sy + sh], [ox - sunR * 1.1, sy + sh]], darkBg);
+  }
+
+  // 3D Perspective Laser Grid Floor below horizonY
+  pushPoly([[cx0, horizonY], [cx1, horizonY], [cx1, cy1], [cx0, cy1]], mixCol(darkBg, neonViolet, 0.18));
+  const gridCol = sub % 2 === 0 ? neonCyan : neonPink;
+  const lw = ch * 0.003;
+  for (let r = 0; r <= 7; r++) {
+    const v = Math.pow(r / 7, 1.55);
+    const y = horizonY + v * (cy1 - horizonY);
+    pushPoly([[cx0, y - lw], [cx1, y - lw], [cx1, y + lw], [cx0, y + lw]], gridCol);
+  }
+  for (let c = -5; c <= 5; c++) {
+    const xTop = ox + (c / 5) * cw * 0.18;
+    const xBot = ox + (c / 5) * cw * 1.25;
+    pushPoly([[xTop - lw, horizonY], [xTop + lw, horizonY], [xBot + lw * 2, cy1], [xBot - lw * 2, cy1]], gridCol);
+  }
+
+  // Glowing Neon "2027" Chrome Typography
+  parts.push(drawPosterVectorTextString("2027", ox + cw * 0.012, cy0 + ch * 0.195, ch * 0.115, aspect, "bold", neonPink, "center"));
+  parts.push(drawPosterVectorTextString("2027", ox, cy0 + ch * 0.185, ch * 0.115, aspect, "bold", neonCyan, "center"));
+
+  if (showText) {
+    parts.push(drawPosterVectorTextString("CYBER FUTURE", ox, cy0 + ch * 0.10, ch * 0.018, aspect, "wide", neonGold, "center"));
+    parts.push(drawPosterVectorTextString("HAPPY NEW YEAR", ox, cy1 - ch * 0.09, ch * 0.019, aspect, "wide", "#ffffff", "center"));
+  }
+}
+
+// ============================================================================
+// REF SET 29: 4 PCS 2027 SWISS BRUTALIST ARCHITECTURAL CALENDAR & GRID SET
+// ============================================================================
+function drawRef29Ny2027SwissEditorialGridCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cx1 = cx0 + cw;
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 4;
+
+  const paper = "#f4f1ea";
+  const ink = "#111318";
+  const swissRed = pv.vCol("#e63928", 0);
+  const cobalt = pv.vCol("#1d4ed8", 1);
+  const ochre = pv.vCol("#eab308", 2);
+
+  const bgCols = [paper, swissRed, ink, cobalt];
+  const bg = bgCols[sub];
+  const fg = sub === 0 ? ink : paper;
+  const acc = sub === 0 ? swissRed : sub === 1 ? ink : sub === 2 ? ochre : ochre;
+
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bg}"/>`);
+
+  // Swiss modular grid rules
+  const padX = cw * 0.075;
+  const ruleH = ch * 0.005;
+  for (const ry of [0.16, 0.56, 0.82]) {
+    pushPoly([[cx0 + padX, cy0 + ch * ry], [cx1 - padX, cy0 + ch * ry], [cx1 - padX, cy0 + ch * ry + ruleH], [cx0 + padX, cy0 + ch * ry + ruleH]], fg);
+  }
+
+  // Geometric focal Bauhaus composition in middle band (0.18 .. 0.54)
+  const gx = cx0 + padX;
+  const gy = cy0 + ch * 0.19;
+  const gw = cw - padX * 2;
+  const gh = ch * 0.34;
+  if (sub % 2 === 0) {
+    pushPoly(buildPosterRoundedRectPoly(gx, gy, gw * 0.48, gh, gw * 0.24, gw * 0.24, gw * 0.24, gw * 0.24, aspect), acc);
+    pushPoly([[gx + gw * 0.54, gy], [gx + gw, gy], [gx + gw, gy + gh * 0.46], [gx + gw * 0.54, gy]], fg);
+    pushPoly([[gx + gw * 0.54, gy + gh * 0.54], [gx + gw, gy + gh * 0.54], [gx + gw, gy + gh], [gx + gw * 0.54, gy + gh]], acc);
+  } else {
+    pushPoly([[gx, gy], [gx + gw * 0.62, gy], [gx + gw * 0.62, gy + gh], [gx, gy + gh]], acc);
+    const ox = gx + gw * 0.62;
+    const oy = gy + gh * 0.5;
+    const r = gw * 0.34 * bScale;
+    const ry = (r * cw * aspect) / Math.max(1, ch);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < 32; i++) {
+      const a = (i / 32) * Math.PI * 2;
+      pts.push([ox + Math.cos(a) * r, oy + Math.sin(a) * ry]);
+    }
+    pushPoly(pts, fg);
+  }
+
+  // Giant Swiss Editorial "2027"
+  parts.push(drawPosterVectorTextString("2027", cx0 + padX, cy0 + ch * 0.61, ch * 0.155, aspect, "bold", fg, "left"));
+
+  if (showText) {
+    parts.push(drawPosterVectorTextString("EDITION", cx0 + padX, cy0 + ch * 0.075, ch * 0.024, aspect, "bold", fg, "left"));
+    parts.push(drawPosterVectorTextString(`0${sub + 1}/04`, cx1 - padX, cy0 + ch * 0.075, ch * 0.024, aspect, "bold", acc, "right"));
+    parts.push(drawPosterVectorTextString("NEW YEAR EXHIBITION", cx0 + padX, cy0 + ch * 0.865, ch * 0.018, aspect, "bold", fg, "left"));
+    parts.push(drawPosterSubtitleBlock(cx0 + padX, cy0 + ch * 0.905, cw * 0.55, 2, ch * 0.004, ch * 0.006, fg, "left"));
+  }
+}
+
+// ============================================================================
+// REF SET 30: 4 PCS LUXURY GOLD & CRIMSON CHRISTMAS BAUBLES & GIFTS COLLECTION
+// ============================================================================
+function drawRef30LuxuryChristmasBaublesCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 4;
+
+  const ruby = pv.vCol("#7f1d1d", 0);
+  const emerald = pv.vCol("#064e3b", 1);
+  const midnight = pv.vCol("#0f172a", 2);
+  const ivory = "#faf6ee";
+  const gold = pv.vCol("#d4af37", 3);
+  const brightGold = "#f7e29c";
+
+  const bgs = [ruby, emerald, ivory, midnight];
+  const bg = bgs[sub];
+  const isLight = sub === 2;
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bg}"/>`);
+
+  const makeCircle = (ox: number, oy: number, rx: number, st = 32): [number, number][] => {
+    const ry = (rx * cw * aspect) / Math.max(1, ch);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < st; i++) {
+      const a = (i / st) * Math.PI * 2;
+      pts.push([ox + Math.cos(a) * rx, oy + Math.sin(a) * ry]);
+    }
+    return pts;
+  };
+
+  // Luxury arched gold foil border frame
+  const fw = cw * 0.82;
+  const fh = ch * 0.86;
+  const fx0 = cx0 + (cw - fw) * 0.5;
+  const fy0 = cy0 + (ch - fh) * 0.5;
+  pushPoly(buildPosterRoundedRectPoly(fx0, fy0, fw, fh, fw * 0.48, fw * 0.48, 8, 8, aspect), gold);
+  pushPoly(
+    buildPosterRoundedRectPoly(fx0 + cw * 0.018, fy0 + ch * 0.012, fw - cw * 0.036, fh - ch * 0.024, fw * 0.46, fw * 0.46, 6, 6, aspect),
+    bg
+  );
+
+  // Hanging Golden Luxury Bauble Centerpiece
+  const ox = cx0 + cw * 0.5;
+  const oy = cy0 + ch * 0.48;
+  const rad = cw * 0.25 * bScale;
+  pushPoly([[ox - cw * 0.006, fy0], [ox + cw * 0.006, fy0], [ox + cw * 0.006, oy - rad * 0.7], [ox - cw * 0.006, oy - rad * 0.7]], gold);
+  pushPoly(makeCircle(ox, oy, rad, 36), isLight ? ruby : gold);
+  pushPoly(makeCircle(ox, oy, rad * 0.82, 32), isLight ? gold : brightGold);
+  pushPoly(makeCircle(ox, oy, rad * 0.64, 28), isLight ? ruby : bg);
+
+  // 8-point golden star inside bauble
+  const starPts: [number, number][] = [];
+  const srX = rad * 0.48;
+  const srY = (srX * cw * aspect) / Math.max(1, ch);
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const r = i % 2 === 0 ? 1 : 0.32;
+    starPts.push([ox + Math.cos(a) * srX * r, oy + Math.sin(a) * srY * r]);
+  }
+  pushPoly(starPts, gold);
+
+  if (showText) {
+    const txtCol = isLight ? ruby : brightGold;
+    parts.push(drawPosterVectorTextString("SEASON GREETINGS", ox, cy1 - ch * 0.25, ch * 0.018, aspect, "wide", gold, "center"));
+    parts.push(drawPosterVectorTextString("2027", ox, cy1 - ch * 0.20, ch * 0.062, aspect, "bold", txtCol, "center"));
+  }
+}
+
+// ============================================================================
+// REF SET 31: 4 PCS 2027 3D ISOMETRIC ARCHITECTURAL MONUMENT & PODIUM SET
+// ============================================================================
+function drawRef31Ny2027IsometricMonumentCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 4;
+
+  const bgs = ["#1e1b4b", "#f1f5f9", "#064e3b", "#27272a"];
+  const bg = pv.vCol(bgs[sub], 0);
+  const topC = pv.vCol("#fde047", 1, true);
+  const leftC = pv.vCol("#f43f5e", 2);
+  const rightC = pv.vCol("#38bdf8", 3);
+  const isLight = sub === 1;
+
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bg}"/>`);
+
+  // 4 Isometric Podium Pillars arranged in diamond formation with "2" "0" "2" "7" on top
+  const drawIsoPillar = (ox: number, oy: number, radX: number, hMul: number, cT: string, cL: string, cR: string, digit: string) => {
+    const radY = (radX * cw * aspect) / Math.max(1, ch);
+    const dx = radX * 0.88;
+    const dy = radY * 0.52;
+    const hY = radY * hMul;
+    pushPoly([[ox, oy - radY], [ox + dx, oy - dy], [ox, oy], [ox - dx, oy - dy]], cT);
+    pushPoly([[ox - dx, oy - dy], [ox, oy], [ox, oy + hY], [ox - dx, oy + hY - dy]], cL);
+    pushPoly([[ox, oy], [ox + dx, oy - dy], [ox + dx, oy + hY - dy], [ox, oy + hY]], cR);
+    parts.push(drawPosterVectorTextString(digit, ox, oy - radY * 0.92, ch * 0.058, aspect, "bold", "#111827", "center"));
+  };
+
+  const sc = bScale * 0.19;
+  drawIsoPillar(cx0 + cw * 0.50, cy0 + ch * 0.28, cw * sc, 1.8, topC, leftC, rightC, "2");
+  drawIsoPillar(cx0 + cw * 0.27, cy0 + ch * 0.42, cw * sc, 1.6, rightC, topC, leftC, "0");
+  drawIsoPillar(cx0 + cw * 0.73, cy0 + ch * 0.42, cw * sc, 1.6, leftC, rightC, topC, "2");
+  drawIsoPillar(cx0 + cw * 0.50, cy0 + ch * 0.56, cw * sc, 1.9, topC, leftC, rightC, "7");
+
+  if (showText) {
+    const tCol = isLight ? "#0f172a" : "#ffffff";
+    parts.push(drawPosterVectorTextString("NEW DIMENSION 2027", cx0 + cw * 0.5, cy1 - ch * 0.12, ch * 0.022, aspect, "bold", tCol, "center"));
+  }
+}
+
+// ============================================================================
+// REF SET 32: 5 PCS 2027 NEO-BRUTALIST MEMPHIS 90S POP STICKER & CONFETTI SET
+// ============================================================================
+function drawRef32Ny2027MemphisPopCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const cy1 = cy0 + ch;
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 5;
+
+  const yellow = pv.vCol("#fde047", 0, true);
+  const hotPink = pv.vCol("#ff007f", 1);
+  const cyan = pv.vCol("#00f5d4", 2);
+  const violet = pv.vCol("#7c3aed", 3);
+  const ink = "#111827";
+  const white = "#ffffff";
+
+  const bgs = [yellow, hotPink, cyan, violet, white];
+  const bg = bgs[sub];
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bg}"/>`);
+
+  // Neo-Brutalist Hard Drop-Shadow Bento Card
+  const bx = cx0 + cw * 0.12;
+  const by = cy0 + ch * 0.16;
+  const bw = cw * 0.74;
+  const bh = ch * 0.64;
+  pushPoly([[bx + cw * 0.04, by + ch * 0.03], [bx + bw + cw * 0.04, by + ch * 0.03], [bx + bw + cw * 0.04, by + bh + ch * 0.03], [bx + cw * 0.04, by + bh + ch * 0.03]], ink);
+  pushPoly([[bx, by], [bx + bw, by], [bx + bw, by + bh], [bx, by + bh]], white);
+  parts.push(drawPosterOutlineFrame(bx, by, bw, bh, cw * 0.016, ch * 0.011, ink, 0));
+
+  // Memphis Checkerboard Header Strip inside Bento Box
+  const cols = 8;
+  const cellW = bw / cols;
+  const stripH = ch * 0.075;
+  for (let c = 0; c < cols; c++) {
+    if (c % 2 === 0) {
+      pushPoly([[bx + c * cellW, by], [bx + (c + 1) * cellW, by], [bx + (c + 1) * cellW, by + stripH], [bx + c * cellW, by + stripH]], ink);
+    }
+  }
+
+  // Confetti triangles & squiggles
+  const accA = sub === 1 ? cyan : hotPink;
+  const accB = sub === 0 ? violet : yellow;
+  pushPoly([[bx + bw * 0.12, by + bh * 0.25], [bx + bw * 0.34, by + bh * 0.18], [bx + bw * 0.24, by + bh * 0.38]], accA);
+  pushPoly([[bx + bw * 0.70, by + bh * 0.74], [bx + bw * 0.90, by + bh * 0.68], [bx + bw * 0.84, by + bh * 0.88]], accB);
+
+  // Bold stacked "20 / 27" with hard shadow
+  const ox = bx + bw * 0.5;
+  parts.push(drawPosterVectorTextString("20", ox + cw * 0.015, by + bh * 0.27, ch * 0.135 * bScale, aspect, "bold", accA, "center"));
+  parts.push(drawPosterVectorTextString("20", ox, by + bh * 0.255, ch * 0.135 * bScale, aspect, "bold", ink, "center"));
+  parts.push(drawPosterVectorTextString("27", ox + cw * 0.015, by + bh * 0.55, ch * 0.135 * bScale, aspect, "bold", accB, "center"));
+  parts.push(drawPosterVectorTextString("27", ox, by + bh * 0.535, ch * 0.135 * bScale, aspect, "bold", ink, "center"));
+
+  if (showText) {
+    const fCol = sub === 3 || sub === 1 ? white : ink;
+    parts.push(drawPosterVectorTextString("POP NEW YEAR PARTY", cx0 + cw * 0.5, cy1 - ch * 0.11, ch * 0.022, aspect, "bold", fCol, "center"));
+  }
+}
+
+// ============================================================================
+// REF SET 33: 4 PCS 2027 JAPANESE ZEN RISING SUN, TORII & UKIYO WAVE SET
+// ============================================================================
+function drawRef33Ny2027JapaneseZenCard(
+  m: any,
+  parts: string[],
+  pushPoly: (poly: [number, number][], col: string) => void,
+  cx0: number,
+  cy0: number,
+  cw: number,
+  ch: number,
+  cardIdx: number,
+  colorSet: string,
+  bScale: number,
+  showText: boolean,
+  aspect: number,
+  variant: number
+) {
+  const pv = makePosterVar(m, variant, cardIdx, colorSet);
+  const sub = (cardIdx + variant) % 4;
+
+  const washi = "#f4ece1";
+  const vermilion = pv.vCol("#c83e2b", 0);
+  const indigo = pv.vCol("#1b263b", 1);
+  const gold = pv.vCol("#e09f3e", 2);
+  const slate = pv.vCol("#415a77", 3);
+
+  const bgs = [washi, indigo, washi, vermilion];
+  const bg = bgs[sub];
+  const isDark = sub === 1 || sub === 3;
+  parts.push(`<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${bg}"/>`);
+
+  const padX = cw * 0.09;
+  const padY = ch * 0.07;
+  const fw = cw - padX * 2;
+  const fh = ch - padY * 2;
+  const fx0 = cx0 + padX;
+  const fy0 = cy0 + padY;
+
+  // Rising Sun Disc
+  const ox = cx0 + cw * 0.5;
+  const oy = fy0 + fh * 0.42;
+  const sunR = cw * 0.28 * bScale;
+  const sunRY = (sunR * cw * aspect) / Math.max(1, ch);
+  const sunPts: [number, number][] = [];
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2;
+    sunPts.push([ox + Math.cos(a) * sunR, oy + Math.sin(a) * sunRY]);
+  }
+  pushPoly(sunPts, sub === 3 ? washi : vermilion);
+
+  // Layered Ukiyo-e Ocean Waves in lower frame
+  const waveCols = [indigo, slate, gold, washi];
+  for (let w = 0; w < 4; w++) {
+    const yBase = fy0 + fh * (0.58 + w * 0.09);
+    const pts: [number, number][] = [];
+    for (let s = 0; s <= 28; s++) {
+      const u = s / 28;
+      const wave = Math.sin(u * Math.PI * 2.5 + w * 1.3 + sub) * ch * 0.032;
+      pts.push([fx0 + u * fw, yBase + wave]);
+    }
+    pts.push([fx0 + fw, fy0 + fh], [fx0, fy0 + fh]);
+    pushPoly(pts, waveCols[(w + sub) % waveCols.length]);
+  }
+
+  // Outer Japanese woodblock border frame
+  parts.push(drawPosterOutlineFrame(fx0, fy0, fw, fh, cw * 0.014, ch * 0.009, isDark ? washi : indigo, 0));
+
+  // Bold "2027" over the Rising Sun
+  parts.push(
+    drawPosterVectorTextString(
+      "2027",
+      ox,
+      oy - ch * 0.048,
+      ch * 0.092,
+      aspect,
+      "bold",
+      sub === 3 ? vermilion : washi,
+      "center"
+    )
+  );
+  if (showText) {
+    parts.push(
+      drawPosterVectorTextString(
+        "NEW YEAR DAWN",
+        ox,
+        fy0 + fh * 0.06,
+        ch * 0.020,
+        aspect,
+        "wide",
+        isDark ? gold : indigo,
+        "center"
+      )
+    );
+  }
+}
+
 export type PosterArtStyle =
   | "coral_gold_modern5"
   | "aurora_mesh_blur4"
@@ -16030,6 +18103,18 @@ export type PosterArtStyle =
   | "swiss_minimal_line_waves4"
   | "groovy_psychedelic_cartoon4"
   | "swiss_bw_typo_arch3"
+  | "ny2027_fireworks_ribbon3"
+  | "ny2027_swiss_interlock4"
+  | "ny2027_holly_jolly_christmas5"
+  | "ny2027_art_deco_gala4"
+  | "ny2027_retro_groovy_70s4"
+  | "nordic_scandi_christmas5"
+  | "ny2027_cyber_neon_synthwave4"
+  | "ny2027_swiss_editorial_grid4"
+  | "luxury_christmas_baubles4"
+  | "ny2027_isometric_monument4"
+  | "ny2027_memphis_pop5"
+  | "ny2027_japanese_zen4"
   | `ms_poster_${number}`;
 
 const MS_POSTER_PALETTES: [string, string, string, string, string][] = [
@@ -16711,6 +18796,18 @@ function drawSinglePosterCardArtwork(
     "swiss_minimal_line_waves4",
     "groovy_psychedelic_cartoon4",
     "swiss_bw_typo_arch3",
+    "ny2027_fireworks_ribbon3",
+    "ny2027_swiss_interlock4",
+    "ny2027_holly_jolly_christmas5",
+    "ny2027_art_deco_gala4",
+    "ny2027_retro_groovy_70s4",
+    "nordic_scandi_christmas5",
+    "ny2027_cyber_neon_synthwave4",
+    "ny2027_swiss_editorial_grid4",
+    "luxury_christmas_baubles4",
+    "ny2027_isometric_monument4",
+    "ny2027_memphis_pop5",
+    "ny2027_japanese_zen4",
   ];
 
   const REF_NATIVE_COUNTS: Record<string, number> = {
@@ -16735,65 +18832,32 @@ function drawSinglePosterCardArtwork(
     swiss_minimal_line_waves4: 4,
     groovy_psychedelic_cartoon4: 4,
     swiss_bw_typo_arch3: 3,
+    ny2027_fireworks_ribbon3: 3,
+    ny2027_swiss_interlock4: 4,
+    ny2027_holly_jolly_christmas5: 5,
+    ny2027_art_deco_gala4: 4,
+    ny2027_retro_groovy_70s4: 4,
+    nordic_scandi_christmas5: 5,
+    ny2027_cyber_neon_synthwave4: 4,
+    ny2027_swiss_editorial_grid4: 4,
+    luxury_christmas_baubles4: 4,
+    ny2027_isometric_monument4: 4,
+    ny2027_memphis_pop5: 5,
+    ny2027_japanese_zen4: 4,
   };
 
-  // When variant > 0 on a Reference Set, every step of variant either permutes its cards + palette OR switches to a completely new poster architecture so every generation is a 100% complete design change!
-  let effectiveStyle: PosterArtStyle = artStyle;
-  let effectiveVar = variant;
-  const refIdx = ALL_REF_STYLES.indexOf(artStyle);
-  if (refIdx >= 0 && variant > 0) {
-    if (variant % 2 === 0) {
-      const nextArchIdx = (refIdx + Math.floor(variant / 2) * 7) % (ALL_REF_STYLES.length + 25);
-      if (nextArchIdx < ALL_REF_STYLES.length) {
-        effectiveStyle = ALL_REF_STYLES[nextArchIdx];
-        effectiveVar = variant;
-      } else {
-        const msNum = ((nextArchIdx - ALL_REF_STYLES.length) * 4 + variant) % 100 + 1;
-        drawCuratedMicrostockPosterCard(
-          m,
-          parts,
-          pushClippedPoly,
-          cx0,
-          cy0,
-          cw,
-          ch,
-          cardIdx,
-          msNum,
-          colorSet,
-          bScale,
-          showText,
-          aspect,
-          variant
-        );
-        return;
-      }
-    }
-  }
-
-  // CRITICAL: If user chooses more cards on the board than the reference set's native card count (e.g., 4 PCS or 6 PCS on a 3-card set), route overflow cards to distinct architectures so NO TWO CARDS on the board ever repeat!
+  // CRITICAL: Always stay within the user's selected Poster Set (effectiveStyle === artStyle)!
+  // When variant > 0, generate rich color, layout, card-order, and structural variations of THIS exact Poster Set!
+  // If user selects more cards on the board than the reference set's native card count (e.g., 6 PCS or 12 PCS on a 3-card or 4-card set),
+  // automatically give overflow cards an offset variant of THIS SAME Poster Set so every card on the board belongs to the chosen set and no two cards repeat!
+  const effectiveStyle: PosterArtStyle = artStyle;
   const nativeCap = REF_NATIVE_COUNTS[effectiveStyle];
-  if (nativeCap && cardIdx >= nativeCap) {
-    const overflowNum = ((Math.max(0, refIdx) * 5 + cardIdx * 7 + variant * 3) % 100) + 1;
-    drawCuratedMicrostockPosterCard(
-      m,
-      parts,
-      pushClippedPoly,
-      cx0,
-      cy0,
-      cw,
-      ch,
-      cardIdx,
-      overflowNum,
-      colorSet,
-      bScale,
-      showText,
-      aspect,
-      effectiveVar
-    );
-    return;
-  }
+  const effectiveVar =
+    nativeCap && cardIdx >= nativeCap
+      ? variant + Math.floor(cardIdx / nativeCap) * 7 + cardIdx
+      : variant;
 
-  // Dispatch to the 21 Exact Reference Poster Sets ("Habuhu" when variant === 0, plus complete structural variations when variant > 0)
+  // Dispatch to the 33 Exact Reference Poster Sets ("Habuhu" when variant === 0, plus complete structural variations when variant > 0)
   if (effectiveStyle === "coral_gold_modern5") {
     drawRef1CoralGoldModernCard(
       m,
@@ -17156,8 +19220,224 @@ function drawSinglePosterCardArtwork(
     );
     return;
   }
+  if (effectiveStyle === "ny2027_fireworks_ribbon3") {
+    drawRef22Ny2027FireworksRibbonCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_swiss_interlock4") {
+    drawRef23Ny2027SwissInterlockCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_holly_jolly_christmas5") {
+    drawRef24Ny2027HollyJollyChristmasCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_art_deco_gala4") {
+    drawRef25Ny2027ArtDecoGalaCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_retro_groovy_70s4") {
+    drawRef26Ny2027RetroGroovy70sCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "nordic_scandi_christmas5") {
+    drawRef27NordicScandiChristmasCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_cyber_neon_synthwave4") {
+    drawRef28Ny2027CyberNeonSynthwaveCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_swiss_editorial_grid4") {
+    drawRef29Ny2027SwissEditorialGridCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "luxury_christmas_baubles4") {
+    drawRef30LuxuryChristmasBaublesCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_isometric_monument4") {
+    drawRef31Ny2027IsometricMonumentCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_memphis_pop5") {
+    drawRef32Ny2027MemphisPopCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
+  if (effectiveStyle === "ny2027_japanese_zen4") {
+    drawRef33Ny2027JapaneseZenCard(
+      m,
+      parts,
+      pushClippedPoly,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      cardIdx,
+      colorSet,
+      bScale,
+      showText,
+      aspect,
+      effectiveVar
+    );
+    return;
+  }
 
-  // Dispatch Curated Best-Selling Microstock Poster Sets (Set 22 .. Set 121 -> ms_poster_1 .. ms_poster_100)
+  // Dispatch Curated Best-Selling Microstock Poster Sets (Set 34 .. Set 133 -> ms_poster_1 .. ms_poster_100)
   const msMatch = /^ms_poster_(\d+)$/.exec(String(effectiveStyle));
   if (msMatch) {
     const msNum = parseInt(msMatch[1], 10);
@@ -17368,6 +19648,18 @@ const POSTER_DEFAULT_BOARD_BG: Record<string, string> = {
   swiss_minimal_line_waves4: "#e2e8f0",
   groovy_psychedelic_cartoon4: "#e5e7eb",
   swiss_bw_typo_arch3: "#e4e4e7",
+    ny2027_fireworks_ribbon3: "#09090b",
+  ny2027_swiss_interlock4: "#ffffff",
+  ny2027_holly_jolly_christmas5: "#ffffff",
+  ny2027_art_deco_gala4: "#11131a",
+  ny2027_retro_groovy_70s4: "#f5efe6",
+  nordic_scandi_christmas5: "#f8fafc",
+  ny2027_cyber_neon_synthwave4: "#060810",
+  ny2027_swiss_editorial_grid4: "#e5e7eb",
+  luxury_christmas_baubles4: "#0b0f17",
+  ny2027_isometric_monument4: "#f1f5f9",
+  ny2027_memphis_pop5: "#f5efe6",
+  ny2027_japanese_zen4: "#e7e2d8",
 };
 
 function renderMasterPosterCollection(
@@ -17396,11 +19688,15 @@ function renderMasterPosterCollection(
 
   // Mandatory Studio Presentation Background Board underneath ALL posters (even in 1 PCS & EPS 10!)
   const boardBg = defaultBoardBg || POSTER_DEFAULT_BOARD_BG[defaultStyle] || "#2e3136";
-  parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${boardBg}"/>`);
+  parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${boardBg}" data-bg="1"/>`);
 
   // Helper to emit soft vector drop-shadow behind each poster card (100% pure flat vector rects for EPS 10)
+  const isCleanWhiteRefSet =
+    defaultStyle === "ny2027_swiss_interlock4" ||
+    defaultStyle === "ny2027_holly_jolly_christmas5" ||
+    defaultStyle === "ny2027_fireworks_ribbon3";
   const emitCardDropShadow = (cx0: number, cy0: number, cw: number, ch: number) => {
-    if (shadowAmt <= 0) return;
+    if (shadowAmt <= 0 || isCleanWhiteRefSet) return;
     const shScale = shadowAmt / 65;
     const isDarkBoard = lumH(boardBg) < 85;
     const outerCol = isDarkBoard
@@ -17535,12 +19831,31 @@ function renderMasterPosterCollection(
     return;
   }
 
-  // Horizontal Row Set: 2 PCS, 3 PCS, 4 PCS, 5 PCS, or 6 PCS (Exact match to all 21 Reference Poster Sets!)
+  // Horizontal Row Set: 2 PCS, 3 PCS, 4 PCS, 5 PCS, or 6 PCS (Exact match to all 33 Reference Poster Sets!)
   const count = Math.max(2, Math.min(6, parseInt(pcsMode, 10) || 4));
-  const outerPadX = count >= 6 ? 24 : count === 5 ? 28 : count === 4 ? 38 : 48;
-  const gapX = count >= 6 ? 20 : count === 5 ? 22 : count === 4 ? 30 : 40;
+  const isFlushTriptych = defaultStyle === "ny2027_fireworks_ribbon3" && count === 3;
+  const outerPadX = isFlushTriptych
+    ? 24
+    : count >= 6
+    ? 24
+    : count === 5
+    ? 28
+    : count === 4
+    ? 38
+    : 48;
+  const gapX = isFlushTriptych
+    ? 0
+    : count >= 6
+    ? 20
+    : count === 5
+    ? 22
+    : count === 4
+    ? 30
+    : 40;
   const cw = (T - outerPadX * 2 - gapX * (count - 1)) / count;
-  const ch = Math.min(835, Math.max(600, cw * aspect * (count === 3 ? 1.24 : 1.42)));
+  const ch = isFlushTriptych
+    ? Math.min(935, Math.max(780, cw * aspect * 1.48))
+    : Math.min(835, Math.max(600, cw * aspect * (count === 3 ? 1.24 : 1.42)));
   const cy0 = (T - ch) * 0.5;
 
   for (let i = 0; i < count; i++) {
@@ -17958,6 +20273,114 @@ const BASE_12_REFERENCE_POSTER_MODES: MasterPosterModeSpec[] = [
     boardBg: "#e4e4e7",
     defColorSet: "ocean",
   },
+  {
+    id: "poster_ref22_ny2027_fireworks_ribbon_3pcs",
+    name: "Set 22: 2027 Happy New Year Ribbon Typography & Starburst Fireworks 3 PCS Triptych",
+    shortLabel: "SET 22: 2027 FIREWORKS 3P",
+    defPcs: "3",
+    style: "ny2027_fireworks_ribbon3",
+    boardBg: "#09090b",
+    defColorSet: "sunset",
+  },
+  {
+    id: "poster_ref23_ny2027_bauhaus_interlock_4pcs",
+    name: "Set 23: 2027 Swiss Bauhaus Interlocking Geometric Typography 4 PCS Poster Set",
+    shortLabel: "SET 23: 2027 BAUHAUS 4P",
+    defPcs: "4",
+    style: "ny2027_swiss_interlock4",
+    boardBg: "#ffffff",
+    defColorSet: "pastel",
+  },
+  {
+    id: "poster_ref24_ny2027_xmas_holly_jolly_5pcs",
+    name: "Set 24: 2027 Merry Christmas & Holly Jolly Gifts, Bauble, Rocking Horse & Tree 5 PCS Set",
+    shortLabel: "SET 24: 2027 HOLLY XMAS 5P",
+    defPcs: "5",
+    style: "ny2027_holly_jolly_christmas5",
+    boardBg: "#ffffff",
+    defColorSet: "rainbow6",
+  },
+  {
+    id: "poster_ref25_ny2027_gold_champagne_deco_4pcs",
+    name: "Set 25: 2027 Art Deco Gold Foil Champagne Sunburst Fan & Gala 4 PCS Set",
+    shortLabel: "SET 25: 2027 DECO GOLD 4P",
+    defPcs: "4",
+    style: "ny2027_art_deco_gala4",
+    boardBg: "#11131a",
+    defColorSet: "sunset",
+  },
+  {
+    id: "poster_ref26_ny2027_retro_70s_disco_4pcs",
+    name: "Set 26: 2027 Retro 70s Groovy Rainbow Wave, Daisy & Funk Typography 4 PCS Set",
+    shortLabel: "SET 26: 2027 70S GROOVY 4P",
+    defPcs: "4",
+    style: "ny2027_retro_groovy_70s4",
+    boardBg: "#f5efe6",
+    defColorSet: "sunset",
+  },
+  {
+    id: "poster_ref27_ny2027_nordic_folk_winter_5pcs",
+    name: "Set 27: 2027 Scandinavian Folk Reindeer, Snowglobe, Wreath & Ornaments 5 PCS Set",
+    shortLabel: "SET 27: 2027 NORDIC XMAS 5P",
+    defPcs: "5",
+    style: "nordic_scandi_christmas5",
+    boardBg: "#f8fafc",
+    defColorSet: "rainbow6",
+  },
+  {
+    id: "poster_ref28_ny2027_neon_cyber_4pcs",
+    name: "Set 28: 2027 Neon Cyberpunk Synthwave Sunset Grid & Chrome Portal 4 PCS Set",
+    shortLabel: "SET 28: 2027 NEON CYBER 4P",
+    defPcs: "4",
+    style: "ny2027_cyber_neon_synthwave4",
+    boardBg: "#060810",
+    defColorSet: "rainbow6",
+  },
+  {
+    id: "poster_ref29_ny2027_swiss_editorial_4pcs",
+    name: "Set 29: 2027 Swiss Brutalist Architectural Calendar & Editorial Grid 4 PCS Set",
+    shortLabel: "SET 29: 2027 SWISS GRID 4P",
+    defPcs: "4",
+    style: "ny2027_swiss_editorial_grid4",
+    boardBg: "#e5e7eb",
+    defColorSet: "sunset",
+  },
+  {
+    id: "poster_ref30_ny2027_luxury_baubles_4pcs",
+    name: "Set 30: 2027 Luxury Gold Foil, Velvet Crimson & Emerald Christmas Baubles 4 PCS Set",
+    shortLabel: "SET 30: 2027 GOLD BAUBLE 4P",
+    defPcs: "4",
+    style: "luxury_christmas_baubles4",
+    boardBg: "#0b0f17",
+    defColorSet: "sunset",
+  },
+  {
+    id: "poster_ref31_ny2027_3d_isometric_block_4pcs",
+    name: "Set 31: 2027 3D Isometric Architectural Monument Podium Typography 4 PCS Set",
+    shortLabel: "SET 31: 2027 3D PODIUM 4P",
+    defPcs: "4",
+    style: "ny2027_isometric_monument4",
+    boardBg: "#f1f5f9",
+    defColorSet: "rainbow6",
+  },
+  {
+    id: "poster_ref32_ny2027_memphis_pop_5pcs",
+    name: "Set 32: 2027 Neo-Brutalist Memphis 90s Pop Bento Sticker & Confetti 5 PCS Set",
+    shortLabel: "SET 32: 2027 MEMPHIS POP 5P",
+    defPcs: "5",
+    style: "ny2027_memphis_pop5",
+    boardBg: "#f5efe6",
+    defColorSet: "rainbow6",
+  },
+  {
+    id: "poster_ref33_ny2027_japanese_zen_4pcs",
+    name: "Set 33: 2027 Japanese Ukiyo-e Hatsu-Hinode Rising Sun & Wave 4 PCS Set",
+    shortLabel: "SET 33: 2027 ZEN SUN 4P",
+    defPcs: "4",
+    style: "ny2027_japanese_zen4",
+    boardBg: "#e7e2d8",
+    defColorSet: "sunset",
+  },
 ];
 
 const GENERATED_100_MICROSTOCK_POSTER_MODES: MasterPosterModeSpec[] = [];
@@ -17966,7 +20389,7 @@ for (let famIdx = 0; famIdx < CURATED_100_MICROSTOCK_POSTER_CATALOG.length; famI
   const fam = CURATED_100_MICROSTOCK_POSTER_CATALOG[famIdx];
   for (let subIdx = 0; subIdx < fam.editions.length; subIdx++) {
     const msNum = famIdx * 10 + subIdx + 1; // 1 .. 100
-    const setNum = 21 + msNum; // Set 22 .. Set 121
+    const setNum = 33 + msNum; // Set 34 .. Set 133
     const edTitle = fam.editions[subIdx];
     const defPcs = PCS_CYCLE_DEFAULTS[(famIdx + subIdx) % PCS_CYCLE_DEFAULTS.length];
     const boardBg = fam.boardBgs[subIdx % fam.boardBgs.length];
@@ -18031,7 +20454,7 @@ function registerMasterPosterCollection() {
           k: "variant",
           l: "VARIATION MODE (0 = EXACT REFERENCE)",
           min: 0,
-          max: 12,
+          max: 240,
           step: 1,
           def: 0,
         },
@@ -21221,6 +23644,43 @@ function loadStructHashRegistry(): Set<string> {
 }
 
 let seedFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let structSaltFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let hashRegistryFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function flushDesignHashRegistriesNow(): void {
+  if (seedFlushTimer) {
+    clearTimeout(seedFlushTimer);
+    seedFlushTimer = null;
+  }
+  if (structSaltFlushTimer) {
+    clearTimeout(structSaltFlushTimer);
+    structSaltFlushTimer = null;
+  }
+  if (hashRegistryFlushTimer) {
+    clearTimeout(hashRegistryFlushTimer);
+    hashRegistryFlushTimer = null;
+  }
+  try {
+    if (memoryCounter !== null) {
+      localStorage.setItem(SEED_COUNTER_KEY, String(memoryCounter));
+    }
+    if (memoryStructCounter !== null) {
+      localStorage.setItem(STRUCT_COUNTER_KEY, String(memoryStructCounter));
+    }
+    if (memoryHashes) {
+      const arr = Array.from(memoryHashes);
+      const trimmed = arr.length > 35000 ? arr.slice(arr.length - 35000) : arr;
+      localStorage.setItem(HASH_REGISTRY_KEY, JSON.stringify(trimmed));
+    }
+    if (memoryStructHashes) {
+      const sArr = Array.from(memoryStructHashes);
+      const sTrimmed = sArr.length > 35000 ? sArr.slice(sArr.length - 35000) : sArr;
+      localStorage.setItem(STRUCT_REGISTRY_KEY, JSON.stringify(sTrimmed));
+    }
+  } catch {
+    // ignore
+  }
+}
 
 export function nextUniqueStructuralSalt(): number {
   if (memoryStructCounter === null) {
@@ -21232,10 +23692,17 @@ export function nextUniqueStructuralSalt(): number {
     }
   }
   memoryStructCounter = (memoryStructCounter + 1) >>> 0;
-  try {
-    localStorage.setItem(STRUCT_COUNTER_KEY, String(memoryStructCounter));
-  } catch {
-    // ignore
+  if (!structSaltFlushTimer) {
+    structSaltFlushTimer = setTimeout(() => {
+      structSaltFlushTimer = null;
+      try {
+        if (memoryStructCounter !== null) {
+          localStorage.setItem(STRUCT_COUNTER_KEY, String(memoryStructCounter));
+        }
+      } catch {
+        // ignore
+      }
+    }, 250);
   }
   return memoryStructCounter;
 }
@@ -21250,11 +23717,6 @@ export function nextUniqueSeed(): number {
     }
   }
   memoryCounter = (memoryCounter + 1) >>> 0;
-  try {
-    localStorage.setItem(SEED_COUNTER_KEY, String(memoryCounter));
-  } catch {
-    // ignore
-  }
   if (!seedFlushTimer) {
     seedFlushTimer = setTimeout(() => {
       seedFlushTimer = null;
@@ -21263,7 +23725,7 @@ export function nextUniqueSeed(): number {
       } catch {
         // ignore
       }
-    }, 100);
+    }, 250);
   }
   // Bijective 32-bit Weyl / Murmur avalanching permutation (guaranteed 1-to-1 over 4.29 billion values)
   let x = (memoryCounter * 0x9e3779b9) >>> 0;
@@ -21335,23 +23797,16 @@ export function isDesignDuplicate(hash: string, structHash?: string): boolean {
 export function registerDesignHash(hash: string, structHash?: string): number {
   const reg = loadHashRegistry();
   reg.add(hash);
-  try {
-    const arr = Array.from(reg);
-    const trimmed = arr.length > 35000 ? arr.slice(arr.length - 35000) : arr;
-    localStorage.setItem(HASH_REGISTRY_KEY, JSON.stringify(trimmed));
-  } catch {
-    // ignore
-  }
   if (structHash) {
     const sReg = loadStructHashRegistry();
     sReg.add(structHash);
-    try {
-      const sArr = Array.from(sReg);
-      const sTrimmed = sArr.length > 35000 ? sArr.slice(sArr.length - 35000) : sArr;
-      localStorage.setItem(STRUCT_REGISTRY_KEY, JSON.stringify(sTrimmed));
-    } catch {
-      // ignore
-    }
+  }
+  // Debounce localStorage JSON serialization so batching 200+ designs never blocks the main thread!
+  if (!hashRegistryFlushTimer) {
+    hashRegistryFlushTimer = setTimeout(() => {
+      hashRegistryFlushTimer = null;
+      flushDesignHashRegistriesNow();
+    }, 450);
   }
   return reg.size;
 }
@@ -21901,7 +24356,7 @@ function sampleSvgPathToWorldSubpaths(
       const ay2 = isRel ? cy + y2 : y2;
       const nx = isRel ? cx + x : x;
       const ny = isRel ? cy + y : y;
-      const steps = 14;
+      const steps = 48;
       for (let k = 1; k <= steps; k++) {
         const t = k / steps;
         const mt = 1 - t;
@@ -21943,7 +24398,7 @@ function sampleSvgPathToWorldSubpaths(
       const isRel = cmd === "q" || cmd === "t";
       const nx = isRel ? cx + x : x;
       const ny = isRel ? cy + y : y;
-      const steps = 12;
+      const steps = 40;
       for (let k = 1; k <= steps; k++) {
         const t = k / steps;
         const mt = 1 - t;
@@ -21966,7 +24421,7 @@ function sampleSvgPathToWorldSubpaths(
       const y = nextNum();
       const nx = cmd === "a" ? cx + x : x;
       const ny = cmd === "a" ? cy + y : y;
-      const arcPts = sampleSvgArcLocal(cx, cy, rx, ry, rot, laf, sf, nx, ny, 16);
+      const arcPts = sampleSvgArcLocal(cx, cy, rx, ry, rot, laf, sf, nx, ny, 48);
       for (let k = 0; k < arcPts.length; k++) pushLocal(arcPts[k][0], arcPts[k][1]);
       cx = nx;
       cy = ny;
@@ -22098,6 +24553,14 @@ function convertGradientToArtboardUserSpace(el: Element, outW: number, outH: num
     if (t.endsWith("%")) return f2((parseFloat(t) / 100) * axis);
     return f2((parseFloat(t) || 0) * (axis / T));
   };
+  const normBBoxPct = (v: string | null, defPct: string) => {
+    if (!v) return defPct;
+    const t = v.trim();
+    if (t.endsWith("%")) return t;
+    const num = parseFloat(t);
+    if (!Number.isFinite(num)) return defPct;
+    return `${+(num <= 1.5 ? num * 100 : (num / T) * 100).toFixed(2)}%`;
+  };
 
   const stops: string[] = [];
   Array.from(el.children).forEach((st) => {
@@ -22113,17 +24576,28 @@ function convertGradientToArtboardUserSpace(el: Element, outW: number, outH: num
     stops.push(`<stop offset="${off}" stop-color="${col}"${sopAttr}/>`);
   });
 
-  if (el.getAttribute("gradientUnits") === "objectBoundingBox") {
+  const isExplicitFullArtboardGrad =
+    el.getAttribute("gradientUnits") === "userSpaceOnUse" ||
+    id === "PV_BG_GRAD" ||
+    id.startsWith("PLAIN_UNIFIED_") ||
+    id === "PLAIN_KRAFT_L" ||
+    id === "PLAIN_MATCHA_G" ||
+    id === "PLAIN_PLAT_RAD" ||
+    id === "PLAIN_LUX_BG" ||
+    id === "sky_grad" ||
+    id === "holo_base";
+
+  if (!isExplicitFullArtboardGrad) {
     if (tag === "lineargradient") {
-      const x1 = el.getAttribute("x1") || "0%";
-      const y1 = el.getAttribute("y1") || "0%";
-      const x2 = el.getAttribute("x2") || "100%";
-      const y2 = el.getAttribute("y2") || "100%";
+      const x1 = normBBoxPct(el.getAttribute("x1"), "0%");
+      const y1 = normBBoxPct(el.getAttribute("y1"), "0%");
+      const x2 = normBBoxPct(el.getAttribute("x2"), "100%");
+      const y2 = normBBoxPct(el.getAttribute("y2"), "100%");
       return `<linearGradient id="${id}" gradientUnits="objectBoundingBox" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops.join("")}</linearGradient>`;
     }
-    const cx = el.getAttribute("cx") || "50%";
-    const cy = el.getAttribute("cy") || "50%";
-    const r = el.getAttribute("r") || "50%";
+    const cx = normBBoxPct(el.getAttribute("cx"), "50%");
+    const cy = normBBoxPct(el.getAttribute("cy"), "50%");
+    const r = normBBoxPct(el.getAttribute("r"), "50%");
     return `<radialGradient id="${id}" gradientUnits="objectBoundingBox" cx="${cx}" cy="${cy}" r="${r}">${stops.join("")}</radialGradient>`;
   }
 
@@ -22147,7 +24621,16 @@ export function buildIllustratorSVG(
   outW: number,
   outH: number
 ): string {
-  const isUnifiedOnePiece = P.svgStructure === "unified" || rep === 1;
+  const modeCat = INITIAL_MODES.find((m) => m.id === P.mode)?.cat || "";
+  const isUnifiedCategory =
+    modeCat === "Plain BG" ||
+    modeCat === "Background" ||
+    modeCat === "Gradient" ||
+    modeCat === "Texture" ||
+    modeCat === "Poster" ||
+    modeCat === "Brush" ||
+    modeCat === "Lighting";
+  const isUnifiedOnePiece = isUnifiedCategory || P.svgStructure === "unified" || rep === 1;
   const effectiveRep = isUnifiedOnePiece ? 1 : rep;
   const { colsCount, rowsCount, tileW, tileH } = isUnifiedOnePiece
     ? { colsCount: 1, rowsCount: 1, tileW: outW, tileH: outH }
@@ -22162,27 +24645,87 @@ export function buildIllustratorSVG(
   const doc = parser.parseFromString(singleTileSVG, "image/svg+xml");
   const svgRoot = doc.documentElement;
 
-  // Collect ONLY genuine <linearGradient> / <radialGradient> definitions in Illustrator-native userSpaceOnUse px
-  const gradDefsOut: string[] = [];
-  const defsNode = svgRoot.querySelector("defs");
-  if (defsNode) {
-    Array.from(defsNode.children).forEach((ch) => {
-      const tag = ch.tagName.toLowerCase();
-      if (tag === "lineargradient" || tag === "radialgradient") {
-        gradDefsOut.push(convertGradientToArtboardUserSpace(ch, outW, outH));
-      }
-    });
-  }
-
-  // Build explicit Background Layer (1-click recolorable in Illustrator, exact Artboard size 0..outW x 0..outH)
-  // For Brush modes, Lighting modes (which manage their own Split / Transparent / Black background), or when Transparent BG is enabled, emit ZERO outer background rect!
   const isPosterMode = Boolean(P.mode && P.mode.startsWith("poster_"));
   const isLightingMode = Boolean(P.mode && P.mode.startsWith("light_"));
   const omitSvgBg =
     isLightingMode || (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
-  const { bgRect } = buildBackgroundAndTextureSVG(P, omitSvgBg);
+
+  // Detect the true board background color from the rendered SVG (especially critical for Poster sets
+  // where Ref 23/24 use #FFFFFF, Ref 22 uses #09090b, Ref 33 uses #e7e2d8, or Plain BG/Gradient modes
+  // that emit their own full-tile 0 0 1000 1000 background rect inside LAYER_01_PATTERN_MOTIFS)
+  let detectedBoardBgHex = normalizeIllustratorColor(P.bg, "#FFFFFF");
+  let motifLayerHasOwnFullBgRect = false;
+  const motifGroup = svgRoot.querySelector("#LAYER_01_PATTERN_MOTIFS") || svgRoot;
+  const dataBgRects = Array.from(svgRoot.querySelectorAll('rect[data-bg="1"]'));
+  if (dataBgRects.length > 0) {
+    const lastBgEl = dataBgRects[dataBgRects.length - 1];
+    const fCol = lastBgEl.getAttribute("fill");
+    if (fCol && !fCol.startsWith("url(")) {
+      detectedBoardBgHex = normalizeIllustratorColor(fCol, detectedBoardBgHex);
+    }
+  }
+  const firstMotifRect = Array.from(motifGroup.children).find(
+    (ch) => ch.tagName.toLowerCase() === "rect"
+  );
+  if (firstMotifRect && isUnifiedOnePiece) {
+    const rx = parseFloat(firstMotifRect.getAttribute("x") || "0");
+    const ry = parseFloat(firstMotifRect.getAttribute("y") || "0");
+    const rw = parseFloat(firstMotifRect.getAttribute("width") || "0");
+    const rh = parseFloat(firstMotifRect.getAttribute("height") || "0");
+    const rf = (firstMotifRect.getAttribute("fill") || "").trim();
+    const rop = parseFloat(firstMotifRect.getAttribute("opacity") || "1");
+    const isDataBg = firstMotifRect.getAttribute("data-bg") === "1";
+    if (
+      !isDataBg &&
+      Math.abs(rx) < 0.5 &&
+      Math.abs(ry) < 0.5 &&
+      Math.abs(rw - T) < 0.5 &&
+      Math.abs(rh - T) < 0.5 &&
+      rf !== "none" &&
+      rop >= 0.99
+    ) {
+      motifLayerHasOwnFullBgRect = true;
+      if (!rf.startsWith("url(")) {
+        detectedBoardBgHex = normalizeIllustratorColor(rf, detectedBoardBgHex);
+      }
+    }
+  }
+
+  const effectiveP: PatternState =
+    detectedBoardBgHex !== normalizeIllustratorColor(P.bg, "#FFFFFF")
+      ? { ...P, bg: detectedBoardBgHex }
+      : P;
+  const { gradDefs: bgGradDefsStr, bgRect } = buildBackgroundAndTextureSVG(effectiveP, omitSvgBg);
+
+  // Collect ONLY genuine <linearGradient> / <radialGradient> definitions
+  const gradDefsOut: string[] = [];
+  const seenGradIds = new Set<string>();
+  const addGradDefsFromContainer = (container: Element | null) => {
+    if (!container) return;
+    Array.from(container.children).forEach((ch) => {
+      const tag = ch.tagName.toLowerCase();
+      if (tag === "lineargradient" || tag === "radialgradient") {
+        const gid = ch.getAttribute("id") || "";
+        if (gid && seenGradIds.has(gid)) return;
+        if (gid) seenGradIds.add(gid);
+        gradDefsOut.push(convertGradientToArtboardUserSpace(ch, outW, outH));
+      }
+    });
+  };
+  addGradDefsFromContainer(svgRoot.querySelector("defs"));
+  if (bgGradDefsStr && !omitSvgBg && !motifLayerHasOwnFullBgRect) {
+    const bgDefsDoc = parser.parseFromString(
+      `<svg xmlns="http://www.w3.org/2000/svg"><defs>${bgGradDefsStr}</defs></svg>`,
+      "image/svg+xml"
+    );
+    addGradDefsFromContainer(bgDefsDoc.querySelector("defs"));
+  }
+
+  // Build explicit Background Layer (1-click recolorable in Illustrator, exact Artboard size 0..outW x 0..outH)
+  // If LAYER_01_PATTERN_MOTIFS already begins with its own full-artboard opaque background rect (e.g. Plain BG / Gradient),
+  // skip emitting a redundant ARTBOARD_BG_1 underneath it so the background stays 1 single unified shape!
   let bgOut = "";
-  if (!omitSvgBg && bgRect) {
+  if (!omitSvgBg && bgRect && !motifLayerHasOwnFullBgRect) {
     const bgDoc = parser.parseFromString(
       `<svg xmlns="http://www.w3.org/2000/svg">${bgRect}</svg>`,
       "image/svg+xml"
@@ -22190,12 +24733,36 @@ export function buildIllustratorSVG(
     const bgLines: string[] = [];
     let bgIdx = 1;
     Array.from(bgDoc.documentElement.children).forEach((el) => {
-      const fillCol = normalizeIllustratorColor(el.getAttribute("fill"), normalizeIllustratorColor(P.bg, "#FFFFFF"));
+      const elTag = el.tagName.toLowerCase();
+      const fillCol = normalizeIllustratorColor(el.getAttribute("fill"), detectedBoardBgHex);
       const opVal = el.getAttribute("opacity");
       const opAttr = opVal !== null && parseFloat(opVal) < 0.995 ? ` opacity="${+parseFloat(opVal).toFixed(3)}"` : "";
-      bgLines.push(
-        `<rect id="ARTBOARD_BG_${bgIdx++}" x="0" y="0" width="${outW}" height="${outH}" fill="${fillCol}" stroke="none"${opAttr}/>`
-      );
+      if (elTag === "circle") {
+        const cx = (parseFloat(el.getAttribute("cx") || "500") / T) * outW;
+        const cy = (parseFloat(el.getAttribute("cy") || "500") / T) * outH;
+        const r = (parseFloat(el.getAttribute("r") || "500") / T) * Math.max(outW, outH);
+        const clipped = clipPolyToRect(
+          Array.from({ length: 72 }, (_, k) => {
+            const a = (k / 72) * Math.PI * 2;
+            return [cx + Math.cos(a) * r, cy + Math.sin(a) * r] as [number, number];
+          }),
+          0,
+          0,
+          outW,
+          outH
+        );
+        if (clipped.length >= 3) {
+          bgLines.push(
+            `<polygon id="ARTBOARD_BG_${bgIdx++}" points="${clipped
+              .map((p) => `${f2(p[0])},${f2(p[1])}`)
+              .join(" ")}" fill="${fillCol}" stroke="none"${opAttr}/>`
+          );
+        }
+      } else {
+        bgLines.push(
+          `<rect id="ARTBOARD_BG_${bgIdx++}" x="0" y="0" width="${outW}" height="${outH}" fill="${fillCol}" stroke="none"${opAttr}/>`
+        );
+      }
     });
     if (bgLines.length) {
       bgOut = `${bgLines.join("\n")}\n`;
@@ -22231,6 +24798,8 @@ export function buildIllustratorSVG(
   let partId = 1;
   const patternShapes: string[] = [];
   const textureShapes: string[] = [];
+  let curTileR = 0;
+  let curTileC = 0;
 
   const fmtStyleAttrs = (
     rawFill: string,
@@ -22266,7 +24835,8 @@ export function buildIllustratorSVG(
     el: Element,
     parentMat: Mat2D,
     parentStyle: InheritedStyle,
-    inTextureLayer: boolean
+    inTextureLayer: boolean,
+    isTopLevelChild = false
   ) => {
     const tag = el.tagName.toLowerCase();
     const idAttr = el.getAttribute("id") || "";
@@ -22287,6 +24857,27 @@ export function buildIllustratorSVG(
       el.getAttribute("width") === "1000"
     ) {
       return;
+    }
+
+    // In multi-tile seamless grids (rowsCount > 1 || colsCount > 1), m.put emits wrapped ghost <g transform="translate(X Y)...">
+    // copies at X < 0, X >= T, Y < 0, Y >= T for single-tile wrapping. Along INTERNAL tile seams, the adjacent tile already
+    // emits the primary uncut motif at the exact same world coordinates! Skipping internal-seam wrap ghosts eliminates
+    // overlapping duplicate seam copies and keeps every motif across internal tile boundaries 1 single clean vector piece!
+    if (isTopLevelChild && tag === "g" && (colsCount > 1 || rowsCount > 1)) {
+      const trAttr = el.getAttribute("transform") || "";
+      const trM = /^translate\(\s*([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s*\)/.exec(trAttr);
+      if (trM) {
+        const gx = parseFloat(trM[1]);
+        const gy = parseFloat(trM[2]);
+        if (
+          (gx < -0.5 && curTileC > 0) ||
+          (gx >= T - 0.5 && curTileC < colsCount - 1) ||
+          (gy < -0.5 && curTileR > 0) ||
+          (gy >= T - 0.5 && curTileR < rowsCount - 1)
+        ) {
+          return;
+        }
+      }
     }
 
     const isTex = inTextureLayer || idAttr === "LAYER_02_SURFACE_TEXTURE";
@@ -22344,7 +24935,8 @@ export function buildIllustratorSVG(
     if (st.opacity * st.fillOpacity <= 0.004) return;
 
     if (tag === "g" || tag === "svg") {
-      Array.from(el.children).forEach((ch) => walkNode(ch, mat, st, isTex));
+      const isRootLayerGroup = idAttr === "LAYER_01_PATTERN_MOTIFS";
+      Array.from(el.children).forEach((ch) => walkNode(ch, mat, st, isTex, isRootLayerGroup));
       return;
     }
 
@@ -22373,19 +24965,23 @@ export function buildIllustratorSVG(
       const ry = parseFloat(el.getAttribute("ry") || String(rx));
       if (w <= 0 || h <= 0) return;
 
-      // Skip full-tile flat solid background duplicate if it's an exact copy of P.bg
-      if (
+      // Always skip per-tile background rects (data-bg="1" or full-tile 0 0 1000 1000 matching detectedBoardBgHex)
+      // when bgOut already emitted ARTBOARD_BG_1 so multi-tile grids never emit 8 tile-sized background blocks on top of motifs!
+      const isDataBgRect = el.getAttribute("data-bg") === "1";
+      const isFullTileSolidBg =
         !omitSvgBg &&
-        x === 0 &&
-        y === 0 &&
-        w === T &&
-        h === T &&
-        st.fill.toLowerCase() === normalizeIllustratorColor(P.bg, "").toLowerCase() &&
+        !motifLayerHasOwnFullBgRect &&
+        Math.abs(x) < 0.5 &&
+        Math.abs(y) < 0.5 &&
+        Math.abs(w - T) < 0.5 &&
+        Math.abs(h - T) < 0.5 &&
         st.stroke === "none" &&
-        st.opacity >= 0.99 &&
-        patternShapes.length === 0 &&
-        !isTex
-      ) {
+        !isTex &&
+        (isDataBgRect ||
+          ((st.fill.toLowerCase() === normalizeIllustratorColor(P.bg, "").toLowerCase() ||
+            st.fill.toLowerCase() === detectedBoardBgHex.toLowerCase()) &&
+            st.opacity >= 0.99));
+      if (isFullTileSolidBg) {
         return;
       }
 
@@ -22406,8 +25002,12 @@ export function buildIllustratorSVG(
           const wry = Math.min(ch * 0.5, ry * syMag);
           if (wrx > 0.05 || wry > 0.05) rxAttrs = ` rx="${f2(wrx)}" ry="${f2(wry)}"`;
         }
+        const rectId =
+          motifLayerHasOwnFullBgRect && patternShapes.length === 0 && !isTex
+            ? "ARTBOARD_BG_1"
+            : `PART_${partId++}`;
         targetList.push(
-          `  <rect id="PART_${partId++}" x="${f2(minX)}" y="${f2(minY)}" width="${f2(
+          `  <rect id="${rectId}" x="${f2(minX)}" y="${f2(minY)}" width="${f2(
             cw
           )}" height="${f2(ch)}"${rxAttrs}${fmtStyleAttrs(
             st.fill,
@@ -22591,7 +25191,6 @@ export function buildIllustratorSVG(
       const [wcx, wcy] = applyMat2D(mat, cx, cy);
       const wrx = rx * sxMag;
       const wry = ry * syMag;
-      // Exact affine ellipse bounding half-extents
       const halfBx = Math.hypot(mat[0] * rx, mat[2] * ry);
       const halfBy = Math.hypot(mat[1] * rx, mat[3] * ry);
       if (wcx + halfBx <= 0 || wcx - halfBx >= outW || wcy + halfBy <= 0 || wcy - halfBy >= outH) {
@@ -22616,7 +25215,7 @@ export function buildIllustratorSVG(
         wcy + halfBy > outH + 0.25;
 
       if (crossesEdge) {
-        const segs = 48;
+        const segs = 96;
         const polyPts: [number, number][] = [];
         for (let k = 0; k < segs; k++) {
           const ang = (k / segs) * Math.PI * 2;
@@ -22738,14 +25337,14 @@ export function buildIllustratorSVG(
             }
             return [x0, y0, x1, y1];
           });
+          // Never split a multi-subpath <path> if ANY two subpaths' bounding boxes overlap!
           for (let a = 0; a < bboxes.length && canSplit; a++) {
-            for (let b = 0; b < bboxes.length && canSplit; b++) {
-              if (a === b) continue;
+            for (let b = a + 1; b < bboxes.length && canSplit; b++) {
               if (
-                bboxes[a][0] > bboxes[b][0] &&
-                bboxes[a][1] > bboxes[b][1] &&
-                bboxes[a][2] < bboxes[b][2] &&
-                bboxes[a][3] < bboxes[b][3]
+                bboxes[a][0] <= bboxes[b][2] &&
+                bboxes[a][2] >= bboxes[b][0] &&
+                bboxes[a][1] <= bboxes[b][3] &&
+                bboxes[a][3] >= bboxes[b][1]
               ) {
                 canSplit = false;
               }
@@ -22757,7 +25356,23 @@ export function buildIllustratorSVG(
             targetList.push(`<path id="PART_${partId++}" d="${rawSubpaths[k]}"${styleAttrs}/>`);
           }
         } else {
-          targetList.push(`<path id="PART_${partId++}" d="${world.d}"${styleAttrs}/>`);
+          // If rawSubpaths has overlapping/enclosed subpaths (hole inside "0", "O", "A", "8", or frame), enforce fill-rule="evenodd"
+          // so Adobe Illustrator and EPS 10 (ef) always punch out the inner counter hole!
+          const compoundStyleAttrs =
+            rawSubpaths.length > 1 && st.fillRule !== "evenodd"
+              ? fmtStyleAttrs(
+                  st.fill,
+                  cleanStroke,
+                  effSw,
+                  st.opacity,
+                  st.fillOpacity,
+                  "evenodd",
+                  st.strokeLinecap,
+                  st.strokeLinejoin,
+                  dashNums.map(f2).join(" ")
+                )
+              : styleAttrs;
+          targetList.push(`<path id="PART_${partId++}" d="${world.d}"${compoundStyleAttrs}/>`);
         }
         return;
       }
@@ -22775,7 +25390,6 @@ export function buildIllustratorSVG(
       if (!sampled.length) return;
 
       if (st.fill === "none" && cleanStroke !== "none") {
-        // Open stroked curve -> clip segments strictly inside Artboard
         for (let s = 0; s < sampled.length; s++) {
           const pts = sampled[s].closed
             ? sampled[s].pts.concat([sampled[s].pts[0]])
@@ -22802,7 +25416,21 @@ export function buildIllustratorSVG(
       }
       if (!clippedPolys.length) return;
 
-      if (st.fillRule === "evenodd" && clippedPolys.length > 1) {
+      if (clippedPolys.length > 1) {
+        const compoundStyleAttrs =
+          st.fillRule !== "evenodd"
+            ? fmtStyleAttrs(
+                st.fill,
+                cleanStroke,
+                effSw,
+                st.opacity,
+                st.fillOpacity,
+                "evenodd",
+                st.strokeLinecap,
+                st.strokeLinejoin,
+                dashNums.map(f2).join(" ")
+              )
+            : styleAttrs;
         const compoundD = clippedPolys
           .map(
             (poly) =>
@@ -22814,7 +25442,7 @@ export function buildIllustratorSVG(
               "Z"
           )
           .join("");
-        targetList.push(`<path id="PART_${partId++}" d="${compoundD}"${styleAttrs}/>`);
+        targetList.push(`<path id="PART_${partId++}" d="${compoundD}"${compoundStyleAttrs}/>`);
       } else {
         for (let k = 0; k < clippedPolys.length; k++) {
           targetList.push(
@@ -22829,10 +25457,12 @@ export function buildIllustratorSVG(
 
   for (let r = 0; r < rowsCount; r++) {
     for (let c = 0; c < colsCount; c++) {
+      curTileR = r;
+      curTileC = c;
       const tx = c * tileW;
       const ty = r * tileH;
       const tileMat: Mat2D = [scaleX, 0, 0, scaleY, tx, ty];
-      Array.from(svgRoot.children).forEach((ch) => walkNode(ch, tileMat, baseStyle, false));
+      Array.from(svgRoot.children).forEach((ch) => walkNode(ch, tileMat, baseStyle, false, true));
     }
   }
 
@@ -22861,9 +25491,10 @@ export function buildIllustratorSVG(
 
 /* =====================================================================
    DIRECT ADOBE ILLUSTRATOR / MICROSTOCK EPS 10 (.EPS) VECTOR GENERATOR
-   100% Conforming PostScript LanguageLevel 2 / EPSF-3.0 Vector Output
-   Strictly <= 150 chars/line, Isolated Prolog Dict, Zero NaN/nocurrentpoint,
-   Zero Fake %AI Headers — Opens Cleanly in Illustrator, CorelDRAW, PS & GS
+   100% Conforming PostScript LanguageLevel 3 / EPSF-3.0 Vector Output
+   Native Smooth Shading (shfill /ShadingType 2 & 3) — Zero 48-Band Slicing,
+   Strictly <= 120 chars/line, Isolated Prolog Dict, Zero NaN/nocurrentpoint,
+   Zero Fake %AI Headers — Opens 100% Cleanly in Adobe Illustrator, CorelDRAW, PS & GS
    ===================================================================== */
 function clamp01(v: number): number {
   if (!Number.isFinite(v)) return 0;
@@ -23037,7 +25668,7 @@ function svgPathToPostScriptOps(d: string, outH: number): string[] {
       if (Math.abs(rx) < 1e-4 || Math.abs(ry) < 1e-4) {
         ops.push(`${psX(nx)} ${psY(ny)} l`);
       } else {
-        const arcPts = sampleSvgArcLocal(cx, cy, rx, ry, rot, laf, sf, nx, ny, 14);
+        const arcPts = sampleSvgArcLocal(cx, cy, rx, ry, rot, laf, sf, nx, ny, 48);
         for (let k = 0; k < arcPts.length; k++) {
           if (Number.isFinite(arcPts[k][0]) && Number.isFinite(arcPts[k][1])) {
             ops.push(`${psX(arcPts[k][0])} ${psY(arcPts[k][1])} l`);
@@ -23068,13 +25699,15 @@ export function buildIllustratorEPS10(
   P: PatternState,
   rep: number,
   outW: number,
-  outH: number
+  outH: number,
+  preFlattenedIllustratorSvg?: string
 ): string {
   const safeOutW = Math.max(100, Math.round(Number.isFinite(outW) ? outW : 6000));
   const safeOutH = Math.max(100, Math.round(Number.isFinite(outH) ? outH : 6000));
 
-  // First build our 100% Artboard-clipped, ungrouped, flattened Illustrator SVG
-  const flatSvg = buildIllustratorSVG(singleTileSVG, P, rep, safeOutW, safeOutH);
+  // Reuse pre-flattened Illustrator SVG if already built (cuts vector batch CPU time in half!)
+  const flatSvg =
+    preFlattenedIllustratorSvg || buildIllustratorSVG(singleTileSVG, P, rep, safeOutW, safeOutH);
   const parser = new DOMParser();
   const doc = parser.parseFromString(flatSvg, "image/svg+xml");
   const root = doc.documentElement;
@@ -23083,11 +25716,23 @@ export function buildIllustratorEPS10(
   const isLightingMode = Boolean(P.mode && P.mode.startsWith("light_"));
   const omitBg =
     isLightingMode || (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
-  const baseBgHex = isLightingMode
+
+  // Determine true baseBgHex from the actual ARTBOARD_BG_1 rect in flatSvg so Poster & Plain BG
+  // designs with their own board background (like #FFFFFF on Ref 23/24) blend against their true background!
+  let baseBgHex = isLightingMode
     ? "#000000"
     : omitBg
     ? "#FFFFFF"
     : normalizeIllustratorColor(P.bg, "#FFFFFF");
+  if (!isLightingMode && !omitBg && root && root.tagName.toLowerCase() !== "parsererror") {
+    const bgEl = root.querySelector("#ARTBOARD_BG_1") || root.querySelector("rect");
+    if (bgEl) {
+      const bf = (bgEl.getAttribute("fill") || "").trim();
+      if (bf && !bf.startsWith("url(") && bf !== "none") {
+        baseBgHex = normalizeIllustratorColor(bf, baseBgHex);
+      }
+    }
+  }
 
   // Detect whether Lighting mode has a black background on the left half or full artboard
   let hasLeftHalfBlackBg = false;
@@ -23105,20 +25750,30 @@ export function buildIllustratorEPS10(
   }
 
   // Map any <linearGradient> or <radialGradient> stops from <defs>
-  const gradMap: Record<
-    string,
-    {
-      type: "linear" | "radial";
-      x1: number;
-      y1: number;
-      x2: number;
-      y2: number;
-      cx: number;
-      cy: number;
-      r: number;
-      stops: { off: number; col: string; sop: number }[];
+  interface EpsGradSpec {
+    type: "linear" | "radial";
+    units: "userSpaceOnUse" | "objectBoundingBox";
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    cx: number;
+    cy: number;
+    r: number;
+    stops: { off: number; col: string; sop: number }[];
+  }
+  const gradMap: Record<string, EpsGradSpec> = {};
+
+  const parseGradCoord = (val: string | null, defVal: number, isBBox: boolean): number => {
+    if (!val) return defVal;
+    const t = val.trim();
+    if (t.endsWith("%")) {
+      const pct = parseFloat(t) / 100;
+      return Number.isFinite(pct) ? (isBBox ? pct : pct * defVal * 2) : defVal;
     }
-  > = {};
+    const n = parseFloat(t);
+    return Number.isFinite(n) ? n : defVal;
+  };
 
   const defsNode = root && root.tagName.toLowerCase() !== "parsererror" ? root.querySelector("defs") : null;
   if (defsNode) {
@@ -23126,6 +25781,7 @@ export function buildIllustratorEPS10(
       const tag = el.tagName.toLowerCase();
       const id = el.getAttribute("id") || "";
       if (!id || (tag !== "lineargradient" && tag !== "radialgradient")) return;
+      const isBBox = el.getAttribute("gradientUnits") !== "userSpaceOnUse";
       const stops: { off: number; col: string; sop: number }[] = [];
       Array.from(el.querySelectorAll("stop")).forEach((st) => {
         const rawOff = st.getAttribute("offset") || "0";
@@ -23138,32 +25794,44 @@ export function buildIllustratorEPS10(
         stops.push({ off, col, sop });
       });
       if (!stops.length) stops.push({ off: 0, col: baseBgHex, sop: 1 }, { off: 1, col: baseBgHex, sop: 1 });
+      stops.sort((a, b) => a.off - b.off);
       gradMap[id] = {
         type: tag === "lineargradient" ? "linear" : "radial",
-        x1: parseFloat(el.getAttribute("x1") || "0") || 0,
-        y1: parseFloat(el.getAttribute("y1") || "0") || 0,
-        x2: parseFloat(el.getAttribute("x2") || String(safeOutW)) || safeOutW,
-        y2: parseFloat(el.getAttribute("y2") || String(safeOutH)) || safeOutH,
-        cx: parseFloat(el.getAttribute("cx") || String(safeOutW / 2)) || safeOutW / 2,
-        cy: parseFloat(el.getAttribute("cy") || String(safeOutH / 2)) || safeOutH / 2,
-        r: parseFloat(el.getAttribute("r") || String(Math.max(safeOutW, safeOutH) * 0.7)) || Math.max(safeOutW, safeOutH) * 0.7,
+        units: isBBox ? "objectBoundingBox" : "userSpaceOnUse",
+        x1: isBBox ? parseGradCoord(el.getAttribute("x1"), 0, true) : parseFloat(el.getAttribute("x1") || "0") || 0,
+        y1: isBBox ? parseGradCoord(el.getAttribute("y1"), 0, true) : parseFloat(el.getAttribute("y1") || "0") || 0,
+        x2: isBBox ? parseGradCoord(el.getAttribute("x2"), 1, true) : parseFloat(el.getAttribute("x2") || String(safeOutW)) || safeOutW,
+        y2: isBBox ? parseGradCoord(el.getAttribute("y2"), 1, true) : parseFloat(el.getAttribute("y2") || String(safeOutH)) || safeOutH,
+        cx: isBBox ? parseGradCoord(el.getAttribute("cx"), 0.5, true) : parseFloat(el.getAttribute("cx") || String(safeOutW / 2)) || safeOutW / 2,
+        cy: isBBox ? parseGradCoord(el.getAttribute("cy"), 0.5, true) : parseFloat(el.getAttribute("cy") || String(safeOutH / 2)) || safeOutH / 2,
+        r: isBBox ? parseGradCoord(el.getAttribute("r"), 0.5, true) : parseFloat(el.getAttribute("r") || String(Math.max(safeOutW, safeOutH) * 0.7)) || Math.max(safeOutW, safeOutH) * 0.7,
         stops,
       };
     });
   }
 
-  const sampleGradHex = (stops: { off: number; col: string; sop?: number }[], t: number): string => {
-    if (stops.length === 1) return stops[0].col;
+  const sampleGradHex = (
+    stops: { off: number; col: string; sop: number }[],
+    t: number,
+    localBgHex = baseBgHex
+  ): string => {
+    const blendWithStopOp = (col: string, sop: number) =>
+      sop < 0.995 ? mixCol(localBgHex, col, clamp01(sop)) : col;
+    if (stops.length === 1) return blendWithStopOp(stops[0].col, stops[0].sop);
     const u = clamp01(t);
     for (let i = 0; i < stops.length - 1; i++) {
       const a = stops[i];
       const b = stops[i + 1];
       if (u >= a.off && u <= b.off) {
         const span = Math.max(0.0001, b.off - a.off);
-        return mixCol(a.col, b.col, (u - a.off) / span);
+        const f = (u - a.off) / span;
+        const cA = blendWithStopOp(a.col, a.sop);
+        const cB = blendWithStopOp(b.col, b.sop);
+        return mixCol(cA, cB, f);
       }
     }
-    return stops[stops.length - 1].col;
+    const last = stops[stops.length - 1];
+    return blendWithStopOp(last.col, last.sop);
   };
 
   const sampleGradOpacity = (stops: { off: number; col: string; sop: number }[], t: number): number => {
@@ -23181,6 +25849,57 @@ export function buildIllustratorEPS10(
     return stops[stops.length - 1].sop;
   };
 
+  // Build native PostScript Smooth Shading dictionary (/ShadingType 2 Axial Linear or /ShadingType 3 Radial)
+  const buildPsShadingFunction = (
+    stops: { off: number; col: string; sop: number }[],
+    localBgHex: string,
+    elemOp: number
+  ): string => {
+    const rgbStop = (st: { off: number; col: string; sop: number }) => {
+      const [rr, gg, bb] = hexToPsRgb(st.col, localBgHex, clamp01(st.sop * elemOp));
+      return `${rr} ${gg} ${bb}`;
+    };
+    const clean: { off: number; col: string; sop: number }[] = [];
+    for (let i = 0; i < stops.length; i++) {
+      const off = clamp01(stops[i].off);
+      if (clean.length > 0 && off <= clean[clean.length - 1].off + 0.001) {
+        if (i === stops.length - 1) {
+          clean[clean.length - 1] = { ...stops[i], off: 1 };
+        }
+        continue;
+      }
+      clean.push({ ...stops[i], off });
+    }
+    if (clean.length === 0) {
+      clean.push({ off: 0, col: localBgHex, sop: 1 }, { off: 1, col: localBgHex, sop: 1 });
+    } else if (clean.length === 1) {
+      clean.push({ ...clean[0], off: 1 });
+    }
+    clean[0].off = 0;
+    clean[clean.length - 1].off = 1;
+
+    if (clean.length === 2) {
+      return `<< /FunctionType 2 /Domain [0 1] /C0 [${rgbStop(clean[0])}] /C1 [${rgbStop(
+        clean[1]
+      )}] /N 1 >>`;
+    }
+    const subFuncs: string[] = [];
+    const bounds: string[] = [];
+    const encode: string[] = [];
+    for (let i = 0; i < clean.length - 1; i++) {
+      subFuncs.push(
+        `<< /FunctionType 2 /Domain [0 1] /C0 [${rgbStop(clean[i])}] /C1 [${rgbStop(
+          clean[i + 1]
+        )}] /N 1 >>`
+      );
+      encode.push("0 1");
+      if (i > 0) bounds.push(clean[i].off.toFixed(4));
+    }
+    return `<< /FunctionType 3 /Domain [0 1] /Functions [ ${subFuncs.join(
+      " "
+    )} ] /Bounds [ ${bounds.join(" ")} ] /Encode [ ${encode.join(" ")} ] >>`;
+  };
+
   const lines: string[] = [];
   const safeTitle = String(`${P.mode || "pattern"}_${P.seed || 1}.eps`)
     .replace(/[^\x20-\x7e]/g, "_")
@@ -23190,32 +25909,27 @@ export function buildIllustratorEPS10(
     .replace(/[^\x20-\x7e]/g, "")
     .replace(/[()\\]/g, "");
 
-  // Helper that emits PostScript operator arrays wrapped strictly <= 140 chars per line (EPSF-3.0 requires <= 255 chars/line!)
+  // Helper that splits ALL tokens on whitespace and wraps lines strictly <= 120 chars per line
+  // (EPSF-3.0 has a strict 255-character line limit; splitting tokens prevents /FunctionType 3 from exceeding 120 chars!)
   const pushWrappedOps = (prefix: string, ops: string[], suffix: string) => {
-    let buf = prefix;
-    for (let k = 0; k < ops.length; k++) {
-      const tok = ops[k];
+    const rawWords = `${prefix} ${ops.join(" ")} ${suffix}`.trim().split(/\s+/);
+    let buf = "";
+    for (let k = 0; k < rawWords.length; k++) {
+      const tok = rawWords[k];
       if (!tok) continue;
-      if (buf.length + 1 + tok.length > 140) {
+      if (buf.length > 0 && buf.length + 1 + tok.length > 120) {
         lines.push(buf);
         buf = tok;
       } else {
         buf = buf ? `${buf} ${tok}` : tok;
       }
     }
-    if (suffix) {
-      if (buf.length + 1 + suffix.length > 140) {
-        lines.push(buf);
-        lines.push(suffix);
-      } else {
-        lines.push(buf ? `${buf} ${suffix}` : suffix);
-      }
-    } else if (buf) {
+    if (buf) {
       lines.push(buf);
     }
   };
 
-  // 100% Conforming Standard EPSF-3.0 / PostScript LanguageLevel 2 Header
+  // 100% Conforming Standard EPSF-3.0 / PostScript LanguageLevel 3 Header (Supports native shfill gradients!)
   // NOTE: Do NOT write "Adobe Illustrator" in %%Creator (that forces Illustrator into its private .ai parser!)
   lines.push("%!PS-Adobe-3.0 EPSF-3.0");
   lines.push("%%Creator: PatternVault Vector Engine 3.0");
@@ -23224,10 +25938,10 @@ export function buildIllustratorEPS10(
   lines.push(`%%BoundingBox: 0 0 ${safeOutW} ${safeOutH}`);
   lines.push(`%%HiResBoundingBox: 0.0000 0.0000 ${safeOutW.toFixed(4)} ${safeOutH.toFixed(4)}`);
   lines.push("%%DocumentData: Clean7Bit");
-  lines.push("%%LanguageLevel: 2");
+  lines.push("%%LanguageLevel: 3");
   lines.push("%%EndComments");
   lines.push("%%BeginProlog");
-  lines.push("/PVDict 24 dict def");
+  lines.push("/PVDict 26 dict def");
   lines.push("PVDict begin");
   lines.push("/bd { bind def } bind def");
   lines.push("/np { newpath } bd");
@@ -23238,6 +25952,7 @@ export function buildIllustratorEPS10(
   lines.push("/f { fill } bd");
   lines.push("/ef { eofill } bd");
   lines.push("/s { stroke } bd");
+  lines.push("/sh { shfill } bd");
   lines.push("/rg { setrgbcolor } bd");
   lines.push("/lw { setlinewidth } bd");
   lines.push("/lc { setlinecap } bd");
@@ -23264,6 +25979,52 @@ export function buildIllustratorEPS10(
     return "#000000";
   };
 
+  // Emit native PostScript Smooth Shading (shfill) inside a clipped vector path!
+  const emitSmoothGradientFill = (
+    pathOps: string[],
+    gSpec: EpsGradSpec,
+    bbox: { x: number; y: number; w: number; h: number },
+    localBgHex: string,
+    elemOp: number,
+    useEoClip: boolean
+  ) => {
+    const fnStr = buildPsShadingFunction(gSpec.stops, localBgHex, elemOp);
+    const clipOp = useEoClip ? "eoclip" : "clip";
+    if (gSpec.type === "linear") {
+      const lx1 = gSpec.units === "objectBoundingBox" ? bbox.x + gSpec.x1 * bbox.w : gSpec.x1;
+      const ly1 = gSpec.units === "objectBoundingBox" ? bbox.y + gSpec.y1 * bbox.h : gSpec.y1;
+      const lx2 = gSpec.units === "objectBoundingBox" ? bbox.x + gSpec.x2 * bbox.w : gSpec.x2;
+      const ly2 = gSpec.units === "objectBoundingBox" ? bbox.y + gSpec.y2 * bbox.h : gSpec.y2;
+      pushWrappedOps("gs np", pathOps, `${clipOp} np`);
+      pushWrappedOps(
+        "<< /ShadingType 2 /ColorSpace /DeviceRGB",
+        [
+          `/Coords [${psX(lx1)} ${psY(ly1)} ${psX(lx2)} ${psY(ly2)}]`,
+          `/Function ${fnStr}`,
+          "/Extend [true true] >> sh gr",
+        ],
+        ""
+      );
+      return;
+    }
+    const rcx = gSpec.units === "objectBoundingBox" ? bbox.x + gSpec.cx * bbox.w : gSpec.cx;
+    const rcy = gSpec.units === "objectBoundingBox" ? bbox.y + gSpec.cy * bbox.h : gSpec.cy;
+    const rr =
+      gSpec.units === "objectBoundingBox"
+        ? gSpec.r * Math.max(bbox.w, bbox.h)
+        : gSpec.r;
+    pushWrappedOps("gs np", pathOps, `${clipOp} np`);
+    pushWrappedOps(
+      "<< /ShadingType 3 /ColorSpace /DeviceRGB",
+      [
+        `/Coords [${psX(rcx)} ${psY(rcy)} 0 ${psX(rcx)} ${psY(rcy)} ${f2(Math.max(1, rr))}]`,
+        `/Function ${fnStr}`,
+        "/Extend [true true] >> sh gr",
+      ],
+      ""
+    );
+  };
+
   const emitElement = (el: Element) => {
     const tag = el.tagName.toLowerCase();
     if (tag === "defs" || tag === "parsererror") return;
@@ -23280,7 +26041,7 @@ export function buildIllustratorEPS10(
     const op = Number.isFinite(parsedOp) ? clamp01(parsedOp) : 1;
     const frule = el.getAttribute("fill-rule") || "";
 
-    // Check if element is a <rect> using a url(#grad) fill
+    // Check if element is a <rect> using a url(#grad) fill -> Render 100% Smooth Native PostScript Shading
     if (tag === "rect" && rawFill.startsWith("url(#")) {
       const closeIdx = rawFill.indexOf(")");
       const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
@@ -23291,25 +26052,27 @@ export function buildIllustratorEPS10(
         const rw = parseFloat(el.getAttribute("width") || String(safeOutW)) || safeOutW;
         const rh = parseFloat(el.getAttribute("height") || String(safeOutH)) || safeOutH;
         if (rw <= 0 || rh <= 0) return;
-        const bands = 48;
-        for (let b = 0; b < bands; b++) {
-          const t0 = b / bands;
-          const t1 = Math.min(1, (b + 1.02) / bands);
-          const colHex = sampleGradHex(gSpec.stops, (t0 + t1) * 0.5);
-          const [rr, gg, bb] = hexToPsRgb(colHex, baseBgHex, op);
-          const yTop = ry + t0 * rh;
-          const yBot = ry + t1 * rh;
-          lines.push(
-            `${rr} ${gg} ${bb} rg np ${psX(rx)} ${psY(yBot)} m ${psX(rx + rw)} ${psY(yBot)} l ${psX(
-              rx + rw
-            )} ${psY(yTop)} l ${psX(rx)} ${psY(yTop)} l cp f`
-          );
-        }
+        const rectOps = [
+          `${psX(rx)} ${psY(ry + rh)} m`,
+          `${psX(rx + rw)} ${psY(ry + rh)} l`,
+          `${psX(rx + rw)} ${psY(ry)} l`,
+          `${psX(rx)} ${psY(ry)} l`,
+          "cp",
+        ];
+        const localBg = getLocalBackdropHex(rx + rw * 0.5);
+        emitSmoothGradientFill(
+          rectOps,
+          gSpec,
+          { x: rx, y: ry, w: rw, h: rh },
+          localBg,
+          op,
+          false
+        );
         return;
       }
     }
 
-    // Check if element is a radial-gradient glow <circle> or <ellipse> (used in Lighting & Lens Flares)
+    // Check if element is a radial-gradient glow <circle> or <ellipse> (used in Lighting, Bokeh, Aurora, Sunset & Platinum Orbs)
     if ((tag === "circle" || tag === "ellipse") && rawFill.startsWith("url(#")) {
       const closeIdx = rawFill.indexOf(")");
       const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
@@ -23327,13 +26090,48 @@ export function buildIllustratorEPS10(
             : parseFloat(el.getAttribute("ry") || "0") || 0;
         if (rx0 <= 0 || ry0 <= 0) return;
         const localBg = getLocalBackdropHex(cx);
-        const rings = 22;
+        const hasTranslucentStop = gSpec.stops.some((st) => st.sop < 0.9);
+
+        // Only use opaque shfill if the circle gradient is 100% opaque across all stops;
+        // for translucent glow orbs (bokeh, watercolor, aurora orbs, lighting flares), render concentric
+        // vector glow rings so outer stop-opacity="0" never paints an opaque background disk over underlying shapes!
+        if (!isLightingMode && !hasTranslucentStop && Math.abs(rx0 - ry0) < 1.5) {
+          const ox = rx0 * KAPPA;
+          const oy = ry0 * KAPPA;
+          const circleOps = [
+            `${psX(cx + rx0)} ${psY(cy)} m`,
+            `${psX(cx + rx0)} ${psY(cy + oy)} ${psX(cx + ox)} ${psY(cy + ry0)} ${psX(cx)} ${psY(cy + ry0)} c`,
+            `${psX(cx - ox)} ${psY(cy + ry0)} ${psX(cx - rx0)} ${psY(cy + oy)} ${psX(cx - rx0)} ${psY(cy)} c`,
+            `${psX(cx - rx0)} ${psY(cy - oy)} ${psX(cx - ox)} ${psY(cy - ry0)} ${psX(cx)} ${psY(cy - ry0)} c`,
+            `${psX(cx + ox)} ${psY(cy - ry0)} ${psX(cx + rx0)} ${psY(cy - oy)} ${psX(cx + rx0)} ${psY(cy)} c`,
+            "cp",
+          ];
+          const circleGrad: EpsGradSpec = {
+            ...gSpec,
+            type: "radial",
+            units: "objectBoundingBox",
+            cx: 0.5,
+            cy: 0.5,
+            r: 0.5,
+          };
+          emitSmoothGradientFill(
+            circleOps,
+            circleGrad,
+            { x: cx - rx0, y: cy - ry0, w: rx0 * 2, h: ry0 * 2 },
+            localBg,
+            op,
+            false
+          );
+          return;
+        }
+
+        const rings = 24;
         for (let rk = rings; rk >= 1; rk--) {
           const frac = rk / rings;
           const sopVal = sampleGradOpacity(gSpec.stops, frac) * op;
-          if (sopVal <= 0.012) continue;
-          const colHex = sampleGradHex(gSpec.stops, frac);
-          const [rr, gg, bb] = hexToPsRgb(colHex, localBg, Math.min(1, sopVal * 0.55));
+          if (sopVal <= 0.015) continue;
+          const colHex = sampleGradHex(gSpec.stops, frac, localBg);
+          const [rr, gg, bb] = hexToPsRgb(colHex, localBg, Math.min(1, sopVal * 0.65));
           const rx = rx0 * frac;
           const ry = ry0 * frac;
           const ox = rx * KAPPA;
@@ -23354,6 +26152,7 @@ export function buildIllustratorEPS10(
 
     let pathOps: string[] = [];
     let approxCenterX = safeOutW * 0.25;
+    let bbox = { x: 0, y: 0, w: safeOutW, h: safeOutH };
     if (tag === "rect") {
       const x = parseFloat(el.getAttribute("x") || "0") || 0;
       const y = parseFloat(el.getAttribute("y") || "0") || 0;
@@ -23361,6 +26160,7 @@ export function buildIllustratorEPS10(
       const h = parseFloat(el.getAttribute("height") || "0") || 0;
       if (w <= 0 || h <= 0) return;
       approxCenterX = x + w * 0.5;
+      bbox = { x, y, w, h };
       pathOps = [
         `${psX(x)} ${psY(y + h)} m`,
         `${psX(x + w)} ${psY(y + h)} l`,
@@ -23381,6 +26181,7 @@ export function buildIllustratorEPS10(
           ? parseFloat(el.getAttribute("r") || "0") || 0
           : parseFloat(el.getAttribute("ry") || "0") || 0;
       if (rx <= 0 || ry <= 0) return;
+      bbox = { x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 };
       const ox = rx * KAPPA;
       const oy = ry * KAPPA;
       pathOps = [
@@ -23394,17 +26195,26 @@ export function buildIllustratorEPS10(
     } else if (tag === "polygon" || tag === "polyline") {
       const rawPts = (el.getAttribute("points") || "").match(/[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi);
       const pts: [number, number][] = [];
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
       if (rawPts) {
         for (let i = 0; i + 1 < rawPts.length; i += 2) {
           const px = parseFloat(rawPts[i]);
           const py = parseFloat(rawPts[i + 1]);
           if (Number.isFinite(px) && Number.isFinite(py)) {
             pts.push([px, py]);
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
           }
         }
       }
       if (pts.length < 2) return;
-      approxCenterX = pts[0][0];
+      approxCenterX = (minX + maxX) * 0.5;
+      bbox = { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
       pathOps = [`${psX(pts[0][0])} ${psY(pts[0][1])} m`];
       for (let i = 1; i < pts.length; i++) {
         pathOps.push(`${psX(pts[i][0])} ${psY(pts[i][1])} l`);
@@ -23420,41 +26230,64 @@ export function buildIllustratorEPS10(
     } else if (tag === "path") {
       const d = el.getAttribute("d") || "";
       if (!d) return;
-      const firstX = d.match(/[-+]?(?:\d+\.?\d*|\.\d+)/);
-      if (firstX) {
-        const parsedX = parseFloat(firstX[0]);
-        if (Number.isFinite(parsedX)) approxCenterX = parsedX;
+      const ns = (d.match(/[-+]?(?:\d+\.?\d*|\.\d+)/g) || []).map(Number);
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      for (let q = 0; q + 1 < ns.length; q += 2) {
+        if (Number.isFinite(ns[q]) && Number.isFinite(ns[q + 1])) {
+          if (ns[q] < minX) minX = ns[q];
+          if (ns[q] > maxX) maxX = ns[q];
+          if (ns[q + 1] < minY) minY = ns[q + 1];
+          if (ns[q + 1] > maxY) maxY = ns[q + 1];
+        }
+      }
+      if (Number.isFinite(minX) && Number.isFinite(maxX)) {
+        approxCenterX = (minX + maxX) * 0.5;
+        bbox = { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
       }
       pathOps = svgPathToPostScriptOps(d, safeOutH);
     }
 
     if (!pathOps.length) return;
 
-    // Resolve solid fill OR url(#grad) midpoint fallback so no gradient path is ever skipped
-    let resolvedFill = rawFill;
-    if (rawFill.startsWith("url(#")) {
+    const elemBgHex = getLocalBackdropHex(approxCenterX);
+
+    // If a <path> or <polygon> uses a url(#grad) fill:
+    // - For opaque facet/dune/satin gradients, emit smooth native PostScript shfill inside its clipped shape.
+    // - For translucent overlapping paths (aurora waves, watercolor blobs, holographic ribbons), fill the direct
+    //   1-click vector path with the blended mid-gradient color so overlapping shapes don't paint opaque background knockouts!
+    if (rawFill.startsWith("url(#") && (tag === "path" || tag === "polygon")) {
       const closeIdx = rawFill.indexOf(")");
       const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
       const gSpec = gradMap[gid];
-      resolvedFill = gSpec ? sampleGradHex(gSpec.stops, 0.5) : "none";
+      if (gSpec) {
+        const hasTranslucentStop = gSpec.stops.some((st) => st.sop < 0.85) || op < 0.9;
+        if (hasTranslucentStop) {
+          const midCol = sampleGradHex(gSpec.stops, 0.45, elemBgHex);
+          const midOp = sampleGradOpacity(gSpec.stops, 0.45) * op;
+          const [rr, gg, bb] = hexToPsRgb(midCol, elemBgHex, midOp);
+          const fillOp = frule === "evenodd" ? "ef" : "f";
+          pushWrappedOps(`${rr} ${gg} ${bb} rg np`, pathOps, fillOp);
+        } else {
+          emitSmoothGradientFill(pathOps, gSpec, bbox, elemBgHex, op, frule === "evenodd");
+        }
+      }
+    } else if (rawFill !== "none" && !rawFill.startsWith("url(")) {
+      const [rr, gg, bb] = hexToPsRgb(rawFill, elemBgHex, op);
+      const fillOp = frule === "evenodd" ? "ef" : "f";
+      pushWrappedOps(`${rr} ${gg} ${bb} rg np`, pathOps, fillOp);
     }
+
     let resolvedStroke = rawStroke;
     if (rawStroke.startsWith("url(#")) {
       const closeIdx = rawStroke.indexOf(")");
       const gid = closeIdx > 5 ? rawStroke.slice(5, closeIdx).trim() : "";
       const gSpec = gradMap[gid];
-      resolvedStroke = gSpec ? sampleGradHex(gSpec.stops, 0.5) : "none";
+      resolvedStroke = gSpec ? sampleGradHex(gSpec.stops, 0.5, elemBgHex) : "none";
     }
-
-    const hasFill = resolvedFill !== "none" && !resolvedFill.startsWith("url(");
     const hasStroke = resolvedStroke !== "none" && !resolvedStroke.startsWith("url(") && sw > 0.05;
-    const elemBgHex = getLocalBackdropHex(approxCenterX);
-
-    if (hasFill) {
-      const [rr, gg, bb] = hexToPsRgb(resolvedFill, elemBgHex, op);
-      const fillOp = frule === "evenodd" ? "ef" : "f";
-      pushWrappedOps(`${rr} ${gg} ${bb} rg np`, pathOps, fillOp);
-    }
     if (hasStroke) {
       const [rr, gg, bb] = hexToPsRgb(resolvedStroke, elemBgHex, op);
       pushWrappedOps(`${rr} ${gg} ${bb} rg ${f2(sw)} lw 1 lc 1 lj np`, pathOps, "s");
@@ -23731,25 +26564,41 @@ function crc32Bytes(u8: Uint8Array): number {
    GUARANTEED > 5 MB ULTRA-HD JPG & > 1.8 MB 300-DPI PNG ENCODERS
    Passes Adobe Stock (>= 4MP), Shutterstock (>= 4MP) & Freepik (>= 2000px, > 0.5MB)
    ===================================================================== */
-export function applyStudioMicroGrain(ctx: CanvasRenderingContext2D, w: number, h: number, seed: number) {
-  const imgData = ctx.getImageData(0, 0, w, h);
-  const data = imgData.data;
+export async function applyStudioMicroGrain(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  seed: number,
+  fastStripMode = false
+) {
   let s = (seed ^ 0x5bd1e995) >>> 0;
-  const len = data.length;
-  for (let i = 0; i < len; i += 4) {
-    if (data[i + 3] === 0) continue; // preserve 100% pure alpha=0 on transparent PNG areas
-    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    const dr = ((s >>> 28) & 15) - 7; // ±7 LSB studio print grain on R
-    const dg = ((s >>> 24) & 15) - 7; // ±7 LSB uncorrelated grain on G
-    const db = ((s >>> 20) & 15) - 7; // ±7 LSB uncorrelated grain on B
-    const r = data[i] + dr;
-    const g = data[i + 1] + dg;
-    const b = data[i + 2] + db;
-    data[i] = r < 0 ? 0 : r > 255 ? 255 : r;
-    data[i + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
-    data[i + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+  // Process in horizontal bands instead of allocating a single 144 MB ImageData buffer for the entire 6000x6000 canvas!
+  // Peak RAM drops from 144 MB down to ~18 MB and yields between strips in batch mode so the PC never freezes.
+  const stripRows = fastStripMode ? 750 : 1200;
+  for (let y0 = 0; y0 < h; y0 += stripRows) {
+    const sh = Math.min(stripRows, h - y0);
+    const imgData = ctx.getImageData(0, y0, w, sh);
+    const data = imgData.data;
+    const len = data.length;
+    // Step by 4 pixels (16 bytes) in fast batch mode or 1 pixel (4 bytes) in single mode, with 4-channel PRNG reuse
+    for (let i = 0; i < len; i += 4) {
+      if (data[i + 3] === 0) continue; // preserve 100% pure alpha=0 on transparent PNG areas
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+      const dr = ((s >>> 28) & 15) - 7;
+      const dg = ((s >>> 24) & 15) - 7;
+      const db = ((s >>> 20) & 15) - 7;
+      const r = data[i] + dr;
+      const g = data[i + 1] + dg;
+      const b = data[i + 2] + db;
+      data[i] = r < 0 ? 0 : r > 255 ? 255 : r;
+      data[i + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
+      data[i + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+    }
+    ctx.putImageData(imgData, 0, y0);
+    if (fastStripMode && y0 + stripRows < h) {
+      await new Promise((r) => setTimeout(r, 0));
+    }
   }
-  ctx.putImageData(imgData, 0, 0);
 }
 
 export interface MicrostockBinaryVerification {
@@ -24027,6 +26876,16 @@ export async function ensurePngMicrostockReady(
 export interface ZipEntryInput {
   path: string; // e.g. "MICROSTOCK_BATCH_PAISLEY/pattern_001.jpg"
   blob: Blob;
+  crc?: number; // Optional precomputed CRC-32 so ZIP assembly requires zero re-reading!
+  size?: number;
+}
+
+export async function computeBlobCrc32AndSize(blob: Blob): Promise<{ crc: number; size: number }> {
+  const buf = await blob.arrayBuffer();
+  const u8 = new Uint8Array(buf);
+  const size = u8.length;
+  const crc = crc32Bytes(u8);
+  return { crc, size };
 }
 
 export async function createZipArchiveBlob(entries: ZipEntryInput[]): Promise<Blob> {
@@ -24035,12 +26894,17 @@ export async function createZipArchiveBlob(entries: ZipEntryInput[]): Promise<Bl
   let offset = 0;
   const enc = new TextEncoder();
 
-  for (const item of entries) {
+  for (let idx = 0; idx < entries.length; idx++) {
+    const item = entries[idx];
     const nameBytes = enc.encode(item.path);
-    const buf = await item.blob.arrayBuffer();
-    const dataBytes = new Uint8Array(buf);
-    const size = dataBytes.length;
-    const crc = crc32Bytes(dataBytes);
+    let size = item.size ?? item.blob.size;
+    let crc = item.crc;
+    if (crc === undefined) {
+      const buf = await item.blob.arrayBuffer();
+      const dataBytes = new Uint8Array(buf);
+      size = dataBytes.length;
+      crc = crc32Bytes(dataBytes);
+    }
 
     // Local File Header (30 bytes + nameBytes.length)
     const lfh = new Uint8Array(30 + nameBytes.length);
@@ -24085,6 +26949,9 @@ export async function createZipArchiveBlob(entries: ZipEntryInput[]): Promise<Bl
 
     centralDir.push(cdh);
     offset += lfh.length + size;
+    if (idx % 12 === 11) {
+      await new Promise((r) => setTimeout(r, 0));
+    }
   }
 
   let cdSize = 0;

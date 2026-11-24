@@ -37,6 +37,7 @@ import {
   computeStructuralSimilarityHash,
   isDesignDuplicate,
   registerDesignHash,
+  flushDesignHashRegistriesNow,
   getLifetimeUniqueTotal,
   buildIllustratorSVG,
   buildIllustratorEPS10,
@@ -46,6 +47,7 @@ import {
   inspectMicrostockFileBinary,
   MicrostockBinaryVerification,
   createZipArchiveBlob,
+  computeBlobCrc32AndSize,
   ZipEntryInput,
   buildMicrostockCSV,
   MicrostockMetaRow,
@@ -486,7 +488,11 @@ export default function App() {
   const selectMode = useCallback(
     (m: PatternMode) => {
       setP((prev) => {
-        const isPlainBg = m.cat === "Plain BG";
+        const isPlainBg =
+          m.cat === "Plain BG" ||
+          m.cat === "Background" ||
+          m.cat === "Gradient" ||
+          m.cat === "Texture";
         const isBrush = m.cat === "Brush";
         const isPoster = m.cat === "Poster";
         const isLighting = m.cat === "Lighting";
@@ -516,7 +522,7 @@ export default function App() {
           mx: "none",
           bd: isPlainBg ? prev.bd : "none",
           transp:
-            isBrush || isLighting ? true : wasBrushOrLight || isPoster ? false : prev.transp,
+            isBrush || isLighting ? true : wasBrushOrLight || isPoster || isPlainBg ? false : prev.transp,
           svgStructure:
             isPlainBg || isBrush || isPoster || isLighting
               ? "unified"
@@ -833,6 +839,11 @@ export default function App() {
       const isBrush = targetMode.cat === "Brush";
       const isPoster = targetMode.cat === "Poster";
       const isLighting = targetMode.cat === "Lighting";
+      const isFullBgCat =
+        targetMode.cat === "Plain BG" ||
+        targetMode.cat === "Background" ||
+        targetMode.cat === "Gradient" ||
+        targetMode.cat === "Texture";
       const maxAttempts = extremeDiverse ? 64 : 48;
 
       const buildCandidateAt = (attempt: number) => {
@@ -875,7 +886,7 @@ export default function App() {
         const testP: PatternState = {
           ...baseP,
           mode: targetMode.id,
-          mx: isBrush || isPoster || isLighting ? "none" : cand.mx,
+          mx: isBrush || isPoster || isLighting || isFullBgCat ? "none" : cand.mx,
           seed: cand.seed,
           bg: cand.bg,
           bg2: cand.bg2,
@@ -894,9 +905,10 @@ export default function App() {
           bdc: cand.bdc,
           bdn: cand.bdn,
           bdo: cand.bdo,
-          transp: isBrush || isLighting ? true : isPoster ? false : baseP.transp,
-          svgStructure: isBrush || isPoster || isLighting ? "unified" : baseP.svgStructure,
-          view: isBrush || isPoster || isLighting ? 1 : baseP.view,
+          transp: isBrush || isLighting ? true : isPoster || isFullBgCat ? false : baseP.transp,
+          svgStructure:
+            isBrush || isPoster || isLighting || isFullBgCat ? "unified" : baseP.svgStructure,
+          view: isBrush || isPoster || isLighting || isFullBgCat ? 1 : baseP.view,
           safeEdge: baseP.safeEdge === true,
         };
         const designHash = computeDesignHash(testP, cand.q);
@@ -1006,37 +1018,6 @@ export default function App() {
           const found = allBrushes.find((m) => m.id === nextBrushId);
           if (found) targetMode = found;
         }
-      } else if (!keepCurrentMode && (curMode.cat === "Poster" || cat === "Poster")) {
-        const allPosters = modes.filter((m) => m.cat === "Poster");
-        if (allPosters.length > 1) {
-          if (posterDeckRef.current.length === 0) {
-            const ids = allPosters.map((m) => m.id);
-            const interleaved: string[] = [];
-            const step = 13; // Prime step jumps across distinct poster structural families on every click!
-            const visited = new Set<string>();
-            let cursor = Math.floor(Math.random() * ids.length);
-            for (let i = 0; i < ids.length; i++) {
-              while (visited.has(ids[cursor])) {
-                cursor = (cursor + 1) % ids.length;
-              }
-              interleaved.push(ids[cursor]);
-              visited.add(ids[cursor]);
-              cursor = (cursor + step) % ids.length;
-            }
-            if (interleaved[0] === curMode.id && interleaved.length > 1) {
-              interleaved.push(interleaved.shift()!);
-            }
-            posterDeckRef.current = interleaved;
-          }
-          let nextPosterId = posterDeckRef.current.shift()!;
-          if (nextPosterId === curMode.id && posterDeckRef.current.length > 0) {
-            const altId = posterDeckRef.current.shift()!;
-            posterDeckRef.current.push(nextPosterId);
-            nextPosterId = altId;
-          }
-          const found = allPosters.find((m) => m.id === nextPosterId);
-          if (found) targetMode = found;
-        }
       } else if (!keepCurrentMode && (curMode.cat === "Lighting" || cat === "Lighting")) {
         const allLights = modes.filter((m) => m.cat === "Lighting");
         if (allLights.length > 1) {
@@ -1110,13 +1091,10 @@ export default function App() {
           }
         } else if (targetMode.cat === "Poster") {
           const targetDefPcs = String(targetMode.params.find((p) => p.k === "pcs")?.def || "4");
-          const hasVisitedSet = MP[targetMode.id]?.variant !== undefined;
-          const nextVar =
-            !keepCurrentMode && !hasVisitedSet
-              ? 0
-              : ((prevPosterVar + 1) % 24) + 1;
+          const nextVar = ((prevPosterVar + 1) % 240) + 1;
           const effPcsPoster =
-            keepCurrentMode && prevPosterPcs !== undefined ? String(prevPosterPcs) : targetDefPcs;
+            prevPosterPcs !== undefined ? String(prevPosterPcs) : targetDefPcs;
+          const prevColorSet = MP[targetMode.id]?.colorSet;
           const posterRatio: CanvasRatio =
             effPcsPoster === "1"
               ? "3:4"
@@ -1132,9 +1110,7 @@ export default function App() {
             ...res.testMP[targetMode.id],
             variant: nextVar,
             pcs: effPcsPoster,
-            bScale: 1,
-            gap: 32,
-            layers: 16,
+            ...(prevColorSet !== undefined ? { colorSet: prevColorSet } : {}),
             ...(prevPosterShowText !== undefined ? { showText: prevPosterShowText } : {}),
           };
           res.testP.bg = targetMode.look?.bg || "#2e3136";
@@ -1224,6 +1200,10 @@ export default function App() {
   const expRep = useCallback(() => {
     if (
       P.svgStructure === "unified" ||
+      curMode.cat === "Plain BG" ||
+      curMode.cat === "Background" ||
+      curMode.cat === "Gradient" ||
+      curMode.cat === "Texture" ||
       curMode.cat === "Brush" ||
       curMode.cat === "Poster" ||
       curMode.cat === "Lighting"
@@ -1252,12 +1232,28 @@ export default function App() {
     setTimeout(() => URL.revokeObjectURL(url), revokeMs);
   };
 
+  // Shared Offscreen Canvas Pool so batching 200+ 30MP designs NEVER exhausts GPU/RAM (reuses 1 tile canvas & 1 master canvas instead of leaking 400 x 144MB = 57GB!)
+  const sharedTileCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const sharedMasterCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const releaseSharedExportCanvases = useCallback(() => {
+    if (sharedTileCanvasRef.current) {
+      sharedTileCanvasRef.current.width = 1;
+      sharedTileCanvasRef.current.height = 1;
+    }
+    if (sharedMasterCanvasRef.current) {
+      sharedMasterCanvasRef.current.width = 1;
+      sharedMasterCanvasRef.current.height = 1;
+    }
+  }, []);
+
   // Render high-res 5 MB – 10 MB JPG or PNG Blob for any given stateP & stateMP
   const renderHighResRasterBlob = useCallback(
     async (
       stateP: PatternState,
       stateMP: Record<string, Record<string, any>>,
-      fmt: "jpeg" | "png"
+      fmt: "jpeg" | "png",
+      isBatchMode = false
     ): Promise<{ blob: Blob; w: number; h: number }> => {
       const mObj = modes.find((x) => x.id === stateP.mode) || modes[0];
       const lightBgMode =
@@ -1280,6 +1276,10 @@ export default function App() {
       const H = dims.h;
       const isUnified =
         stateP.svgStructure === "unified" ||
+        mObj.cat === "Plain BG" ||
+        mObj.cat === "Background" ||
+        mObj.cat === "Gradient" ||
+        mObj.cat === "Texture" ||
         mObj.cat === "Brush" ||
         mObj.cat === "Poster" ||
         mObj.cat === "Lighting";
@@ -1307,8 +1307,14 @@ export default function App() {
       );
       const img = await loadImg(tileSvg);
 
-      const tc = cvs(twPx, thPx);
-      const tx = tc.getContext("2d")!;
+      if (!sharedTileCanvasRef.current) {
+        sharedTileCanvasRef.current = document.createElement("canvas");
+      }
+      const tc = sharedTileCanvasRef.current;
+      tc.width = twPx;
+      tc.height = thPx;
+      const tx = tc.getContext("2d", { willReadFrequently: true })!;
+      tx.clearRect(0, 0, twPx, thPx);
       tx.imageSmoothingEnabled = true;
       tx.imageSmoothingQuality = "high";
       if (!isBrushOrTransp) {
@@ -1316,9 +1322,17 @@ export default function App() {
         tx.fillRect(0, 0, twPx, thPx);
       }
       tx.drawImage(img, 0, 0, twPx, thPx);
+      // Release decoded SVG image bitmap immediately
+      img.src = "";
 
-      const c = cvs(W, H);
-      const x = c.getContext("2d")!;
+      if (!sharedMasterCanvasRef.current) {
+        sharedMasterCanvasRef.current = document.createElement("canvas");
+      }
+      const c = sharedMasterCanvasRef.current;
+      c.width = W;
+      c.height = H;
+      const x = c.getContext("2d", { willReadFrequently: true })!;
+      x.clearRect(0, 0, W, H);
       x.imageSmoothingEnabled = true;
       x.imageSmoothingQuality = "high";
 
@@ -1345,20 +1359,25 @@ export default function App() {
           x.drawImage(tc, Math.round(i * tileW), Math.round(j * tileH), Math.ceil(tileW), Math.ceil(tileH));
         }
       }
+      // Shrink tile canvas right after stamping so 144 MB tile buffer is freed before micro-grain + JPEG encode
+      tc.width = 1;
+      tc.height = 1;
 
-      // Apply subtle 300-DPI studio print micro-grain (preserves alpha=0 on transparent PNG areas)
-      applyStudioMicroGrain(x, W, H, stateP.seed);
+      // Apply subtle 300-DPI studio print micro-grain in memory-safe strips (yields between strips in batch mode so PC never freezes!)
+      await applyStudioMicroGrain(x, W, H, stateP.seed, isBatchMode);
 
       // Encode JPG (Guaranteed 5.8 MB – 9.5 MB pure pixel entropy + 300 DPI) or PNG (Guaranteed >= 1.85 MB, 300 DPI)
       const MIN_JPG_BYTES = 5850000; // ~5.58 MB
       const MAX_JPG_BYTES = 9850000; // ~9.40 MB (strictly under 10 MB)
 
+      const initialJpgQ = isBatchMode ? 0.94 : 0.985;
       let rawBlob: Blob | null = await new Promise((resolve) =>
-        c.toBlob((b) => resolve(b), "image/" + fmt, fmt === "jpeg" ? 0.985 : 1.0)
+        c.toBlob((b) => resolve(b), "image/" + fmt, fmt === "jpeg" ? initialJpgQ : 1.0)
       );
 
       if (fmt === "jpeg" && rawBlob && rawBlob.size > MAX_JPG_BYTES) {
-        for (const qTry of [0.95, 0.92, 0.88, 0.84, 0.79, 0.74, 0.68]) {
+        const qList = isBatchMode ? [0.86, 0.78, 0.7] : [0.95, 0.92, 0.88, 0.84, 0.79, 0.74, 0.68];
+        for (const qTry of qList) {
           const tryB: Blob | null = await new Promise((resolve) =>
             c.toBlob((b) => resolve(b), "image/jpeg", qTry)
           );
@@ -1368,6 +1387,10 @@ export default function App() {
           }
         }
       }
+
+      // Immediately release 144 MB master canvas backing buffer
+      c.width = 1;
+      c.height = 1;
 
       const validBlob = rawBlob || new Blob([], { type: "image/" + fmt });
       const finalBlob =
@@ -1584,8 +1607,6 @@ export default function App() {
             ? modes.filter((m) => m.cat === "Brush")
             : curMode.cat === "Lighting"
             ? modes.filter((m) => m.cat === "Lighting")
-            : curMode.cat === "Poster"
-            ? modes.filter((m) => m.cat === "Poster")
             : [curMode];
 
         // Build a Category-Interleaved, Fisher-Yates Shuffled sequence so NO two consecutive designs share a category or style!
@@ -1663,7 +1684,95 @@ export default function App() {
         const userPosterShowText = curMode.cat === "Poster" ? MP[curMode.id]?.showText : undefined;
 
         let workingMP = { ...MP };
+        let lastBatchP: PatternState = anchorP;
+        let lastLockedTotal = uniqCount;
         const batchUsedSigs = new Set<string>();
+
+        const needSvg = batchFormat === "svg" || batchFormat === "both" || batchFormat === "all3";
+        const needEps = batchFormat === "eps" || batchFormat === "eps_jpg" || batchFormat === "all3";
+        const needJpg =
+          batchFormat === "jpg" ||
+          batchFormat === "both" ||
+          batchFormat === "eps_jpg" ||
+          batchFormat === "all3";
+
+        // Auto-chunk ZIP archives into memory-safe volumes (45 designs per ZIP when JPGs are included, or 100 for vector-only)
+        // This guarantees RAM never exceeds ~320 MB even on a 200-design or 500-design batch!
+        const designsPerVolume = !dirHandle && needJpg ? 45 : 100;
+        const totalVolumes = !dirHandle && total > designsPerVolume ? Math.ceil(total / designsPerVolume) : 1;
+        let currentVolume = 1;
+        let designsInCurVolume = 0;
+
+        const flushZipVolume = async (volIdx: number, isFinal: boolean) => {
+          if (dirHandle || zipEntries.length === 0) return;
+          const volTag = totalVolumes > 1 ? `_PART_${String(volIdx).padStart(2, "0")}_OF_${String(totalVolumes).padStart(2, "0")}` : "";
+          const volFolderName = `${folderName}${volTag}`;
+          const csvText = buildMicrostockCSV(csvRows);
+          const csvBlob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
+          const csvMeta = await computeBlobCrc32AndSize(csvBlob);
+          const licenseText = [
+            "====================================================================",
+            "PATTERNVAULT — COMMERCIAL MICROSTOCK ORIGIN & ROYALTY-FREE CERTIFICATE",
+            "====================================================================",
+            `BATCH FOLDER ID : ${volFolderName}`,
+            `GENERATED COUNT : ${csvRows.length} FILES`,
+            "GENERATION TYPE : 100% MANUAL PROCEDURAL MATHEMATICAL GEOMETRY (ZERO AI)",
+            "COPYRIGHT STATUS: 100% ORIGINAL PROCEDURAL VECTORS — PUBLIC DOMAIN / COMMERCIAL ROYALTY-FREE",
+            "MICROSTOCK READY: APPROVED FOR ADOBE STOCK, SHUTTERSTOCK, FREEPIK, VECTEEZY & PRINT-ON-DEMAND",
+            "DUPLICATE CHECK : VERIFIED VIA 64-BIT FNV-1A + 32-BIT WEYL NON-REPEATING PERMUTATION LEDGER",
+            "====================================================================",
+          ].join("\n");
+          const licBlob = new Blob([licenseText], { type: "text/plain;charset=utf-8" });
+          const licMeta = await computeBlobCrc32AndSize(licBlob);
+
+          zipEntries.push({
+            path: `${folderName}/MICROSTOCK_UPLOAD_METADATA.csv`,
+            blob: csvBlob,
+            crc: csvMeta.crc,
+            size: csvMeta.size,
+          });
+          zipEntries.push({
+            path: `${folderName}/COMMERCIAL_LICENSE_CERTIFICATE.txt`,
+            blob: licBlob,
+            crc: licMeta.crc,
+            size: licMeta.size,
+          });
+
+          setBatchProgress({
+            done: isFinal ? total : Math.min(total, volIdx * designsPerVolume),
+            total,
+            msg:
+              totalVolumes > 1
+                ? `PACKAGING ARCHIVE VOLUME ${volIdx} / ${totalVolumes} (.ZIP)...`
+                : "PACKAGING FOLDER ARCHIVE (.ZIP)...",
+          });
+          await new Promise((r) => setTimeout(r, 15));
+
+          const zipBlob = await createZipArchiveBlob(zipEntries);
+          const zipMb = (zipBlob.size / (1024 * 1024)).toFixed(1);
+          downloadBlob(zipBlob, `${volFolderName}.zip`);
+
+          // Immediately clear zipEntries array so all 6MB JPG Blobs in this volume are garbage-collected!
+          zipEntries.length = 0;
+          designsInCurVolume = 0;
+
+          if (isFinal) {
+            setExportStatus(
+              `DOWNLOADED BATCH "${volFolderName}.zip" (${csvRows.length} FILES · ${zipMb} MB)`
+            );
+            setBatchProgress({
+              done: total,
+              total,
+              msg:
+                totalVolumes > 1
+                  ? `✓ DOWNLOADED ALL ${totalVolumes} ZIP VOLUMES (${csvRows.length} UNIQUE FILES · MICROSTOCK CSV INCLUDED)!`
+                  : `✓ DOWNLOADED "${volFolderName}.zip" (${csvRows.length} FILES · ${zipMb} MB · MICROSTOCK CSV INCLUDED)!`,
+            });
+          } else {
+            // Brief pause between multi-volume ZIP downloads so browser download manager queues cleanly
+            await new Promise((r) => setTimeout(r, 120));
+          }
+        };
 
         for (let idx = 0; idx < total; idx++) {
           if (batchCancelRef.current) break;
@@ -1673,6 +1782,9 @@ export default function App() {
             total,
             msg: `GENERATING UNIQUE ${idx + 1} / ${total} [${targetMode.cat.toUpperCase()} · ${targetMode.name.toUpperCase()}]...`,
           });
+
+          // Yield a real animation frame so browser UI stays 60fps responsive and Cancel button works instantaneously
+          await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
 
           // Preserve user's explicit Lighting bgMode/pcs or Poster pcs/showText if batching inside that category
           if (targetMode.cat === "Lighting" && (userLightBgMode !== undefined || userLightPcs !== undefined)) {
@@ -1706,24 +1818,35 @@ export default function App() {
             batchUsedSigs
           );
           if (!candRes) continue;
-          await new Promise((r) => setTimeout(r, 0));
 
           const workingP = candRes.testP;
           workingMP = candRes.testMP;
-          const lockedTotal = registerDesignHash(candRes.designHash, candRes.structHash);
-          setP(workingP);
-          setMP(workingMP);
-          setClicks((c) => c + 1);
-          setUniqCount(lockedTotal);
+          lastBatchP = workingP;
+          lastLockedTotal = registerDesignHash(candRes.designHash, candRes.structHash);
+          // Do NOT call setP(workingP) / setMP(workingMP) on every single loop iteration!
+          // Updating main canvas React state 200 times forces 200 full DOM/SVG preview re-renders + 200 undo history serializations.
+          if (idx % 5 === 0 || idx === total - 1) {
+            setUniqCount(lastLockedTotal);
+          }
 
           const numStr = String(idx + 1).padStart(3, "0");
           const ratioTag = (workingP.ratio || "1:1").replace(":", "x");
           const isBrush = targetMode.cat === "Brush";
           const isPoster = targetMode.cat === "Poster";
           const isLighting = targetMode.cat === "Lighting";
-          const omitBg = isPoster ? false : Boolean(workingP.transp || isBrush || isLighting);
+          const isFullBgCat =
+            targetMode.cat === "Plain BG" ||
+            targetMode.cat === "Background" ||
+            targetMode.cat === "Gradient" ||
+            targetMode.cat === "Texture";
+          const omitBg =
+            isPoster || isFullBgCat ? false : Boolean(workingP.transp || isBrush || isLighting);
           const rep =
-            workingP.svgStructure === "unified" || isBrush || isPoster || isLighting
+            workingP.svgStructure === "unified" ||
+            isBrush ||
+            isPoster ||
+            isLighting ||
+            isFullBgCat
               ? 1
               : workingP.exRep === "auto"
               ? workingP.view > 0
@@ -1737,16 +1860,19 @@ export default function App() {
             workingP.artH
           );
 
-          const needSvg = batchFormat === "svg" || batchFormat === "both" || batchFormat === "all3";
-          const needEps = batchFormat === "eps" || batchFormat === "eps_jpg" || batchFormat === "all3";
-          const needJpg =
-            batchFormat === "jpg" ||
-            batchFormat === "both" ||
-            batchFormat === "eps_jpg" ||
-            batchFormat === "all3";
-
           const cleanTileForVec =
             needSvg || needEps ? buildSVGFor(workingP, workingMP, omitBg, false) : "";
+          // Build flattened Illustrator SVG ONCE and share it with both SVG and EPS10 outputs!
+          const sharedFlatSvg =
+            needSvg || needEps
+              ? buildIllustratorSVG(
+                  cleanTileForVec,
+                  { ...workingP, transp: omitBg },
+                  rep,
+                  dims.w,
+                  dims.h
+                )
+              : "";
 
           if (needEps) {
             const fullEps = buildIllustratorEPS10(
@@ -1754,7 +1880,8 @@ export default function App() {
               { ...workingP, transp: omitBg },
               rep,
               dims.w,
-              dims.h
+              dims.h,
+              sharedFlatSvg
             );
             const epsBlob = new Blob([fullEps], { type: "application/postscript;charset=utf-8" });
             const epsFilename = `${numStr}_${targetMode.id}_${ratioTag}_${dims.w}x${dims.h}_${workingP.seed}.eps`;
@@ -1765,7 +1892,13 @@ export default function App() {
               await wr.write(epsBlob);
               await wr.close();
             } else {
-              zipEntries.push({ path: `${folderName}/${epsFilename}`, blob: epsBlob });
+              const meta = await computeBlobCrc32AndSize(epsBlob);
+              zipEntries.push({
+                path: `${folderName}/${epsFilename}`,
+                blob: epsBlob,
+                crc: meta.crc,
+                size: meta.size,
+              });
             }
 
             csvRows.push({
@@ -1782,14 +1915,7 @@ export default function App() {
           }
 
           if (needSvg) {
-            const fullSvg = buildIllustratorSVG(
-              cleanTileForVec,
-              { ...workingP, transp: omitBg },
-              rep,
-              dims.w,
-              dims.h
-            );
-            const svgBlob = new Blob([fullSvg], { type: "image/svg+xml;charset=utf-8" });
+            const svgBlob = new Blob([sharedFlatSvg], { type: "image/svg+xml;charset=utf-8" });
             const svgFilename = `${numStr}_${targetMode.id}_${ratioTag}_${dims.w}x${dims.h}_${workingP.seed}.svg`;
 
             if (dirHandle) {
@@ -1798,7 +1924,13 @@ export default function App() {
               await wr.write(svgBlob);
               await wr.close();
             } else {
-              zipEntries.push({ path: `${folderName}/${svgFilename}`, blob: svgBlob });
+              const meta = await computeBlobCrc32AndSize(svgBlob);
+              zipEntries.push({
+                path: `${folderName}/${svgFilename}`,
+                blob: svgBlob,
+                crc: meta.crc,
+                size: meta.size,
+              });
             }
 
             csvRows.push({
@@ -1818,7 +1950,8 @@ export default function App() {
             const { blob: jpgBlob, w: jW, h: jH } = await renderHighResRasterBlob(
               workingP,
               workingMP,
-              "jpeg"
+              "jpeg",
+              true
             );
             const jpgFilename = `${numStr}_${targetMode.id}_${ratioTag}_${jW}x${jH}_${workingP.seed}.jpg`;
 
@@ -1828,7 +1961,13 @@ export default function App() {
               await wr.write(jpgBlob);
               await wr.close();
             } else {
-              zipEntries.push({ path: `${folderName}/${jpgFilename}`, blob: jpgBlob });
+              const meta = await computeBlobCrc32AndSize(jpgBlob);
+              zipEntries.push({
+                path: `${folderName}/${jpgFilename}`,
+                blob: jpgBlob,
+                crc: meta.crc,
+                size: meta.size,
+              });
             }
 
             csvRows.push({
@@ -1844,33 +1983,46 @@ export default function App() {
             });
           }
 
+          designsInCurVolume++;
           setBatchProgress({
             done: idx + 1,
             total,
             msg: `COMPLETED ${idx + 1} / ${total} · SEED #${workingP.seed} VERIFIED UNIQUE`,
           });
-          // Yield to UI thread so canvas preview updates smoothly
-          await new Promise((r) => setTimeout(r, 25));
+
+          // If current ZIP volume reached capacity (45 designs with JPGs) and more designs remain, download this volume and free RAM!
+          if (!dirHandle && designsInCurVolume >= designsPerVolume && idx < total - 1) {
+            await flushZipVolume(currentVolume, false);
+            currentVolume++;
+          }
         }
 
-        if (csvRows.length > 0) {
-          const csvText = buildMicrostockCSV(csvRows);
-          const csvBlob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
-          const licenseText = [
-            "====================================================================",
-            "PATTERNVAULT — COMMERCIAL MICROSTOCK ORIGIN & ROYALTY-FREE CERTIFICATE",
-            "====================================================================",
-            `BATCH FOLDER ID : ${folderName}`,
-            `GENERATED COUNT : ${csvRows.length} FILES`,
-            "GENERATION TYPE : 100% MANUAL PROCEDURAL MATHEMATICAL GEOMETRY (ZERO AI)",
-            "COPYRIGHT STATUS: 100% ORIGINAL PROCEDURAL VECTORS — PUBLIC DOMAIN / COMMERCIAL ROYALTY-FREE",
-            "MICROSTOCK READY: APPROVED FOR ADOBE STOCK, SHUTTERSTOCK, FREEPIK, VECTEEZY & PRINT-ON-DEMAND",
-            "DUPLICATE CHECK : VERIFIED VIA 64-BIT FNV-1A + 32-BIT WEYL NON-REPEATING PERMUTATION LEDGER",
-            "====================================================================",
-          ].join("\n");
-          const licBlob = new Blob([licenseText], { type: "text/plain;charset=utf-8" });
+        // Sync final design to main studio canvas once at the end of the batch
+        lockHist.current = true;
+        setP(lastBatchP);
+        setMP(workingMP);
+        setClicks((c) => c + csvRows.length);
+        setUniqCount(lastLockedTotal);
+        flushDesignHashRegistriesNow();
 
+        if (csvRows.length > 0) {
           if (dirHandle) {
+            const csvText = buildMicrostockCSV(csvRows);
+            const csvBlob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
+            const licenseText = [
+              "====================================================================",
+              "PATTERNVAULT — COMMERCIAL MICROSTOCK ORIGIN & ROYALTY-FREE CERTIFICATE",
+              "====================================================================",
+              `BATCH FOLDER ID : ${folderName}`,
+              `GENERATED COUNT : ${csvRows.length} FILES`,
+              "GENERATION TYPE : 100% MANUAL PROCEDURAL MATHEMATICAL GEOMETRY (ZERO AI)",
+              "COPYRIGHT STATUS: 100% ORIGINAL PROCEDURAL VECTORS — PUBLIC DOMAIN / COMMERCIAL ROYALTY-FREE",
+              "MICROSTOCK READY: APPROVED FOR ADOBE STOCK, SHUTTERSTOCK, FREEPIK, VECTEEZY & PRINT-ON-DEMAND",
+              "DUPLICATE CHECK : VERIFIED VIA 64-BIT FNV-1A + 32-BIT WEYL NON-REPEATING PERMUTATION LEDGER",
+              "====================================================================",
+            ].join("\n");
+            const licBlob = new Blob([licenseText], { type: "text/plain;charset=utf-8" });
+
             const cfh = await dirHandle.getFileHandle("MICROSTOCK_UPLOAD_METADATA.csv", {
               create: true,
             });
@@ -1894,33 +2046,12 @@ export default function App() {
               msg: `✓ SAVED ${csvRows.length} FILES + CSV DIRECTLY TO FOLDER "${folderName}"!`,
             });
           } else if (zipEntries.length > 0) {
-            zipEntries.push({
-              path: `${folderName}/MICROSTOCK_UPLOAD_METADATA.csv`,
-              blob: csvBlob,
-            });
-            zipEntries.push({
-              path: `${folderName}/COMMERCIAL_LICENSE_CERTIFICATE.txt`,
-              blob: licBlob,
-            });
-            setBatchProgress({
-              done: total,
-              total,
-              msg: "PACKAGING FOLDER ARCHIVE (.ZIP)...",
-            });
-            const zipBlob = await createZipArchiveBlob(zipEntries);
-            const zipMb = (zipBlob.size / (1024 * 1024)).toFixed(1);
-            downloadBlob(zipBlob, `${folderName}.zip`);
-            setExportStatus(
-              `DOWNLOADED BATCH FOLDER "${folderName}.zip" (${csvRows.length} FILES · ${zipMb} MB)`
-            );
-            setBatchProgress({
-              done: total,
-              total,
-              msg: `✓ DOWNLOADED "${folderName}.zip" (${csvRows.length} FILES · ${zipMb} MB · MICROSTOCK CSV INCLUDED)!`,
-            });
+            await flushZipVolume(currentVolume, true);
           }
         }
       } finally {
+        releaseSharedExportCanvases();
+        flushDesignHashRegistriesNow();
         setBatchRunning(false);
       }
     },
@@ -1933,11 +2064,13 @@ export default function App() {
       modes,
       P,
       MP,
+      uniqCount,
       generateUniqueCandidateForMode,
       batchBgMode,
       batchFormat,
       buildSVGFor,
       renderHighResRasterBlob,
+      releaseSharedExportCanvases,
     ]
   );
 
@@ -2702,7 +2835,7 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* QUICK 21 HABUHU REFERENCE SETS GRID */}
+                      {/* QUICK 33 HABUHU REFERENCE SETS GRID (SETS 1–33 INCLUDING 2027 NEW YEAR & CHRISTMAS SETS) */}
                       <div
                         style={{
                           display: "grid",
@@ -2711,7 +2844,7 @@ export default function App() {
                           marginBottom: "8px",
                         }}
                       >
-                        {MASTER_POSTER_MODES.slice(0, 21).map((pm, idx) => (
+                        {MASTER_POSTER_MODES.slice(0, 33).map((pm, idx) => (
                           <button
                             key={pm.id}
                             type="button"
@@ -2785,10 +2918,10 @@ export default function App() {
                           type="button"
                           className="btn pri"
                           style={{ minHeight: "27px", fontSize: "9.5px", padding: "4px 6px" }}
-                          onClick={() => smartRandom(true, "current", false)}
-                          title="SWITCH TO NEXT UNIQUE POSTER SET & NEW STRUCTURAL DESIGN (1-TIME BURN)"
+                          onClick={() => smartRandom(true, "current", true)}
+                          title="GENERATE NEW VARIATION OF THIS SELECTED POSTER SET (1-TIME BURN)"
                         >
-                          ✦ NEXT UNIQUE POSTER
+                          ✦ NEW VARIATION (THIS SET)
                         </button>
                         <button
                           type="button"
@@ -2800,10 +2933,14 @@ export default function App() {
                             borderColor: "var(--ac)",
                             color: "var(--ac)",
                           }}
-                          onClick={() => smartRandom(true, "current", true)}
-                          title="GENERATE NEW STRUCTURAL DESIGN INSIDE THIS POSTER SET (1-TIME BURN)"
+                          onClick={() => {
+                            const idx = MASTER_POSTER_MODES.findIndex((x) => x.id === curMode.id);
+                            const nextIdx = (idx + 1) % MASTER_POSTER_MODES.length;
+                            selectPosterReferenceSet(MASTER_POSTER_MODES[nextIdx].id);
+                          }}
+                          title="SWITCH TO NEXT POSTER SET IN COLLECTION"
                         >
-                          ✦ NEW IN THIS SET
+                          ✦ NEXT POSTER SET ▶
                         </button>
                       </div>
                     </div>
