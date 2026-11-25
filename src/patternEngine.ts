@@ -78,6 +78,29 @@ export function getMicrostockPosterRatio(pcsVal: string): CanvasRatio {
   return "2:1";                                              // 8000 × 4000 PX (5 PCS & 6 PCS Panoramic Showcase)
 }
 
+export function getMicrostockCalendarRatio(viewMode: string): CanvasRatio {
+  const v = String(viewMode || "12m");
+  if (v === "1m") return "3:4";       // 4800 × 6400 PX (Vertical Single Month Wall Calendar)
+  if (v === "12m_3x4") return "3:4";  // 4800 × 6400 PX (Vertical 12-Month 3×4 Wall Calendar Poster)
+  if (v === "12m") return "4:3";      // 6400 × 4800 PX (Landscape 12-Month 4×3 Full Year Desk/Wall Calendar)
+  if (v === "3m") return "3:2";       // 7200 × 4800 PX (Quarterly 3-Month Triptych Calendar)
+  if (v === "4m") return "16:9";      // 7680 × 4320 PX (4-Month Seasonal / Quad Calendar)
+  if (v === "6m") return "3:2";       // 7200 × 4800 PX (Half-Year 6-Month 3×2 Calendar)
+  if (v === "week") return "4:3";     // 6400 × 4800 PX (Weekly 7-Day Schedule & Planner Template)
+  return "4:3";
+}
+
+export function getMicrostockTypographyRatio(pcsVal: string): CanvasRatio {
+  const p = String(pcsVal || "1");
+  if (p === "1") return "4:3";   // 6400 × 4800 PX (1 PC Hero Calligraphy & Flourish Artwork)
+  if (p === "2") return "2:1";   // 8000 × 4000 PX (2 PCS Side-by-Side Duo Calligraphy Set)
+  if (p === "4") return "4:3";   // 6400 × 4800 PX (4 PCS 2×2 Hand-Lettered Calligraphy Set)
+  if (p === "6") return "3:2";   // 7200 × 4800 PX (6 PCS 3×2 Hand-Lettered Calligraphy Bundle)
+  if (p === "9") return "4:3";   // 6400 × 4800 PX (9 PCS 3×3 Mega Hand-Lettering Collection)
+  if (p === "12") return "4:3";  // 6400 × 4800 PX (12 PCS 4×3 Ultimate Calligraphy Sheet)
+  return "4:3";
+}
+
 export function getRatioDims(basePx: number, ratio: CanvasRatio | string, customW?: number, customH?: number) {
   const MIN_SIDE_PX = 4000; // Strictly >= 4000px on EVERY side (2x Freepik's 2000px minimum!)
   const MIN_TOTAL_MP_PX = 30000000; // Strictly >= 30.0 MP (7.5x Adobe Stock & Shutterstock's 4.0 MP minimum!)
@@ -12467,6 +12490,291 @@ const VECTOR_OUTLINE_GLYPHS: Record<string, [number, number][][]> = {
       [3.1, 3.4],
     ],
   ],
+  "4": [
+    [
+      [5.8, 0],
+      [8.1, 0],
+      [8.1, 8.8],
+      [9.6, 8.8],
+      [9.6, 11.0],
+      [8.1, 11.0],
+      [8.1, 14],
+      [5.8, 14],
+      [5.8, 11.0],
+      [0.5, 11.0],
+      [0.5, 8.8],
+    ],
+    [
+      [5.8, 3.2],
+      [2.7, 8.8],
+      [5.8, 8.8],
+    ],
+  ],
+  "5": [
+    [
+      [1.4, 0],
+      [8.8, 0],
+      [8.8, 2.3],
+      [3.6, 2.3],
+      [3.3, 5.4],
+      [4.8, 4.7],
+      [6.8, 4.7],
+      [8.6, 5.9],
+      [9.3, 8.1],
+      [9.1, 11.1],
+      [8.0, 13.0],
+      [6.1, 14],
+      [3.5, 14],
+      [1.5, 12.8],
+      [0.7, 10.6],
+      [3.0, 10.0],
+      [3.8, 11.6],
+      [5.8, 11.7],
+      [6.8, 10.4],
+      [6.8, 8.1],
+      [5.8, 6.9],
+      [3.9, 6.9],
+      [3.1, 7.7],
+      [1.0, 7.3],
+    ],
+  ],
+  "6": [
+    [
+      [3.8, 0],
+      [6.6, 0],
+      [8.4, 1.1],
+      [9.1, 3.0],
+      [6.8, 3.5],
+      [6.1, 2.2],
+      [4.1, 2.2],
+      [3.2, 3.6],
+      [3.1, 6.0],
+      [4.4, 5.2],
+      [6.6, 5.2],
+      [8.5, 6.4],
+      [9.3, 8.6],
+      [9.1, 11.4],
+      [8.1, 13.0],
+      [6.3, 14],
+      [3.7, 14],
+      [1.8, 12.9],
+      [0.8, 10.5],
+      [0.8, 3.6],
+      [1.7, 1.2],
+    ],
+    [
+      [3.9, 7.3],
+      [6.1, 7.3],
+      [6.9, 8.5],
+      [6.9, 10.6],
+      [6.1, 11.8],
+      [3.9, 11.8],
+      [3.2, 10.6],
+      [3.2, 8.5],
+    ],
+  ],
+  "7": [
+    [
+      [0.8, 0],
+      [9.3, 0],
+      [9.3, 2.2],
+      [4.8, 14],
+      [2.2, 14],
+      [6.6, 2.3],
+      [0.8, 2.3],
+    ],
+  ],
+  "8": [
+    [
+      [3.6, 0],
+      [6.4, 0],
+      [8.3, 1.0],
+      [9.0, 2.8],
+      [8.8, 5.0],
+      [7.6, 6.5],
+      [8.9, 7.9],
+      [9.3, 10.3],
+      [8.4, 12.8],
+      [6.5, 14],
+      [3.5, 14],
+      [1.6, 12.8],
+      [0.7, 10.3],
+      [1.1, 7.9],
+      [2.4, 6.5],
+      [1.2, 5.0],
+      [1.0, 2.8],
+      [1.7, 1.0],
+    ],
+    [
+      [3.9, 2.1],
+      [6.1, 2.1],
+      [6.7, 3.1],
+      [6.7, 4.7],
+      [6.1, 5.6],
+      [3.9, 5.6],
+      [3.3, 4.7],
+      [3.3, 3.1],
+    ],
+    [
+      [3.8, 7.7],
+      [6.2, 7.7],
+      [6.9, 8.8],
+      [6.9, 10.7],
+      [6.2, 11.8],
+      [3.8, 11.8],
+      [3.1, 10.7],
+      [3.1, 8.8],
+    ],
+  ],
+  "9": [
+    [
+      [3.7, 0],
+      [6.3, 0],
+      [8.2, 1.1],
+      [9.2, 3.5],
+      [9.2, 10.4],
+      [8.3, 12.8],
+      [6.2, 14],
+      [3.4, 14],
+      [1.6, 12.9],
+      [0.9, 11.0],
+      [3.2, 10.5],
+      [3.9, 11.8],
+      [5.9, 11.8],
+      [6.8, 10.4],
+      [6.9, 8.0],
+      [5.6, 8.8],
+      [3.4, 8.8],
+      [1.5, 7.6],
+      [0.7, 5.4],
+      [0.9, 2.6],
+      [1.9, 1.0],
+    ],
+    [
+      [3.9, 2.2],
+      [6.1, 2.2],
+      [6.8, 3.4],
+      [6.8, 5.5],
+      [6.1, 6.7],
+      [3.9, 6.7],
+      [3.1, 5.5],
+      [3.1, 3.4],
+    ],
+  ],
+  "/": [
+    [
+      [6.8, 0],
+      [8.8, 0],
+      [3.2, 14],
+      [1.2, 14],
+    ],
+  ],
+  ":": [
+    [
+      [3.6, 3.2],
+      [6.4, 3.2],
+      [6.4, 6.0],
+      [3.6, 6.0],
+    ],
+    [
+      [3.6, 10.2],
+      [6.4, 10.2],
+      [6.4, 13.0],
+      [3.6, 13.0],
+    ],
+  ],
+  ",": [
+    [
+      [3.8, 10.8],
+      [6.4, 10.8],
+      [6.4, 13.2],
+      [4.4, 15.2],
+      [2.8, 15.2],
+      [4.2, 13.2],
+      [3.8, 13.2],
+    ],
+  ],
+  "+": [
+    [
+      [4.0, 2.5],
+      [6.0, 2.5],
+      [6.0, 6.0],
+      [9.2, 6.0],
+      [9.2, 8.0],
+      [6.0, 8.0],
+      [6.0, 11.5],
+      [4.0, 11.5],
+      [4.0, 8.0],
+      [0.8, 8.0],
+      [0.8, 6.0],
+      [4.0, 6.0],
+    ],
+  ],
+  "&": [
+    [
+      [3.2, 0],
+      [6.2, 0],
+      [7.8, 1.2],
+      [8.0, 3.4],
+      [6.6, 5.4],
+      [5.4, 6.3],
+      [7.4, 8.8],
+      [8.4, 7.0],
+      [9.8, 7.6],
+      [8.6, 10.3],
+      [9.8, 12.2],
+      [9.8, 14],
+      [7.6, 14],
+      [6.8, 12.7],
+      [5.2, 14],
+      [2.6, 14],
+      [1.0, 12.6],
+      [0.6, 10.2],
+      [1.4, 7.8],
+      [3.0, 6.4],
+      [2.0, 4.6],
+      [1.8, 2.2],
+    ],
+    [
+      [3.8, 2.0],
+      [5.6, 2.0],
+      [6.0, 3.2],
+      [4.6, 4.8],
+      [3.6, 3.5],
+    ],
+    [
+      [3.2, 8.2],
+      [4.4, 7.4],
+      [6.0, 10.6],
+      [4.8, 11.8],
+      [3.0, 11.6],
+      [2.6, 9.8],
+    ],
+  ],
+  "(": [
+    [
+      [5.8, 0],
+      [7.8, 0],
+      [5.2, 4.2],
+      [5.2, 9.8],
+      [7.8, 14],
+      [5.8, 14],
+      [2.8, 9.8],
+      [2.8, 4.2],
+    ],
+  ],
+  ")": [
+    [
+      [2.2, 0],
+      [4.2, 0],
+      [7.2, 4.2],
+      [7.2, 9.8],
+      [4.2, 14],
+      [2.2, 14],
+      [4.8, 9.8],
+      [4.8, 4.2],
+    ],
+  ],
   "!": [
     [
       [3.7, 0],
@@ -12524,7 +12832,7 @@ function drawPosterVectorTextString(
 
   const charAdv = (ch: string) => {
     if (ch === " ") return weight === "wide" ? 9.5 : 5.8;
-    if (ch === "I" || ch === "|" || ch === "!" || ch === ".") return 4.6;
+    if (ch === "I" || ch === "|" || ch === "!" || ch === "." || ch === ":" || ch === ",") return 4.6;
     if (ch === "M" || ch === "W") return 10.4;
     return 9.4;
   };
@@ -12553,7 +12861,7 @@ function drawPosterVectorTextString(
       continue;
     }
     const loops = VECTOR_OUTLINE_GLYPHS[ch];
-    const xOff = ch === "I" || ch === "|" || ch === "!" || ch === "." ? -2.7 : 0;
+    const xOff = ch === "I" || ch === "|" || ch === "!" || ch === "." || ch === ":" || ch === "," ? -2.7 : 0;
 
     if (loops && loops.length > 0) {
       let compoundD = "";
@@ -12563,6 +12871,78 @@ function drawPosterVectorTextString(
         for (let p = 0; p < ring.length; p++) {
           const px = curX + (ring[p][0] + xOff) * scX;
           const py = yTop + ring[p][1] * scY;
+          compoundD += (p === 0 ? "M" : "L") + `${f1(px)} ${f1(py)}`;
+        }
+        compoundD += "Z";
+      }
+      if (compoundD) {
+        const ruleAttr = loops.length > 1 ? ` fill-rule="evenodd"` : "";
+        outPaths.push(`<path d="${compoundD}" fill="${col}"${ruleAttr}/>`);
+      }
+    }
+    curX += (adv + tracking) * scX;
+  }
+  return outPaths.join("");
+}
+
+function drawMirroredPosterVectorTextString(
+  text: string,
+  xStart: number,
+  yTop: number,
+  charH: number,
+  reflectH: number,
+  aspect: number,
+  weight: "regular" | "bold" | "wide",
+  col: string,
+  align: "left" | "center" | "right" = "center"
+): string {
+  const str = text.toUpperCase();
+  const scY = charH / 14;
+  const scReflectY = reflectH / 14;
+  const scX = (scY / Math.max(0.42, aspect)) * (weight === "bold" ? 1.06 : 0.96);
+  const tracking = weight === "wide" ? 7.2 : weight === "bold" ? 2.4 : 3.2;
+
+  const charAdv = (ch: string) => {
+    if (ch === " ") return weight === "wide" ? 9.5 : 5.8;
+    if (ch === "I" || ch === "|" || ch === "!" || ch === "." || ch === ":" || ch === ",") return 4.6;
+    if (ch === "M" || ch === "W") return 10.4;
+    return 9.4;
+  };
+
+  let totalUnits = 0;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    totalUnits += charAdv(ch) + (ch === " " ? 0 : tracking);
+  }
+  if (str.length > 0 && str[str.length - 1] !== " ") totalUnits -= tracking;
+
+  let curX =
+    align === "right"
+      ? xStart - totalUnits * scX
+      : align === "center"
+      ? xStart - totalUnits * scX * 0.5
+      : xStart;
+
+  const outPaths: string[] = [];
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    const adv = charAdv(ch);
+    if (ch === " ") {
+      curX += adv * scX;
+      continue;
+    }
+    const loops = VECTOR_OUTLINE_GLYPHS[ch];
+    const xOff = ch === "I" || ch === "|" || ch === "!" || ch === "." || ch === ":" || ch === "," ? -2.7 : 0;
+
+    if (loops && loops.length > 0) {
+      let compoundD = "";
+      for (let l = 0; l < loops.length; l++) {
+        const ring = loops[l];
+        if (ring.length < 3) continue;
+        for (let p = 0; p < ring.length; p++) {
+          const px = curX + (ring[p][0] + xOff) * scX;
+          const py = yTop + (14 - ring[p][1]) * scReflectY;
           compoundD += (p === 0 ? "M" : "L") + `${f1(px)} ${f1(py)}`;
         }
         compoundD += "Z";
@@ -22837,6 +23217,6155 @@ function registerMasterLightingCollection() {
 
 registerMasterLightingCollection();
 
+/* ============================================================================
+   PERPETUAL MICROSTOCK CALENDAR & PLANNER VECTOR STUDIO (60 COMMERCIAL SETS)
+   - Real Gregorian Perpetual Calendar Algorithm (Any Year 2024–2035, Leap-Year Accurate!)
+   - 7 High-Selling Microstock Views:
+     * "12m"     -> 12-Month Full Year Calendar (4×3 Landscape Wall / Desk Sheet)
+     * "12m_3x4" -> 12-Month Full Year Vertical Poster (3×4 Portrait Wall Sheet)
+     * "1m"      -> Single Month Wall / Desk Calendar Page (January .. December)
+     * "3m"      -> 3-Month Quarterly Triptych Calendar Set (Q1 / Q2 / Q3 / Q4)
+     * "4m"      -> 4-Month Seasonal Quad Calendar Set
+     * "6m"      -> 6-Month Half-Year (3×2) Calendar Sheet
+     * "week"    -> 7-Day Weekly Planner, Schedule & Notes Template
+   - 3 Week-Start Standards:
+     * "sun"     -> Sunday First (SUN MON TUE WED THU FRI SAT — US / International)
+     * "mon"     -> Monday First (MON TUE WED THU FRI SAT SUN — Europe / ISO-8601)
+     * "sat"     -> Saturday First (SAT SUN MON TUE WED THU FRI — Middle East / South Asia)
+   - 100% Create-Outlines Editable Vector Typography & Separable Vector Shapes!
+   ============================================================================ */
+
+export type CalendarArtTheme =
+  | "swiss_editorial"
+  | "corporate_modern"
+  | "luxury_gold_noir"
+  | "bauhaus_geometric"
+  | "botanical_organic"
+  | "pastel_minimal"
+  | "retro_70s_groovy"
+  | "cyber_tech_neon"
+  | "japanese_zen_arch"
+  | "memphis_pop_studio"
+  | "nordic_clean_grid"
+  | "executive_dark_slate";
+
+export interface MasterCalendarModeSpec {
+  id: string;
+  name: string;
+  shortLabel: string;
+  theme: CalendarArtTheme;
+  defYear: string;
+  defMonth: string;
+  defView: string;
+  defWeekStart: string;
+  boardBg: string;
+  cardBg: string;
+  headerBg: string;
+  textCol: string;
+  mutedCol: string;
+  accent1: string;
+  accent2: string;
+  accent3: string;
+  weekendCol: string;
+  subIdx: number;
+}
+
+const CALENDAR_MONTH_NAMES = [
+  "JANUARY",
+  "FEBRUARY",
+  "MARCH",
+  "APRIL",
+  "MAY",
+  "JUNE",
+  "JULY",
+  "AUGUST",
+  "SEPTEMBER",
+  "OCTOBER",
+  "NOVEMBER",
+  "DECEMBER",
+];
+
+const CALENDAR_MONTH_SHORT = [
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
+];
+
+const RAINBOW_12_MONTH_COLORS: string[] = [
+  "#4f67b0", // 1 January - Royal Indigo Blue
+  "#84bd00", // 2 February - Vibrant Lime Green
+  "#e0458b", // 3 March - Hot Magenta Pink
+  "#2a9df4", // 4 April - Bright Sky Cyan
+  "#38b2a6", // 5 May - Tropical Teal Mint
+  "#9353a6", // 6 June - Amethyst Purple
+  "#e65c2e", // 7 July - Vivid Coral Orange
+  "#f5b000", // 8 August - Golden Amber Yellow
+  "#e60012", // 9 September - Pure Crimson Red
+  "#d48b3b", // 10 October - Warm Bronze Ochre
+  "#4b63b8", // 11 November - Deep Sapphire Blue
+  "#80bd01", // 12 December - Fresh Emerald Lime
+];
+
+const BASE_12_CALENDAR_FAMILIES: {
+  theme: CalendarArtTheme;
+  familyTitle: string;
+  shortPrefix: string;
+  boardBg: string;
+  cardBg: string;
+  headerBg: string;
+  textCol: string;
+  mutedCol: string;
+  accent1: string;
+  accent2: string;
+  accent3: string;
+  weekendCol: string;
+  editions: { title: string; year: string; view: string; month: string; weekStart: string }[];
+}[] = [
+  {
+    theme: "swiss_editorial",
+    familyTitle: "Corner Wave Ribbons & Centered Red Year Calendar",
+    shortPrefix: "CORNER WAVE",
+    boardBg: "#000000",
+    cardBg: "#ffffff",
+    headerBg: "#f97316",
+    textCol: "#1e293b",
+    mutedCol: "#475569",
+    accent1: "#f43f2e",
+    accent2: "#f59e0b",
+    accent3: "#2563eb",
+    weekendCol: "#ef4444",
+    editions: [
+      { title: "2027 Corner Wave 12-Month Vertical Calendar", year: "2027", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2026 Corner Wave 12-Month Wall Calendar", year: "2026", view: "12m", month: "1", weekStart: "sun" },
+      { title: "2027 Single Month Corner Wave Desk Calendar", year: "2027", view: "1m", month: "1", weekStart: "sun" },
+      { title: "2026 Quarterly 3-Month Wave Triptych", year: "2026", view: "3m", month: "1", weekStart: "sun" },
+      { title: "2026 Weekly Planner & Schedule Sheet", year: "2026", view: "week", month: "1", weekStart: "mon" },
+    ],
+  },
+  {
+    theme: "corporate_modern",
+    familyTitle: "3D Crimson Wave Banner & Bordered Card Calendar",
+    shortPrefix: "CRIMSON WAVE",
+    boardBg: "#000000",
+    cardBg: "#ffffff",
+    headerBg: "#880808",
+    textCol: "#1e40af",
+    mutedCol: "#111827",
+    accent1: "#dc2626",
+    accent2: "#991b1b",
+    accent3: "#1d4ed8",
+    weekendCol: "#dc2626",
+    editions: [
+      { title: "2027 Crimson 3D Wave 12-Month Card Calendar", year: "2027", view: "12m_3x4", month: "1", weekStart: "mon" },
+      { title: "2026 Crimson 3D Wave 12-Month Wall Calendar", year: "2026", view: "12m", month: "1", weekStart: "mon" },
+      { title: "2027 Crimson Wave Single Month Poster", year: "2027", view: "1m", month: "3", weekStart: "mon" },
+      { title: "2026 Half-Year 6-Month Crimson Card Planner", year: "2026", view: "6m", month: "1", weekStart: "mon" },
+      { title: "2026 Corporate 7-Day Weekly Organizer", year: "2026", view: "week", month: "1", weekStart: "mon" },
+    ],
+  },
+  {
+    theme: "memphis_pop_studio",
+    familyTitle: "Mirror Reflection Year & 12-Color Rainbow Bars Calendar",
+    shortPrefix: "RAINBOW MIRROR",
+    boardBg: "#000000",
+    cardBg: "#ffffff",
+    headerBg: "#ea580c",
+    textCol: "#1f2937",
+    mutedCol: "#374151",
+    accent1: "#ea580c",
+    accent2: "#2a9df4",
+    accent3: "#84bd00",
+    weekendCol: "#e11d48",
+    editions: [
+      { title: "2026 Rainbow Mirror Reflection 12-Month Calendar", year: "2026", view: "12m", month: "1", weekStart: "mon" },
+      { title: "2027 Rainbow Mirror Reflection 12-Month Poster", year: "2027", view: "12m", month: "1", weekStart: "mon" },
+      { title: "2026 Rainbow Bar Single Month Showcase", year: "2026", view: "1m", month: "5", weekStart: "mon" },
+      { title: "2027 Rainbow 4-Month Seasonal Strip", year: "2027", view: "4m", month: "1", weekStart: "mon" },
+      { title: "2026 Rainbow Studio Weekly Desk Planner", year: "2026", view: "week", month: "1", weekStart: "mon" },
+    ],
+  },
+  {
+    theme: "nordic_clean_grid",
+    familyTitle: "3D Shadow Emerald Year & Full 42-Cell Boxed Table Calendar",
+    shortPrefix: "EMERALD TABLE",
+    boardBg: "#000000",
+    cardBg: "#ffffff",
+    headerBg: "#0d9f4f",
+    textCol: "#1e293b",
+    mutedCol: "#334155",
+    accent1: "#0d9f4f",
+    accent2: "#10b981",
+    accent3: "#047857",
+    weekendCol: "#ef4444",
+    editions: [
+      { title: "2027 Emerald Boxed Table 12-Month Wall Calendar", year: "2027", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2026 Emerald Boxed Table 12-Month Grid Calendar", year: "2026", view: "12m", month: "1", weekStart: "sun" },
+      { title: "2027 Full Boxed Grid Single Month Calendar", year: "2027", view: "1m", month: "1", weekStart: "sun" },
+      { title: "2026 Boxed Table 3-Month Quarterly Calendar", year: "2026", view: "3m", month: "1", weekStart: "sun" },
+      { title: "2026 Boxed Table Weekly Schedule Sheet", year: "2026", view: "week", month: "1", weekStart: "sun" },
+    ],
+  },
+  {
+    theme: "luxury_gold_noir",
+    familyTitle: "Luxury 24K Gold Crest & Obsidian Noir Calendar",
+    shortPrefix: "GOLD NOIR",
+    boardBg: "#000000",
+    cardBg: "#0b0f17",
+    headerBg: "#161e2e",
+    textCol: "#f8fafc",
+    mutedCol: "#94a3b8",
+    accent1: "#f59e0b",
+    accent2: "#fde047",
+    accent3: "#d97706",
+    weekendCol: "#fbbf24",
+    editions: [
+      { title: "2026 Royal Gold 12-Month VIP Calendar", year: "2026", view: "12m", month: "1", weekStart: "sun" },
+      { title: "2027 Black & Gold 12-Month Vertical Poster", year: "2027", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2026 Luxury Gold Single Month Showcase", year: "2026", view: "1m", month: "12", weekStart: "sun" },
+      { title: "2027 Gold Triptych 3-Month Collection", year: "2027", view: "3m", month: "1", weekStart: "mon" },
+      { title: "2026 Executive Gold Weekly Desk Planner", year: "2026", view: "week", month: "1", weekStart: "sun" },
+    ],
+  },
+  {
+    theme: "bauhaus_geometric",
+    familyTitle: "Bauhaus Geometric Arch, Sun & Split Header Calendar",
+    shortPrefix: "BAUHAUS ARCH",
+    boardBg: "#000000",
+    cardBg: "#f5efe6",
+    headerBg: "#1e293b",
+    textCol: "#1e293b",
+    mutedCol: "#64748b",
+    accent1: "#e05a47",
+    accent2: "#f2b84b",
+    accent3: "#2b5b84",
+    weekendCol: "#e05a47",
+    editions: [
+      { title: "2026 Bauhaus 12-Month Art Wall Calendar", year: "2026", view: "12m", month: "1", weekStart: "mon" },
+      { title: "2027 Bauhaus 12-Month Vertical Art Poster", year: "2027", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2026 Bauhaus Single Month Art Print", year: "2026", view: "1m", month: "5", weekStart: "mon" },
+      { title: "2026 Bauhaus 4-Month Quad Art Series", year: "2026", view: "4m", month: "1", weekStart: "sun" },
+      { title: "2026 Bauhaus Studio Weekly Schedule", year: "2026", view: "week", month: "1", weekStart: "mon" },
+    ],
+  },
+  {
+    theme: "botanical_organic",
+    familyTitle: "Botanical Terracotta Sun Arch & Sage Hills Calendar",
+    shortPrefix: "BOTANICAL SUN",
+    boardBg: "#000000",
+    cardBg: "#fbf8f3",
+    headerBg: "#1f3d36",
+    textCol: "#1f3d36",
+    mutedCol: "#6b7d74",
+    accent1: "#2d6a4f",
+    accent2: "#e07a5f",
+    accent3: "#81b29a",
+    weekendCol: "#e07a5f",
+    editions: [
+      { title: "2026 Botanical 12-Month Floral Calendar", year: "2026", view: "12m", month: "1", weekStart: "sun" },
+      { title: "2027 Organic Leaf 12-Month Wall Poster", year: "2027", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2026 Botanical Monthly Desk Card", year: "2026", view: "1m", month: "4", weekStart: "sun" },
+      { title: "2026 Spring/Summer 3-Month Triptych", year: "2026", view: "3m", month: "4", weekStart: "sun" },
+      { title: "2026 Botanical Weekly Habit & Planner", year: "2026", view: "week", month: "1", weekStart: "sun" },
+    ],
+  },
+  {
+    theme: "pastel_minimal",
+    familyTitle: "Origami Folded Geometric Ribbon & Pastel Calendar",
+    shortPrefix: "ORIGAMI RIBBON",
+    boardBg: "#000000",
+    cardBg: "#fffaf5",
+    headerBg: "#3a3550",
+    textCol: "#2d2a3e",
+    mutedCol: "#7c7794",
+    accent1: "#ec4899",
+    accent2: "#8b5cf6",
+    accent3: "#14b8a6",
+    weekendCol: "#ec4899",
+    editions: [
+      { title: "2026 Origami Ribbon 12-Month Planner", year: "2026", view: "12m", month: "1", weekStart: "sun" },
+      { title: "2027 Aesthetic 12-Month Vertical Calendar", year: "2027", view: "12m_3x4", month: "1", weekStart: "mon" },
+      { title: "2026 Soft Pastel Single Month Page", year: "2026", view: "1m", month: "6", weekStart: "sun" },
+      { title: "2026 Pastel 6-Month Half-Year Overview", year: "2026", view: "6m", month: "1", weekStart: "sun" },
+      { title: "2026 Aesthetic Weekly Journal Template", year: "2026", view: "week", month: "1", weekStart: "mon" },
+    ],
+  },
+  {
+    theme: "retro_70s_groovy",
+    familyTitle: "Retro 70s 5-Band Sunset Curve & Vintage Calendar",
+    shortPrefix: "RETRO 70S",
+    boardBg: "#000000",
+    cardBg: "#f6efe2",
+    headerBg: "#2b1d14",
+    textCol: "#2b1d14",
+    mutedCol: "#7c5e48",
+    accent1: "#d9593d",
+    accent2: "#f0a93b",
+    accent3: "#3f7d6e",
+    weekendCol: "#d9593d",
+    editions: [
+      { title: "2026 Retro 70s 12-Month Groove Calendar", year: "2026", view: "12m", month: "1", weekStart: "sun" },
+      { title: "2027 Vintage Sunset 12-Month Poster", year: "2027", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2026 Retro Groove Single Month Poster", year: "2026", view: "1m", month: "7", weekStart: "sun" },
+      { title: "2026 Summer Retro 3-Month Triptych", year: "2026", view: "3m", month: "7", weekStart: "sun" },
+      { title: "2026 Vintage 70s Weekly Schedule Pad", year: "2026", view: "week", month: "1", weekStart: "sun" },
+    ],
+  },
+  {
+    theme: "cyber_tech_neon",
+    familyTitle: "Futuristic Cyber HUD Chamfered Tech Grid Calendar",
+    shortPrefix: "CYBER HUD",
+    boardBg: "#000000",
+    cardBg: "#090d16",
+    headerBg: "#131c2e",
+    textCol: "#f1f5f9",
+    mutedCol: "#64748b",
+    accent1: "#00f0ff",
+    accent2: "#ff2a85",
+    accent3: "#8b5cf6",
+    weekendCol: "#ff2a85",
+    editions: [
+      { title: "2026 Cyber Neon 12-Month Tech Calendar", year: "2026", view: "12m", month: "1", weekStart: "mon" },
+      { title: "2027 Sci-Fi HUD 12-Month Vertical Poster", year: "2027", view: "12m_3x4", month: "1", weekStart: "mon" },
+      { title: "2026 Cyber Neon Single Month Display", year: "2026", view: "1m", month: "8", weekStart: "mon" },
+      { title: "2027 Cyber Quad 4-Month Tech Series", year: "2027", view: "4m", month: "1", weekStart: "mon" },
+      { title: "2026 Developer Sprint Weekly Planner", year: "2026", view: "week", month: "1", weekStart: "mon" },
+    ],
+  },
+  {
+    theme: "japanese_zen_arch",
+    familyTitle: "Japanese Zen Hinomaru Red Sun & Horizon Calendar",
+    shortPrefix: "JAPANESE ZEN",
+    boardBg: "#000000",
+    cardBg: "#f4efe6",
+    headerBg: "#1c1917",
+    textCol: "#1c1917",
+    mutedCol: "#78716c",
+    accent1: "#dc2626",
+    accent2: "#d97706",
+    accent3: "#292524",
+    weekendCol: "#dc2626",
+    editions: [
+      { title: "2026 Japanese Zen 12-Month Wall Calendar", year: "2026", view: "12m", month: "1", weekStart: "sun" },
+      { title: "2027 Kyoto Minimal 12-Month Vertical Poster", year: "2027", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2026 Zen Red Sun Single Month Art Card", year: "2026", view: "1m", month: "9", weekStart: "sun" },
+      { title: "2026 Zen Triptych 3-Month Art Set", year: "2026", view: "3m", month: "10", weekStart: "sun" },
+      { title: "2026 Zen Mindful Weekly Planner Sheet", year: "2026", view: "week", month: "1", weekStart: "mon" },
+    ],
+  },
+  {
+    theme: "executive_dark_slate",
+    familyTitle: "Panoramic Mountain Peaks & Multi-Year Pro Calendar",
+    shortPrefix: "MOUNTAIN PRO",
+    boardBg: "#000000",
+    cardBg: "#ffffff",
+    headerBg: "#0f172a",
+    textCol: "#0f172a",
+    mutedCol: "#64748b",
+    accent1: "#0284c7",
+    accent2: "#f59e0b",
+    accent3: "#10b981",
+    weekendCol: "#e11d48",
+    editions: [
+      { title: "2026 Panoramic Mountain 12-Month Pro Calendar", year: "2026", view: "12m", month: "1", weekStart: "mon" },
+      { title: "2028 Full Year 12-Month Leap-Year Calendar", year: "2028", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2025 Full Year 12-Month Archive Calendar", year: "2025", view: "12m", month: "1", weekStart: "sun" },
+      { title: "2029 Full Year 12-Month Future Calendar", year: "2029", view: "12m_3x4", month: "1", weekStart: "sun" },
+      { title: "2030 Full Year 12-Month Decade Calendar", year: "2030", view: "12m", month: "1", weekStart: "sun" },
+    ],
+  },
+];
+
+export const MASTER_CALENDAR_MODES: MasterCalendarModeSpec[] = [];
+for (let fIdx = 0; fIdx < BASE_12_CALENDAR_FAMILIES.length; fIdx++) {
+  const fam = BASE_12_CALENDAR_FAMILIES[fIdx];
+  for (let eIdx = 0; eIdx < fam.editions.length; eIdx++) {
+    const num = fIdx * 5 + eIdx + 1; // Calendar 1 .. Calendar 60
+    const ed = fam.editions[eIdx];
+    MASTER_CALENDAR_MODES.push({
+      id: `cal_ms_${num}`,
+      name: `Calendar ${num}: ${ed.title}`,
+      shortLabel: `CAL ${num}: ${fam.shortPrefix} (${ed.year} · ${ed.view.toUpperCase()})`,
+      theme: fam.theme,
+      defYear: ed.year,
+      defMonth: ed.month,
+      defView: ed.view,
+      defWeekStart: ed.weekStart,
+      boardBg: fam.boardBg,
+      cardBg: fam.cardBg,
+      headerBg: fam.headerBg,
+      textCol: fam.textCol,
+      mutedCol: fam.mutedCol,
+      accent1: fam.accent1,
+      accent2: fam.accent2,
+      accent3: fam.accent3,
+      weekendCol: fam.weekendCol,
+      subIdx: eIdx,
+    });
+  }
+}
+
+// Accurate Gregorian Perpetual Calendar Helpers (Works for ANY year e.g. 2024..2035)
+function getDaysInMonth(year: number, month1To12: number): number {
+  return new Date(year, month1To12, 0).getDate();
+}
+
+// Returns 0=Sunday, 1=Monday, ..., 6=Saturday for the 1st of the given month
+function getFirstDayOfWeek0Sun(year: number, month1To12: number): number {
+  return new Date(year, month1To12 - 1, 1).getDay();
+}
+
+function getWeekDayLabels(weekStart: string, mode: "single" | "two" | "three" = "three"): { label: string; isWeekend: boolean }[] {
+  const full = [
+    { label: mode === "single" ? "S" : mode === "two" ? "SU" : "SUN", isWeekend: true },
+    { label: mode === "single" ? "M" : mode === "two" ? "MO" : "MON", isWeekend: false },
+    { label: mode === "single" ? "T" : mode === "two" ? "TU" : "TUE", isWeekend: false },
+    { label: mode === "single" ? "W" : mode === "two" ? "WE" : "WED", isWeekend: false },
+    { label: mode === "single" ? "T" : mode === "two" ? "TH" : "THU", isWeekend: false },
+    { label: mode === "single" ? "F" : mode === "two" ? "FR" : "FRI", isWeekend: false },
+    { label: mode === "single" ? "S" : mode === "two" ? "SA" : "SAT", isWeekend: true },
+  ];
+  const shift = weekStart === "mon" ? 1 : weekStart === "sat" ? 6 : 0;
+  return full.slice(shift).concat(full.slice(0, shift));
+}
+
+function getStartOffsetForWeekStart(firstDow0Sun: number, weekStart: string): number {
+  const shift = weekStart === "mon" ? 1 : weekStart === "sat" ? 6 : 0;
+  return (firstDow0Sun - shift + 7) % 7;
+}
+
+// Draw Decorative Vector Header Illustration inside a Single-Month Hero Card or Weekly Planner
+function drawCalendarHeaderArt(
+  m: any,
+  parts: string[],
+  theme: CalendarArtTheme,
+  hx: number,
+  hy: number,
+  hw: number,
+  hh: number,
+  headerBg: string,
+  accent1: string,
+  accent2: string,
+  accent3: string,
+  cardBg: string,
+  variant: number,
+  cardSalt: number
+) {
+  parts.push(`<rect x="${f1(hx)}" y="${f1(hy)}" width="${f1(hw)}" height="${f1(hh)}" fill="${headerBg}"/>`);
+  const clipPoly = (pts: [number, number][], col: string) => {
+    const cl = clipPolyToRect(pts, hx, hy, hx + hw, hy + hh);
+    if (cl.length >= 3) {
+      parts.push(
+        `<polygon points="${cl.map((p) => `${f1(p[0])},${f1(p[1])}`).join(" ")}" fill="${col}"/>`
+      );
+    }
+  };
+
+  const vShift = ((variant + cardSalt) % 7) * 0.04;
+  if (theme === "bauhaus_geometric" || (variant + cardSalt) % 6 === 1) {
+    const bw = hw * 0.34;
+    parts.push(
+      `<rect x="${f1(hx + hw - bw)}" y="${f1(hy)}" width="${f1(bw)}" height="${f1(hh)}" fill="${accent1}"/>`
+    );
+    const r1 = Math.min(bw * 0.72, hh * 0.75);
+    const semi: [number, number][] = [];
+    for (let k = 0; k <= 24; k++) {
+      const a = (k / 24) * Math.PI;
+      semi.push([hx + hw - bw + Math.cos(a) * r1, hy + hh - Math.sin(a) * r1]);
+    }
+    clipPoly(semi, accent2);
+    const r2 = Math.min(hw * 0.12, hh * 0.38);
+    const circ: [number, number][] = [];
+    for (let k = 0; k < 28; k++) {
+      const a = (k / 28) * Math.PI * 2;
+      circ.push([hx + hw * (0.76 - vShift) + Math.cos(a) * r2, hy + hh * 0.42 + Math.sin(a) * r2]);
+    }
+    clipPoly(circ, accent3);
+  } else if (theme === "luxury_gold_noir" || theme === "executive_dark_slate" || (variant + cardSalt) % 6 === 2) {
+    const p1: [number, number][] = [
+      [hx + hw * (0.58 - vShift), hy],
+      [hx + hw, hy],
+      [hx + hw, hy + hh],
+      [hx + hw * (0.72 - vShift), hy + hh],
+    ];
+    clipPoly(p1, mixCol(headerBg, accent1, 0.28));
+    const p2: [number, number][] = [
+      [hx + hw * (0.74 - vShift), hy],
+      [hx + hw * (0.81 - vShift), hy],
+      [hx + hw * (0.93 - vShift), hy + hh],
+      [hx + hw * (0.86 - vShift), hy + hh],
+    ];
+    clipPoly(p2, accent1);
+    parts.push(
+      `<rect x="${f1(hx)}" y="${f1(hy + hh - Math.max(2, hh * 0.06))}" width="${f1(hw)}" height="${f1(
+        Math.max(2, hh * 0.06)
+      )}" fill="${accent1}"/>`
+    );
+  } else if (theme === "botanical_organic" || theme === "pastel_minimal" || (variant + cardSalt) % 6 === 3) {
+    const wave1: [number, number][] = [[hx + hw * 0.45, hy + hh]];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      const wx = hx + hw * (0.45 + t * 0.55);
+      const wy = hy + hh * (0.68 - Math.sin(t * Math.PI + vShift * 6) * 0.42);
+      wave1.push([wx, wy]);
+    }
+    wave1.push([hx + hw, hy + hh]);
+    clipPoly(wave1, accent3);
+
+    const sunR = Math.min(hw * 0.11, hh * 0.42);
+    const sun: [number, number][] = [];
+    for (let k = 0; k < 28; k++) {
+      const a = (k / 28) * Math.PI * 2;
+      sun.push([hx + hw * (0.84 - vShift * 0.5) + Math.cos(a) * sunR, hy + hh * 0.42 + Math.sin(a) * sunR]);
+    }
+    clipPoly(sun, accent2);
+  } else if (theme === "retro_70s_groovy" || (variant + cardSalt) % 6 === 4) {
+    const cols = [accent1, accent2, accent3];
+    for (let b = 0; b < 3; b++) {
+      const x0 = hx + hw * (0.66 + b * 0.075 - vShift);
+      const poly: [number, number][] = [
+        [x0, hy],
+        [x0 + hw * 0.065, hy],
+        [x0 - hw * 0.055, hy + hh],
+        [x0 - hw * 0.12, hy + hh],
+      ];
+      clipPoly(poly, cols[b]);
+    }
+  } else if (theme === "japanese_zen_arch" || (variant + cardSalt) % 6 === 5) {
+    const sunR = Math.min(hw * 0.13, hh * 0.46);
+    const sun: [number, number][] = [];
+    for (let k = 0; k < 32; k++) {
+      const a = (k / 32) * Math.PI * 2;
+      sun.push([hx + hw * 0.84 + Math.cos(a) * sunR, hy + hh * 0.5 + Math.sin(a) * sunR]);
+    }
+    clipPoly(sun, accent1);
+    parts.push(
+      `<rect x="${f1(hx + hw * 0.72)}" y="${f1(hy + hh * 0.68)}" width="${f1(hw * 0.24)}" height="${f1(
+        Math.max(1.8, hh * 0.045)
+      )}" fill="${headerBg}"/>`
+    );
+  } else {
+    const barW = Math.max(6, hw * 0.025);
+    parts.push(`<rect x="${f1(hx)}" y="${f1(hy)}" width="${f1(barW)}" height="${f1(hh)}" fill="${accent1}"/>`);
+    parts.push(
+      `<rect x="${f1(hx + hw * 0.78)}" y="${f1(hy)}" width="${f1(hw * 0.22)}" height="${f1(hh)}" fill="${accent1}"/>`
+    );
+    parts.push(
+      `<rect x="${f1(hx + hw * 0.73)}" y="${f1(hy)}" width="${f1(hw * 0.05)}" height="${f1(hh)}" fill="${accent2}"/>`
+    );
+  }
+}
+
+// 16 Distinct Commercial Microstock Hero Top-Header & Sheet Corner Designs
+// Includes the 4 exact user reference sample styles (styles 0, 1, 2, 3) plus 12 more ultra-unique headers!
+function drawCalendarSheetHeroTopHeader(
+  parts: string[],
+  styleIdx: number,
+  year: number,
+  subTitleStr: string,
+  sheetX: number,
+  sheetY: number,
+  sheetW: number,
+  sheetH: number,
+  topBannerH: number,
+  aspect: number,
+  cardBg: string,
+  headerBg: string,
+  textCol: string,
+  mutedCol: string,
+  accent1: string,
+  accent2: string,
+  accent3: string
+) {
+  const yearStr = String(year);
+  const cx = sheetX + sheetW * 0.5;
+  const clipSheet = (pts: [number, number][], col: string, opacity = 1) => {
+    const cl = clipPolyToRect(pts, sheetX, sheetY, sheetX + sheetW, sheetY + sheetH);
+    if (cl.length >= 3) {
+      const opAttr = opacity < 0.999 ? ` fill-opacity="${f1(opacity)}"` : "";
+      parts.push(
+        `<polygon points="${cl.map((p) => `${f1(p[0])},${f1(p[1])}`).join(" ")}" fill="${col}"${opAttr}/>`
+      );
+    }
+  };
+  const clipBanner = (pts: [number, number][], col: string, opacity = 1) => {
+    const cl = clipPolyToRect(pts, sheetX, sheetY, sheetX + sheetW, sheetY + topBannerH);
+    if (cl.length >= 3) {
+      const opAttr = opacity < 0.999 ? ` fill-opacity="${f1(opacity)}"` : "";
+      parts.push(
+        `<polygon points="${cl.map((p) => `${f1(p[0])},${f1(p[1])}`).join(" ")}" fill="${col}"${opAttr}/>`
+      );
+    }
+  };
+
+  const s = ((styleIdx % 16) + 16) % 16;
+
+  if (s === 0) {
+    // SAMPLE 1 (image_b440cdb6.png): Sweeping Top-Left & Bottom-Right Curved Corner Wave Ribbons
+    // + Giant Centered Coral-Red Year + Wide-Tracked "C A L E N D A R" Subtitle
+    const tlOuter: [number, number][] = [[sheetX, sheetY]];
+    for (let k = 0; k <= 32; k++) {
+      const t = k / 32;
+      const px = sheetX + sheetW * 0.62 * (1 - t);
+      const py = sheetY + sheetH * 0.21 * Math.pow(t, 1.45);
+      tlOuter.push([px, py]);
+    }
+    clipSheet(tlOuter, accent2); // Golden amber inner wave
+
+    const tlInner: [number, number][] = [[sheetX, sheetY]];
+    for (let k = 0; k <= 32; k++) {
+      const t = k / 32;
+      const px = sheetX + sheetW * 0.48 * (1 - t);
+      const py = sheetY + sheetH * 0.145 * Math.pow(t, 1.55);
+      tlInner.push([px, py]);
+    }
+    clipSheet(tlInner, accent1); // Deep orange-red outer corner wave
+
+    // Matching Bottom-Right Corner Dual Wave Ribbons
+    const brOuter: [number, number][] = [[sheetX + sheetW, sheetY + sheetH]];
+    for (let k = 0; k <= 32; k++) {
+      const t = k / 32;
+      const px = sheetX + sheetW - sheetW * 0.44 * (1 - t);
+      const py = sheetY + sheetH - sheetH * 0.16 * Math.pow(t, 1.45);
+      brOuter.push([px, py]);
+    }
+    clipSheet(brOuter, accent2);
+
+    const brInner: [number, number][] = [[sheetX + sheetW, sheetY + sheetH]];
+    for (let k = 0; k <= 32; k++) {
+      const t = k / 32;
+      const px = sheetX + sheetW - sheetW * 0.32 * (1 - t);
+      const py = sheetY + sheetH - sheetH * 0.105 * Math.pow(t, 1.55);
+      brInner.push([px, py]);
+    }
+    clipSheet(brInner, accent1);
+
+    // Giant Centered Coral-Red Year + Wide-Tracked C A L E N D A R
+    const yrH = topBannerH * 0.52;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + topBannerH * 0.17,
+        yrH,
+        aspect,
+        "bold",
+        accent1,
+        "center"
+      )
+    );
+    const subH = topBannerH * 0.095;
+    parts.push(
+      drawPosterVectorTextString(
+        "C   A   L   E   N   D   A   R",
+        cx,
+        sheetY + topBannerH * 0.79,
+        subH,
+        aspect,
+        "bold",
+        textCol,
+        "center"
+      )
+    );
+  } else if (s === 1) {
+    // SAMPLE 2 (image_1d87db8c.png): Full-Width 3D Overlapping Crimson/Ruby Wave Top Banner
+    // + Giant Crisp White Centered Year
+    const baseCol = lumH(headerBg) < 160 ? headerBg : "#7f0909";
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${baseCol}"/>`
+    );
+
+    // 4 overlapping sweeping 3D translucent/layered crimson & scarlet wave ribbons
+    const w1: [number, number][] = [[sheetX, sheetY]];
+    for (let k = 0; k <= 32; k++) {
+      const t = k / 32;
+      w1.push([
+        sheetX + sheetW * t,
+        sheetY + topBannerH * (0.25 + 0.55 * Math.sin(t * Math.PI * 0.85)),
+      ]);
+    }
+    w1.push([sheetX + sheetW, sheetY]);
+    clipBanner(w1, mixCol(baseCol, accent1, 0.55));
+
+    const w2: [number, number][] = [[sheetX, sheetY + topBannerH]];
+    for (let k = 0; k <= 32; k++) {
+      const t = k / 32;
+      w2.push([
+        sheetX + sheetW * t,
+        sheetY + topBannerH * (0.35 + 0.48 * Math.cos(t * Math.PI * 0.9)),
+      ]);
+    }
+    w2.push([sheetX + sheetW, sheetY + topBannerH]);
+    clipBanner(w2, mixCol(baseCol, "#ff1e1e", 0.45));
+
+    const w3: [number, number][] = [[sheetX, sheetY + topBannerH]];
+    for (let k = 0; k <= 32; k++) {
+      const t = k / 32;
+      w3.push([
+        sheetX + sheetW * t,
+        sheetY + topBannerH * (0.85 - 0.52 * Math.pow(t, 1.35)),
+      ]);
+    }
+    w3.push([sheetX + sheetW, sheetY + topBannerH]);
+    clipBanner(w3, mixCol(baseCol, "#2b0202", 0.52));
+
+    // Giant Crisp White Centered Year
+    const yrH = topBannerH * 0.56;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + (topBannerH - yrH) * 0.46,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "center"
+      )
+    );
+  } else if (s === 2) {
+    // SAMPLE 3 (image_4bc79b84.png): Giant Top Year with Faded Vertical Mirror Reflection directly below baseline
+    const yrH = topBannerH * 0.54;
+    const yrY = sheetY + topBannerH * 0.12;
+    const yrCol = accent1;
+    // Multi-slice vertical mirror fade effect for 100% vector EPS compatibility
+    const reflectBaseCol = mixCol(cardBg, yrCol, 0.24);
+    parts.push(
+      drawMirroredPosterVectorTextString(
+        yearStr,
+        cx,
+        yrY + yrH + 3,
+        yrH,
+        yrH * 0.58,
+        aspect,
+        "bold",
+        reflectBaseCol,
+        "center"
+      )
+    );
+    // Cover lower half of reflection with soft stepped strips of cardBg so it fades smoothly into white
+    const fadeTop = yrY + yrH + 3 + yrH * 0.16;
+    const fadeH = yrH * 0.44;
+    for (let st = 0; st < 6; st++) {
+      const sy = fadeTop + (st / 6) * fadeH;
+      const sh = fadeH / 6 + 0.8;
+      const op = 0.22 + (st / 5) * 0.78;
+      parts.push(
+        `<rect x="${f1(cx - sheetW * 0.28)}" y="${f1(sy)}" width="${f1(
+          sheetW * 0.56
+        )}" height="${f1(sh)}" fill="${cardBg}" fill-opacity="${f1(op)}"/>`
+      );
+    }
+    // Crisp primary giant year on top
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        yrY,
+        yrH,
+        aspect,
+        "bold",
+        yrCol,
+        "center"
+      )
+    );
+  } else if (s === 3) {
+    // SAMPLE 4 (image_7fb5e8d3.png): Giant Centered Emerald/Accent Year with Multi-Layer 3D Diagonal Extruded Drop Shadow
+    const yrH = topBannerH * 0.56;
+    const yrY = sheetY + topBannerH * 0.18;
+    const shadowSteps = 8;
+    for (let st = shadowSteps; st >= 1; st--) {
+      const dx = st * 1.65;
+      const dy = st * 1.45;
+      const t = st / shadowSteps;
+      const sCol = mixCol(cardBg, accent1, 0.28 * (1 - t * 0.65));
+      parts.push(
+        drawPosterVectorTextString(
+          yearStr,
+          cx + dx,
+          yrY + dy,
+          yrH,
+          aspect,
+          "bold",
+          sCol,
+          "center"
+        )
+      );
+    }
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        yrY,
+        yrH,
+        aspect,
+        "bold",
+        accent1,
+        "center"
+      )
+    );
+  } else if (s === 4) {
+    // STYLE 5: Bauhaus Geometric Split Arch, Rising Sun Circle & Bold Left Year Block
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${headerBg}"/>`
+    );
+    const rightW = sheetW * 0.42;
+    parts.push(
+      `<rect x="${f1(sheetX + sheetW - rightW)}" y="${f1(sheetY)}" width="${f1(
+        rightW
+      )}" height="${f1(topBannerH)}" fill="${accent1}"/>`
+    );
+    const rArch = topBannerH * 0.82;
+    const arch: [number, number][] = [];
+    for (let k = 0; k <= 28; k++) {
+      const a = (k / 28) * Math.PI;
+      arch.push([
+        sheetX + sheetW - rightW + Math.cos(a) * rArch,
+        sheetY + topBannerH - Math.sin(a) * rArch,
+      ]);
+    }
+    clipBanner(arch, accent2);
+
+    const rSun = topBannerH * 0.34;
+    const sun: [number, number][] = [];
+    for (let k = 0; k < 28; k++) {
+      const a = (k / 28) * Math.PI * 2;
+      sun.push([
+        sheetX + sheetW * 0.82 + Math.cos(a) * rSun,
+        sheetY + topBannerH * 0.45 + Math.sin(a) * rSun,
+      ]);
+    }
+    clipBanner(sun, accent3);
+
+    const yrH = topBannerH * 0.52;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        sheetX + 34,
+        sheetY + topBannerH * 0.14,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "left"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        subTitleStr,
+        sheetX + 36,
+        sheetY + topBannerH * 0.74,
+        topBannerH * 0.11,
+        aspect,
+        "bold",
+        accent2,
+        "left"
+      )
+    );
+  } else if (s === 5) {
+    // STYLE 6: Luxury 24K Gold & Obsidian Noir Geometric Diamond Crest Header + Double Gold Flanking Lines
+    const darkBg = lumH(headerBg) < 80 ? headerBg : "#0b0f17";
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${darkBg}"/>`
+    );
+    const gold1 = "#f59e0b";
+    const gold2 = "#fde047";
+    // Outer & inner gold rules
+    parts.push(
+      `<rect x="${f1(sheetX + 14)}" y="${f1(sheetY + 12)}" width="${f1(
+        sheetW - 28
+      )}" height="${f1(topBannerH - 24)}" fill="none" stroke="${gold1}" stroke-width="1.8"/>`
+    );
+    parts.push(
+      `<rect x="${f1(sheetX + 20)}" y="${f1(sheetY + 18)}" width="${f1(
+        sheetW - 40
+      )}" height="${f1(topBannerH - 36)}" fill="none" stroke="${gold2}" stroke-width="0.9"/>`
+    );
+    // Flanking gold Wing Bars
+    const wingW = sheetW * 0.18;
+    parts.push(
+      `<rect x="${f1(sheetX + 46)}" y="${f1(sheetY + topBannerH * 0.46)}" width="${f1(
+        wingW
+      )}" height="2.5" fill="${gold1}"/>`
+    );
+    parts.push(
+      `<rect x="${f1(sheetX + sheetW - 46 - wingW)}" y="${f1(
+        sheetY + topBannerH * 0.46
+      )}" width="${f1(wingW)}" height="2.5" fill="${gold1}"/>`
+    );
+    const yrH = topBannerH * 0.48;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + topBannerH * 0.17,
+        yrH,
+        aspect,
+        "bold",
+        gold2,
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "C  A  L  E  N  D  A  R",
+        cx,
+        sheetY + topBannerH * 0.72,
+        topBannerH * 0.1,
+        aspect,
+        "bold",
+        gold1,
+        "center"
+      )
+    );
+  } else if (s === 6) {
+    // STYLE 7: Origami Folded Geometric Corner Polygons & Center Year Capsule
+    clipBanner(
+      [
+        [sheetX, sheetY],
+        [sheetX + sheetW * 0.28, sheetY],
+        [sheetX + sheetW * 0.14, sheetY + topBannerH],
+        [sheetX, sheetY + topBannerH],
+      ],
+      accent1
+    );
+    clipBanner(
+      [
+        [sheetX + sheetW * 0.28, sheetY],
+        [sheetX + sheetW * 0.38, sheetY],
+        [sheetX + sheetW * 0.22, sheetY + topBannerH],
+        [sheetX + sheetW * 0.14, sheetY + topBannerH],
+      ],
+      accent2
+    );
+    clipBanner(
+      [
+        [sheetX + sheetW, sheetY],
+        [sheetX + sheetW * 0.72, sheetY],
+        [sheetX + sheetW * 0.86, sheetY + topBannerH],
+        [sheetX + sheetW, sheetY + topBannerH],
+      ],
+      accent3
+    );
+    clipBanner(
+      [
+        [sheetX + sheetW * 0.72, sheetY],
+        [sheetX + sheetW * 0.62, sheetY],
+        [sheetX + sheetW * 0.78, sheetY + topBannerH],
+        [sheetX + sheetW * 0.86, sheetY + topBannerH],
+      ],
+      accent2
+    );
+    const yrH = topBannerH * 0.52;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + topBannerH * 0.15,
+        yrH,
+        aspect,
+        "bold",
+        headerBg,
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "A N N U A L   C A L E N D A R",
+        cx,
+        sheetY + topBannerH * 0.75,
+        topBannerH * 0.105,
+        aspect,
+        "bold",
+        accent1,
+        "center"
+      )
+    );
+  } else if (s === 7) {
+    // STYLE 8: Botanical Terracotta Sun Arch, Rolling Sage Hills & Center Year
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${mixCol(cardBg, accent3, 0.18)}"/>`
+    );
+    // Rising Sun Semicircle behind year
+    const sunR = topBannerH * 0.76;
+    const sunPts: [number, number][] = [];
+    for (let k = 0; k <= 32; k++) {
+      const a = (k / 32) * Math.PI;
+      sunPts.push([cx + Math.cos(a) * sunR, sheetY + topBannerH - Math.sin(a) * sunR]);
+    }
+    clipBanner(sunPts, accent2);
+
+    // Rolling Left & Right Hills
+    const hillL: [number, number][] = [[sheetX, sheetY + topBannerH]];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      hillL.push([
+        sheetX + sheetW * 0.55 * t,
+        sheetY + topBannerH * (0.48 + 0.52 * Math.cos(t * Math.PI * 0.5)),
+      ]);
+    }
+    clipBanner(hillL, accent1);
+
+    const hillR: [number, number][] = [[sheetX + sheetW, sheetY + topBannerH]];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      hillR.push([
+        sheetX + sheetW - sheetW * 0.55 * t,
+        sheetY + topBannerH * (0.52 + 0.48 * Math.cos(t * Math.PI * 0.5)),
+      ]);
+    }
+    clipBanner(hillR, accent3);
+
+    const yrH = topBannerH * 0.52;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + topBannerH * 0.16,
+        yrH,
+        aspect,
+        "bold",
+        headerBg,
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "C  A  L  E  N  D  A  R",
+        cx,
+        sheetY + topBannerH * 0.76,
+        topBannerH * 0.105,
+        aspect,
+        "bold",
+        "#ffffff",
+        "center"
+      )
+    );
+  } else if (s === 8) {
+    // STYLE 9: Retro 70s 5-Band Sunset Curve Banner + Vintage Drop-Shadow Year
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${headerBg}"/>`
+    );
+    const bandCols = [accent1, accent2, "#f6d365", accent3, "#2b5b84"];
+    for (let b = 0; b < 5; b++) {
+      const bx0 = sheetX + sheetW * (0.52 + b * 0.075);
+      clipBanner(
+        [
+          [bx0, sheetY],
+          [bx0 + sheetW * 0.068, sheetY],
+          [bx0 - sheetW * 0.08, sheetY + topBannerH],
+          [bx0 - sheetW * 0.148, sheetY + topBannerH],
+        ],
+        bandCols[b]
+      );
+    }
+    const yrH = topBannerH * 0.54;
+    // Retro offset shadow
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        sheetX + 44,
+        sheetY + topBannerH * 0.19,
+        yrH,
+        aspect,
+        "bold",
+        accent1,
+        "left"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        sheetX + 38,
+        sheetY + topBannerH * 0.14,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "left"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "C A L E N D A R   E D I T I O N",
+        sheetX + 40,
+        sheetY + topBannerH * 0.75,
+        topBannerH * 0.105,
+        aspect,
+        "bold",
+        accent2,
+        "left"
+      )
+    );
+  } else if (s === 9) {
+    // STYLE 10: Futuristic Cyber HUD Angular Chamfered Frame + Neon Dual-Offset Year
+    const hudBg = "#090d16";
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${hudBg}"/>`
+    );
+    // Chamfered neon HUD polygon border
+    const pad = 12;
+    const cut = 22;
+    const x0 = sheetX + pad;
+    const y0 = sheetY + pad;
+    const x1 = sheetX + sheetW - pad;
+    const y1 = sheetY + topBannerH - pad;
+    const hudPts = `${f1(x0 + cut)},${f1(y0)} ${f1(x1 - cut)},${f1(y0)} ${f1(x1)},${f1(
+      y0 + cut
+    )} ${f1(x1)},${f1(y1 - cut)} ${f1(x1 - cut)},${f1(y1)} ${f1(x0 + cut)},${f1(y1)} ${f1(
+      x0
+    )},${f1(y1 - cut)} ${f1(x0)},${f1(y0 + cut)}`;
+    parts.push(
+      `<polygon points="${hudPts}" fill="none" stroke="${accent1}" stroke-width="2.2"/>`
+    );
+    // Glowing corner tech bars
+    parts.push(
+      `<rect x="${f1(x0 + cut + 12)}" y="${f1(y0 + 6)}" width="${f1(
+        sheetW * 0.16
+      )}" height="4" fill="${accent2}"/>`
+    );
+    parts.push(
+      `<rect x="${f1(x1 - cut - 12 - sheetW * 0.16)}" y="${f1(
+        y1 - 10
+      )}" width="${f1(sheetW * 0.16)}" height="4" fill="${accent2}"/>`
+    );
+    const yrH = topBannerH * 0.5;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx + 3.5,
+        sheetY + topBannerH * 0.19,
+        yrH,
+        aspect,
+        "bold",
+        accent2,
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + topBannerH * 0.16,
+        yrH,
+        aspect,
+        "bold",
+        accent1,
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "S Y S T E M   C A L E N D A R",
+        cx,
+        sheetY + topBannerH * 0.74,
+        topBannerH * 0.095,
+        aspect,
+        "bold",
+        "#ffffff",
+        "center"
+      )
+    );
+  } else if (s === 10) {
+    // STYLE 11: Japanese Zen Hinomaru Red Rising Sun Disk & Horizon Rule Header
+    const sunR = topBannerH * 0.44;
+    const sunPts: [number, number][] = [];
+    for (let k = 0; k < 36; k++) {
+      const a = (k / 36) * Math.PI * 2;
+      sunPts.push([
+        cx + Math.cos(a) * sunR,
+        sheetY + topBannerH * 0.48 + Math.sin(a) * sunR,
+      ]);
+    }
+    clipBanner(sunPts, "#dc2626");
+    // Thin horizon rules left and right
+    parts.push(
+      `<rect x="${f1(sheetX + 36)}" y="${f1(sheetY + topBannerH * 0.5)}" width="${f1(
+        sheetW * 0.27
+      )}" height="2.2" fill="${textCol}"/>`
+    );
+    parts.push(
+      `<rect x="${f1(sheetX + sheetW - 36 - sheetW * 0.27)}" y="${f1(
+        sheetY + topBannerH * 0.5
+      )}" width="${f1(sheetW * 0.27)}" height="2.2" fill="${textCol}"/>`
+    );
+    const yrH = topBannerH * 0.48;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + topBannerH * 0.24,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "C  A  L  E  N  D  A  R",
+        cx,
+        sheetY + topBannerH * 0.84,
+        topBannerH * 0.095,
+        aspect,
+        "bold",
+        textCol,
+        "center"
+      )
+    );
+  } else if (s === 11) {
+    // STYLE 12: Memphis 80s Pop Geometric Confetti, Checkered Strip & Brutalist Hard-Shadow Year
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="#ffbe0b"/>`
+    );
+    // Bottom black & white checkered border strip along topBannerH
+    const chkH = 12;
+    const chkCols = 24;
+    const chkW = sheetW / chkCols;
+    for (let c = 0; c < chkCols; c++) {
+      parts.push(
+        `<rect x="${f1(sheetX + c * chkW)}" y="${f1(
+          sheetY + topBannerH - chkH
+        )}" width="${f1(chkW + 0.5)}" height="${f1(chkH)}" fill="${
+          c % 2 === 0 ? "#111827" : "#ffffff"
+        }"/>`
+      );
+    }
+    // Geometric pop triangles & circles on left/right
+    clipBanner(
+      [
+        [sheetX + 32, sheetY + 18],
+        [sheetX + 115, sheetY + 18],
+        [sheetX + 72, sheetY + topBannerH - 24],
+      ],
+      "#ff3366"
+    );
+    clipBanner(
+      [
+        [sheetX + sheetW - 125, sheetY + topBannerH - 24],
+        [sheetX + sheetW - 35, sheetY + topBannerH - 24],
+        [sheetX + sheetW - 80, sheetY + 18],
+      ],
+      "#2ec4b6"
+    );
+    const yrH = topBannerH * 0.52;
+    // Hard black brutalist drop shadow
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx + 5,
+        sheetY + topBannerH * 0.18 + 5,
+        yrH,
+        aspect,
+        "bold",
+        "#111827",
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + topBannerH * 0.18,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "center"
+      )
+    );
+  } else if (s === 12) {
+    // STYLE 13: Corporate Executive Multi-Chevron Diagonal Split Banner
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${headerBg}"/>`
+    );
+    // 3 Nested Diagonal Chevron Arrows from Right
+    const chCols = [accent1, accent2, accent3];
+    for (let i = 0; i < 3; i++) {
+      const xStart = sheetX + sheetW * (0.48 + i * 0.14);
+      clipBanner(
+        [
+          [xStart, sheetY],
+          [sheetX + sheetW, sheetY],
+          [sheetX + sheetW, sheetY + topBannerH],
+          [xStart, sheetY + topBannerH],
+          [xStart - topBannerH * 0.45, sheetY + topBannerH * 0.5],
+        ],
+        chCols[i]
+      );
+    }
+    const yrH = topBannerH * 0.54;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        sheetX + 36,
+        sheetY + (topBannerH - yrH) * 0.48,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "left"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "C A L E N D A R",
+        sheetX + sheetW - 36,
+        sheetY + topBannerH * 0.4,
+        topBannerH * 0.22,
+        aspect,
+        "bold",
+        "#ffffff",
+        "right"
+      )
+    );
+  } else if (s === 13) {
+    // STYLE 14: Abstract Concentric Circle Ripples & Center Floating Year Capsule
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${headerBg}"/>`
+    );
+    const ringCols = [accent1, accent2, accent3];
+    for (let side = -1; side <= 1; side += 2) {
+      const rcx = side < 0 ? sheetX + sheetW * 0.12 : sheetX + sheetW * 0.88;
+      const rcy = sheetY + topBannerH * 0.5;
+      for (let rIdx = 2; rIdx >= 0; rIdx--) {
+        const rad = topBannerH * (0.35 + rIdx * 0.25);
+        const cPts: [number, number][] = [];
+        for (let k = 0; k < 32; k++) {
+          const a = (k / 32) * Math.PI * 2;
+          cPts.push([rcx + Math.cos(a) * rad, rcy + Math.sin(a) * rad]);
+        }
+        clipBanner(cPts, ringCols[rIdx], 0.85);
+      }
+    }
+    // Center solid dark/card pill behind year
+    const pillW = sheetW * 0.36;
+    const pillH = topBannerH * 0.76;
+    parts.push(
+      `<rect x="${f1(cx - pillW * 0.5)}" y="${f1(
+        sheetY + (topBannerH - pillH) * 0.5
+      )}" width="${f1(pillW)}" height="${f1(pillH)}" fill="${headerBg}" stroke="${accent2}" stroke-width="2"/>`
+    );
+    const yrH = topBannerH * 0.48;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + (topBannerH - yrH) * 0.5,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "center"
+      )
+    );
+  } else if (s === 14) {
+    // STYLE 15: Royal Architectural Double-Frame Medallion Header
+    const padX = 24;
+    parts.push(
+      `<rect x="${f1(sheetX + padX)}" y="${f1(sheetY + 12)}" width="${f1(
+        sheetW - padX * 2
+      )}" height="${f1(topBannerH - 20)}" fill="${cardBg}" stroke="${accent1}" stroke-width="2.5"/>`
+    );
+    parts.push(
+      `<rect x="${f1(sheetX + padX + 7)}" y="${f1(sheetY + 19)}" width="${f1(
+        sheetW - (padX + 7) * 2
+      )}" height="${f1(topBannerH - 34)}" fill="none" stroke="${accent2}" stroke-width="1.2"/>`
+    );
+    // Left and right solid accent blocks inside frame
+    const blkW = sheetW * 0.16;
+    parts.push(
+      `<rect x="${f1(sheetX + padX + 12)}" y="${f1(sheetY + 24)}" width="${f1(
+        blkW
+      )}" height="${f1(topBannerH - 44)}" fill="${accent1}"/>`
+    );
+    parts.push(
+      `<rect x="${f1(sheetX + sheetW - padX - 12 - blkW)}" y="${f1(
+        sheetY + 24
+      )}" width="${f1(blkW)}" height="${f1(topBannerH - 44)}" fill="${accent1}"/>`
+    );
+    const yrH = topBannerH * 0.46;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        sheetY + topBannerH * 0.2,
+        yrH,
+        aspect,
+        "bold",
+        accent1,
+        "center"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        "C   A   L   E   N   D   A   R",
+        cx,
+        sheetY + topBannerH * 0.72,
+        topBannerH * 0.095,
+        aspect,
+        "bold",
+        textCol,
+        "center"
+      )
+    );
+  } else {
+    // STYLE 16: Panoramic Geometric Mountain Peaks, Radiant Sun & Sky Banner
+    parts.push(
+      `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+        topBannerH
+      )}" fill="${headerBg}"/>`
+    );
+    // Sun disk on right sky
+    const sunR = topBannerH * 0.34;
+    const sunPts: [number, number][] = [];
+    for (let k = 0; k < 28; k++) {
+      const a = (k / 28) * Math.PI * 2;
+      sunPts.push([
+        sheetX + sheetW * 0.82 + Math.cos(a) * sunR,
+        sheetY + topBannerH * 0.38 + Math.sin(a) * sunR,
+      ]);
+    }
+    clipBanner(sunPts, accent2);
+    // Layered geometric mountain peaks
+    clipBanner(
+      [
+        [sheetX + sheetW * 0.42, sheetY + topBannerH],
+        [sheetX + sheetW * 0.62, sheetY + topBannerH * 0.22],
+        [sheetX + sheetW * 0.82, sheetY + topBannerH],
+      ],
+      accent1
+    );
+    clipBanner(
+      [
+        [sheetX + sheetW * 0.64, sheetY + topBannerH],
+        [sheetX + sheetW * 0.8, sheetY + topBannerH * 0.32],
+        [sheetX + sheetW * 0.98, sheetY + topBannerH],
+      ],
+      accent3
+    );
+    const yrH = topBannerH * 0.54;
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        sheetX + 36,
+        sheetY + topBannerH * 0.14,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "left"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        subTitleStr,
+        sheetX + 38,
+        sheetY + topBannerH * 0.74,
+        topBannerH * 0.105,
+        aspect,
+        "bold",
+        accent2,
+        "left"
+      )
+    );
+  }
+}
+
+// Render a Single Month Grid Box (Supports 6 distinct Microstock Table Styles + Hero Single-Month View)
+function drawSingleMonthCalendarBox(
+  m: any,
+  parts: string[],
+  theme: CalendarArtTheme,
+  year: number,
+  month1To12: number,
+  weekStart: string,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
+  aspect: number,
+  isHeroSingleMonth: boolean,
+  cardBg: string,
+  headerBg: string,
+  textCol: string,
+  mutedCol: string,
+  accent1: string,
+  accent2: string,
+  accent3: string,
+  weekendCol: string,
+  variant: number,
+  styleIdx = 0
+) {
+  const safeM = Math.max(1, Math.min(12, month1To12));
+  const mName = CALENDAR_MONTH_NAMES[safeM - 1];
+  const mNumStr = String(safeM).padStart(2, "0");
+
+  if (isHeroSingleMonth) {
+    // Hero Single Month / 3-Month / 4-Month Showcase Card
+    parts.push(`<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(bh)}" fill="${cardBg}"/>`);
+    const borderCol = mixCol(cardBg, textCol, 0.16);
+    parts.push(
+      `<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(bh)}" fill="none" stroke="${borderCol}" stroke-width="2.2"/>`
+    );
+
+    const headerH = bh * 0.25;
+    drawCalendarHeaderArt(
+      m,
+      parts,
+      theme,
+      bx,
+      by,
+      bw,
+      headerH,
+      headerBg,
+      accent1,
+      accent2,
+      accent3,
+      cardBg,
+      variant,
+      safeM
+    );
+
+    const headerTextCol = lumH(headerBg) < 135 ? "#ffffff" : "#0f172a";
+    const padX = bw * 0.065;
+    const numH = Math.min(headerH * 0.42, bw * aspect * 0.16);
+    parts.push(
+      drawPosterVectorTextString(
+        mNumStr,
+        bx + padX,
+        by + headerH * 0.16,
+        numH,
+        aspect,
+        "bold",
+        accent2 === headerBg ? "#ffffff" : accent2,
+        "left"
+      )
+    );
+    const titleH = Math.min(headerH * 0.22, bw * aspect * 0.085);
+    parts.push(
+      drawPosterVectorTextString(
+        mName,
+        bx + padX,
+        by + headerH * 0.65,
+        titleH,
+        aspect,
+        "bold",
+        headerTextCol,
+        "left"
+      )
+    );
+    const yrH = titleH * 0.68;
+    parts.push(
+      drawPosterVectorTextString(
+        `CALENDAR ${year}`,
+        bx + bw - padX,
+        by + headerH * 0.2,
+        yrH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "right"
+      )
+    );
+
+    const gridTop = by + headerH + bh * 0.025;
+    const gridBot = by + bh - bh * 0.085;
+    const gridH = Math.max(20, gridBot - gridTop);
+    const gridLeft = bx + bw * 0.05;
+    const gridW = bw * 0.9;
+    const colW = gridW / 7;
+
+    const dowRowH = gridH * 0.14;
+    const dowLabels = getWeekDayLabels(weekStart, bw < 260 ? "single" : "three");
+    const dowCharH = Math.min(dowRowH * 0.54, colW * aspect * (bw < 260 ? 0.42 : 0.25));
+    const dowBarBg = mixCol(cardBg, textCol, 0.06);
+    parts.push(
+      `<rect x="${f1(gridLeft)}" y="${f1(gridTop)}" width="${f1(gridW)}" height="${f1(
+        dowRowH * 0.86
+      )}" fill="${dowBarBg}"/>`
+    );
+
+    for (let c = 0; c < 7; c++) {
+      const cx = gridLeft + (c + 0.5) * colW;
+      const dCol = dowLabels[c].isWeekend ? weekendCol : mutedCol;
+      parts.push(
+        drawPosterVectorTextString(
+          dowLabels[c].label,
+          cx,
+          gridTop + (dowRowH * 0.86 - dowCharH) * 0.5,
+          dowCharH,
+          aspect,
+          "bold",
+          dCol,
+          "center"
+        )
+      );
+    }
+
+    const daysTotal = getDaysInMonth(year, safeM);
+    const firstDow = getFirstDayOfWeek0Sun(year, safeM);
+    const startOffset = getStartOffsetForWeekStart(firstDow, weekStart);
+    const datesTop = gridTop + dowRowH * 1.05;
+    const datesH = gridH - dowRowH * 1.05;
+    const rowH = datesH / 6;
+    const dayCharH = Math.min(rowH * 0.46, colW * aspect * 0.34);
+    const highlightDay = ((safeM * 7 + variant * 5) % Math.max(1, daysTotal - 2)) + 2;
+
+    // Draw 42 subtle grid boxes
+    const cellBorder = mixCol(cardBg, textCol, 0.12);
+    for (let r = 0; r < 6; r++) {
+      for (let c = 0; c < 7; c++) {
+        const cellX = gridLeft + c * colW;
+        const cellY = datesTop + r * rowH;
+        const isWknd = dowLabels[c].isWeekend;
+        parts.push(
+          `<rect x="${f1(cellX)}" y="${f1(cellY)}" width="${f1(colW)}" height="${f1(
+            rowH
+          )}" fill="${mixCol(cardBg, textCol, isWknd ? 0.04 : 0.015)}" stroke="${cellBorder}" stroke-width="1"/>`
+        );
+      }
+    }
+
+    for (let d = 1; d <= daysTotal; d++) {
+      const slot = startOffset + (d - 1);
+      const r = Math.floor(slot / 7);
+      const c = slot % 7;
+      const cellX = gridLeft + c * colW;
+      const cellY = datesTop + r * rowH;
+      const cx = cellX + colW * 0.5;
+      const cy = cellY + rowH * 0.5;
+      const isWknd = dowLabels[c].isWeekend;
+
+      let numCol = isWknd ? weekendCol : textCol;
+      if (d === highlightDay) {
+        const badgeW = colW * 0.74;
+        const badgeH = rowH * 0.74;
+        parts.push(
+          `<rect x="${f1(cx - badgeW * 0.5)}" y="${f1(cy - badgeH * 0.5)}" width="${f1(
+            badgeW
+          )}" height="${f1(badgeH)}" fill="${accent1}"/>`
+        );
+        numCol = "#ffffff";
+      }
+
+      parts.push(
+        drawPosterVectorTextString(
+          String(d),
+          cx,
+          cy - dayCharH * 0.5,
+          dayCharH,
+          aspect,
+          isWknd || d === highlightDay ? "bold" : "regular",
+          numCol,
+          "center"
+        )
+      );
+    }
+
+    const footY = by + bh - bh * 0.068;
+    const footH = bh * 0.046;
+    parts.push(
+      `<rect x="${f1(gridLeft)}" y="${f1(footY)}" width="${f1(gridW)}" height="1.5" fill="${mixCol(
+        cardBg,
+        textCol,
+        0.16
+      )}"/>`
+    );
+    const noteH = Math.min(footH * 0.42, bw * aspect * 0.026);
+    parts.push(
+      drawPosterVectorTextString(
+        "NOTES / SCHEDULE",
+        gridLeft,
+        footY + footH * 0.35,
+        noteH,
+        aspect,
+        "bold",
+        accent1,
+        "left"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        `${mName} ${year}`,
+        gridLeft + gridW,
+        footY + footH * 0.35,
+        noteH,
+        aspect,
+        "regular",
+        mutedCol,
+        "right"
+      )
+    );
+    return;
+  }
+
+  // ============================================================================
+  // MULTI-MONTH (12-MONTH & 6-MONTH) TABLE GRID ARCHITECTURES
+  // Matches the 4 User Sample Calendars + Additional Unique Commercial Table Styles!
+  // ============================================================================
+  const s = ((styleIdx % 16) + 16) % 16;
+
+  // Map 16 top-header styles to 6 distinct Month Table Grid layouts:
+  // tableMode 0 -> Sample 1 (image_b440cdb6.png): Open borderless grid, centered blue/accent month title, gray weekday pill bar, red Sundays
+  // tableMode 1 -> Sample 2 (image_1d87db8c.png): Crisp bordered white card, centered dark month title, 2-letter weekdays, cobalt blue weekdays & crimson weekends
+  // tableMode 2 -> Sample 3 (image_4bc79b84.png): 12-Color Rainbow solid month header bar + horizontal divider line under every week row
+  // tableMode 3 -> Sample 4 (image_7fb5e8d3.png): Full 42-Cell Boxed Table Grid (every date cell bordered) + solid emerald/accent header bar + gray boxed weekday row
+  // tableMode 4 -> Brutalist / Memphis Hard-Shadow Card + Accent Corner Number Badge + Zebra Week Rows
+  // tableMode 5 -> Editorial Double-Underlined Month Header + Numbered Month Prefix ("01 JANUARY")
+  const tableMode =
+    s === 0
+      ? 0
+      : s === 1
+      ? 1
+      : s === 2
+      ? 2
+      : s === 3
+      ? 3
+      : s === 11 || s === 8
+      ? 4
+      : s === 4 || s === 6 || s === 10
+      ? 5
+      : s % 6;
+
+  const headerH = bh * 0.165;
+  const padSide = tableMode === 3 ? 0 : tableMode === 2 ? bw * 0.02 : bw * 0.045;
+  const gridLeft = bx + padSide;
+  const gridW = bw - padSide * 2;
+  const colW = gridW / 7;
+
+  if (tableMode === 0) {
+    // SAMPLE 1 TABLE: Open borderless layout, centered blue/accent month name, light gray weekday bar
+    const titleCol = accent3 || "#2563eb";
+    const titleH = Math.min(headerH * 0.56, bw * aspect * 0.078);
+    parts.push(
+      drawPosterVectorTextString(
+        mName,
+        bx + bw * 0.5,
+        by + (headerH - titleH) * 0.45,
+        titleH,
+        aspect,
+        "bold",
+        titleCol,
+        "center"
+      )
+    );
+  } else if (tableMode === 1) {
+    // SAMPLE 2 TABLE: Crisp bordered card around each month + centered dark month title
+    const cardStroke = mixCol(cardBg, textCol, 0.22);
+    parts.push(
+      `<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(
+        bh
+      )}" fill="${cardBg}" stroke="${cardStroke}" stroke-width="1.5"/>`
+    );
+    const titleH = Math.min(headerH * 0.52, bw * aspect * 0.074);
+    parts.push(
+      drawPosterVectorTextString(
+        mName,
+        bx + bw * 0.5,
+        by + (headerH - titleH) * 0.55,
+        titleH,
+        aspect,
+        "bold",
+        lumH(cardBg) < 128 ? "#ffffff" : "#111827",
+        "center"
+      )
+    );
+  } else if (tableMode === 2) {
+    // SAMPLE 3 TABLE: 12-Color Rainbow Individual Solid Month Header Bars
+    const mBarCol = RAINBOW_12_MONTH_COLORS[(safeM - 1) % 12];
+    parts.push(
+      `<rect x="${f1(gridLeft)}" y="${f1(by)}" width="${f1(gridW)}" height="${f1(
+        headerH * 0.92
+      )}" fill="${mBarCol}"/>`
+    );
+    const titleH = Math.min(headerH * 0.5, bw * aspect * 0.075);
+    parts.push(
+      drawPosterVectorTextString(
+        mName,
+        bx + bw * 0.5,
+        by + (headerH * 0.92 - titleH) * 0.5,
+        titleH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "center"
+      )
+    );
+  } else if (tableMode === 3) {
+    // SAMPLE 4 TABLE: Solid Emerald/Accent Month Header Bar + Full Outer Table Border
+    const barCol = accent1;
+    parts.push(
+      `<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(
+        headerH
+      )}" fill="${barCol}"/>`
+    );
+    const titleH = Math.min(headerH * 0.54, bw * aspect * 0.078);
+    parts.push(
+      drawPosterVectorTextString(
+        mName,
+        bx + bw * 0.5,
+        by + (headerH - titleH) * 0.5,
+        titleH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "center"
+      )
+    );
+  } else if (tableMode === 4) {
+    // BRUTALIST / RETRO POP CARD: Hard offset drop shadow + dark header bar with right month number badge
+    parts.push(
+      `<rect x="${f1(bx + 4)}" y="${f1(by + 4)}" width="${f1(bw)}" height="${f1(
+        bh
+      )}" fill="${headerBg}"/>`
+    );
+    parts.push(
+      `<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(
+        bh
+      )}" fill="${cardBg}" stroke="${headerBg}" stroke-width="1.6"/>`
+    );
+    const barCol = RAINBOW_12_MONTH_COLORS[(safeM + variant) % 12];
+    parts.push(
+      `<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(
+        headerH
+      )}" fill="${barCol}"/>`
+    );
+    const titleH = Math.min(headerH * 0.5, bw * aspect * 0.074);
+    parts.push(
+      drawPosterVectorTextString(
+        mName,
+        bx + bw * 0.06,
+        by + (headerH - titleH) * 0.5,
+        titleH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "left"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        mNumStr,
+        bx + bw * 0.94,
+        by + (headerH - titleH) * 0.5,
+        titleH,
+        aspect,
+        "bold",
+        "#ffffff",
+        "right"
+      )
+    );
+  } else {
+    // EDITORIAL SWISS DOUBLE-RULED HEADER: "01" in accent1 on left, Month Name on right, thick underline
+    const titleH = Math.min(headerH * 0.52, bw * aspect * 0.074);
+    parts.push(
+      drawPosterVectorTextString(
+        mNumStr,
+        gridLeft,
+        by + (headerH - titleH) * 0.45,
+        titleH,
+        aspect,
+        "bold",
+        accent1,
+        "left"
+      )
+    );
+    parts.push(
+      drawPosterVectorTextString(
+        mName,
+        gridLeft + gridW,
+        by + (headerH - titleH) * 0.45,
+        titleH,
+        aspect,
+        "bold",
+        textCol,
+        "right"
+      )
+    );
+    parts.push(
+      `<rect x="${f1(gridLeft)}" y="${f1(by + headerH - 3)}" width="${f1(
+        gridW
+      )}" height="2.4" fill="${accent1}"/>`
+    );
+  }
+
+  // Weekday Bar & Date Grid Coordinates
+  const gridTop = by + headerH + (tableMode === 3 ? 0 : bh * 0.02);
+  const gridBot = by + bh - (tableMode === 3 ? 0 : bh * 0.03);
+  const gridH = Math.max(20, gridBot - gridTop);
+  const dowRowH = gridH * 0.145;
+
+  const dowMode: "single" | "two" | "three" =
+    tableMode === 0 || tableMode === 3
+      ? "single"
+      : tableMode === 1
+      ? "two"
+      : bw < 220
+      ? "single"
+      : "three";
+  const dowLabels = getWeekDayLabels(weekStart, dowMode);
+  const dowCharH = Math.min(
+    dowRowH * 0.55,
+    colW * aspect * (dowMode === "single" ? 0.44 : dowMode === "two" ? 0.34 : 0.25)
+  );
+
+  const cellStrokeCol = mixCol(cardBg, textCol, 0.22);
+
+  if (tableMode === 0 || tableMode === 4 || tableMode === 5) {
+    // Light gray horizontal weekday pill bar (Sample 1)
+    const pillBg = mixCol(cardBg, textCol, 0.09);
+    parts.push(
+      `<rect x="${f1(gridLeft)}" y="${f1(gridTop)}" width="${f1(gridW)}" height="${f1(
+        dowRowH * 0.88
+      )}" fill="${pillBg}"/>`
+    );
+  } else if (tableMode === 2) {
+    // Sample 3: Crisp horizontal rule below weekday labels
+    parts.push(
+      `<rect x="${f1(gridLeft)}" y="${f1(gridTop + dowRowH * 0.9)}" width="${f1(
+        gridW
+      )}" height="1.2" fill="${cellStrokeCol}"/>`
+    );
+  } else if (tableMode === 3) {
+    // Sample 4: Boxed gray weekday header cells (7 bordered weekday cells)
+    const dowBg = mixCol(cardBg, textCol, 0.12);
+    for (let c = 0; c < 7; c++) {
+      parts.push(
+        `<rect x="${f1(gridLeft + c * colW)}" y="${f1(gridTop)}" width="${f1(
+          colW
+        )}" height="${f1(dowRowH)}" fill="${dowBg}" stroke="${cellStrokeCol}" stroke-width="1"/>`
+      );
+    }
+  }
+
+  // Render Weekday Labels (S M T W T F S / MO TU WE TH FR SA SU / MON TUE...)
+  for (let c = 0; c < 7; c++) {
+    const cx = gridLeft + (c + 0.5) * colW;
+    const isWknd = dowLabels[c].isWeekend;
+    const dCol = isWknd
+      ? weekendCol
+      : tableMode === 1 || tableMode === 0 || tableMode === 3
+      ? textCol
+      : mutedCol;
+    const wy =
+      tableMode === 3
+        ? gridTop + (dowRowH - dowCharH) * 0.5
+        : gridTop + (dowRowH * 0.88 - dowCharH) * 0.5;
+    parts.push(
+      drawPosterVectorTextString(
+        dowLabels[c].label,
+        cx,
+        wy,
+        dowCharH,
+        aspect,
+        "bold",
+        dCol,
+        "center"
+      )
+    );
+  }
+
+  // 6 Rows × 7 Columns of Dates
+  const daysTotal = getDaysInMonth(year, safeM);
+  const firstDow = getFirstDayOfWeek0Sun(year, safeM);
+  const startOffset = getStartOffsetForWeekStart(firstDow, weekStart);
+
+  const datesTop = tableMode === 3 ? gridTop + dowRowH : gridTop + dowRowH * 1.04;
+  const datesH = gridBot - datesTop;
+  const rowH = datesH / 6;
+  const dayCharH = Math.min(rowH * 0.48, colW * aspect * 0.35);
+
+  if (tableMode === 3) {
+    // SAMPLE 4 (image_7fb5e8d3.png): Draw all 42 Individual Boxed Table Cells (7 cols × 6 rows)
+    for (let r = 0; r < 6; r++) {
+      for (let c = 0; c < 7; c++) {
+        const cellX = gridLeft + c * colW;
+        const cellY = datesTop + r * rowH;
+        parts.push(
+          `<rect x="${f1(cellX)}" y="${f1(cellY)}" width="${f1(colW)}" height="${f1(
+            rowH
+          )}" fill="${cardBg}" stroke="${cellStrokeCol}" stroke-width="1"/>`
+        );
+      }
+    }
+  } else if (tableMode === 2) {
+    // SAMPLE 3 (image_4bc79b84.png): Draw thin horizontal divider lines under every week row
+    const lineCol = mixCol(cardBg, textCol, 0.18);
+    for (let r = 1; r <= 6; r++) {
+      const ly = datesTop + r * rowH;
+      parts.push(
+        `<rect x="${f1(gridLeft)}" y="${f1(ly - 0.8)}" width="${f1(
+          gridW
+        )}" height="0.95" fill="${lineCol}"/>`
+      );
+    }
+  } else if (tableMode === 4) {
+    // Subtle alternating zebra stripes for week rows
+    const zebraCol = mixCol(cardBg, textCol, 0.045);
+    for (let r = 0; r < 6; r += 2) {
+      parts.push(
+        `<rect x="${f1(gridLeft)}" y="${f1(datesTop + r * rowH)}" width="${f1(
+          gridW
+        )}" height="${f1(rowH)}" fill="${zebraCol}"/>`
+      );
+    }
+  }
+
+  for (let d = 1; d <= daysTotal; d++) {
+    const slot = startOffset + (d - 1);
+    const r = Math.floor(slot / 7);
+    const c = slot % 7;
+    const cellX = gridLeft + c * colW;
+    const cellY = datesTop + r * rowH;
+    const cx = cellX + colW * 0.5;
+    const cy = cellY + rowH * 0.5;
+    const isWknd = dowLabels[c].isWeekend;
+
+    // Sample 2 uses vibrant cobalt blue for weekday numbers and crimson red for weekend numbers
+    const weekdayNumCol =
+      tableMode === 1 && lumH(cardBg) > 128 ? "#1d4ed8" : textCol;
+    const numCol = isWknd ? weekendCol : weekdayNumCol;
+
+    parts.push(
+      drawPosterVectorTextString(
+        String(d),
+        cx,
+        cy - dayCharH * 0.5,
+        dayCharH,
+        aspect,
+        "bold",
+        numCol,
+        "center"
+      )
+    );
+  }
+}
+
+// Render 7-Day Weekly Planner & Schedule Sheet ("week" viewMode)
+function drawWeeklyPlannerBoard(
+  m: any,
+  parts: string[],
+  theme: CalendarArtTheme,
+  year: number,
+  month1To12: number,
+  weekStart: string,
+  aspect: number,
+  cardBg: string,
+  headerBg: string,
+  textCol: string,
+  mutedCol: string,
+  accent1: string,
+  accent2: string,
+  accent3: string,
+  weekendCol: string,
+  variant: number
+) {
+  const bx = 42;
+  const by = 42;
+  const bw = 916;
+  const bh = 916;
+  const safeM = Math.max(1, Math.min(12, month1To12));
+  const mName = CALENDAR_MONTH_NAMES[safeM - 1];
+
+  parts.push(`<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(bh)}" fill="${cardBg}"/>`);
+  const headerH = 148;
+  drawCalendarHeaderArt(
+    m,
+    parts,
+    theme,
+    bx,
+    by,
+    bw,
+    headerH,
+    headerBg,
+    accent1,
+    accent2,
+    accent3,
+    cardBg,
+    variant,
+    99
+  );
+
+  const headerTextCol = lumH(headerBg) < 135 ? "#ffffff" : "#0f172a";
+  parts.push(
+    drawPosterVectorTextString(
+      "WEEKLY PLANNER",
+      bx + 36,
+      by + 34,
+      36,
+      aspect,
+      "bold",
+      headerTextCol,
+      "left"
+    )
+  );
+  parts.push(
+    drawPosterVectorTextString(
+      `${mName} ${year}  |  SCHEDULE & PRIORITIES`,
+      bx + 36,
+      by + 88,
+      16,
+      aspect,
+      "bold",
+      accent2 === headerBg ? "#ffffff" : accent2,
+      "left"
+    )
+  );
+  parts.push(
+    drawPosterVectorTextString(
+      String(year),
+      bx + bw - 36,
+      by + 44,
+      44,
+      aspect,
+      "bold",
+      "#ffffff",
+      "right"
+    )
+  );
+
+  // 4×2 Grid inside the Weekly Planner: 7 Day Cards + 1 Notes & Priorities Card
+  const dayNamesFullSun = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ];
+  const shift = weekStart === "mon" ? 1 : weekStart === "sat" ? 6 : 0;
+  const orderedDays = dayNamesFullSun.slice(shift).concat(dayNamesFullSun.slice(0, shift));
+  const boxTitles = [...orderedDays, "TOP PRIORITIES & NOTES"];
+
+  const cols = 4;
+  const rows = 2;
+  const padX = 28;
+  const padY = 26;
+  const gapX = 16;
+  const gapY = 18;
+  const gridX = bx + padX;
+  const gridY = by + headerH + padY;
+  const gridW = bw - padX * 2;
+  const gridH = bh - headerH - padY * 2;
+  const cellW = (gridW - gapX * (cols - 1)) / cols;
+  const cellH = (gridH - gapY * (rows - 1)) / rows;
+
+  const startDayNum = ((variant * 7) % 21) + 1;
+  const lineCol = mixCol(cardBg, textCol, 0.13);
+  const boxBg = mixCol(cardBg, textCol, 0.025);
+
+  for (let i = 0; i < 8; i++) {
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    const cx0 = gridX + c * (cellW + gapX);
+    const cy0 = gridY + r * (cellH + gapY);
+    const isNotes = i === 7;
+    const isWknd =
+      boxTitles[i] === "SUNDAY" || boxTitles[i] === "SATURDAY";
+
+    parts.push(
+      `<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cellW)}" height="${f1(
+        cellH
+      )}" fill="${boxBg}" stroke="${lineCol}" stroke-width="1.5"/>`
+    );
+
+    const barH = 38;
+    const barCol = isNotes ? accent1 : isWknd ? weekendCol : headerBg;
+    parts.push(
+      `<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cellW)}" height="${f1(barH)}" fill="${barCol}"/>`
+    );
+
+    parts.push(
+      drawPosterVectorTextString(
+        boxTitles[i],
+        cx0 + 12,
+        cy0 + 12,
+        13.5,
+        aspect,
+        "bold",
+        "#ffffff",
+        "left"
+      )
+    );
+    if (!isNotes) {
+      parts.push(
+        drawPosterVectorTextString(
+          String(startDayNum + i).padStart(2, "0"),
+          cx0 + cellW - 12,
+          cy0 + 11,
+          15,
+          aspect,
+          "bold",
+          "#ffffff",
+          "right"
+        )
+      );
+    }
+
+    // Ruled Checklist Lines inside each Day Card
+    const linesCount = 8;
+    const lineStartY = cy0 + barH + 26;
+    const lineStepY = (cellH - barH - 36) / linesCount;
+    for (let l = 0; l < linesCount; l++) {
+      const ly = lineStartY + l * lineStepY;
+      parts.push(
+        `<rect x="${f1(cx0 + 12)}" y="${f1(ly - 8)}" width="9" height="9" fill="none" stroke="${
+          isNotes ? accent1 : mutedCol
+        }" stroke-width="1.3"/>`
+      );
+      parts.push(
+        `<rect x="${f1(cx0 + 28)}" y="${f1(ly)}" width="${f1(cellW - 40)}" height="1.2" fill="${lineCol}"/>`
+      );
+    }
+  }
+}
+
+function renderMasterCalendarCollection(
+  m: any,
+  q: Record<string, any>,
+  spec: MasterCalendarModeSpec
+) {
+  const year = Math.max(2024, Math.min(2035, parseInt(String(q.year || spec.defYear || "2026"), 10) || 2026));
+  const month1To12 = Math.max(1, Math.min(12, parseInt(String(q.month || spec.defMonth || "1"), 10) || 1));
+  const viewMode = String(q.viewMode || spec.defView || "12m");
+  const weekStart = String(q.weekStart || spec.defWeekStart || "sun");
+  const colorSet = String(q.colorSet || "default");
+  const variant = Math.max(0, Math.round(+(q.variant ?? 0)));
+
+  const dims = getRatioDims(
+    m.C?.px || 5200,
+    m.C?.ratio || getMicrostockCalendarRatio(viewMode),
+    m.C?.artW,
+    m.C?.artH
+  );
+  const aspect = Math.max(0.5, Math.min(2.4, dims.w / Math.max(1, dims.h)));
+
+  const parts: string[] = [];
+
+  // Presentation Board Background (Defaults to Pure Black #000000, responds dynamically to P.bg colour picker!)
+  const boardBg = normalizeIllustratorColor(m.bg || m.C?.bg || spec.boardBg || "#000000", "#000000");
+  parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${boardBg}" data-bg="1"/>`);
+
+  // Determine Family Index (0..11) from spec.id ("cal_ms_1" .. "cal_ms_60")
+  const modeNum = Math.max(1, parseInt(spec.id.replace("cal_ms_", ""), 10) || 1);
+  const familyIdx = Math.floor((modeNum - 1) / 5);
+  // Hero Top-Header & Table Style Index (0..15) cycles across all 16 distinct architectures on every click!
+  const styleIdx = (familyIdx + variant) % 16;
+
+  // Resolve Theme Palette + Variant / Studio Palette overrides
+  let cardBg = spec.cardBg;
+  let headerBg = spec.headerBg;
+  let textCol = spec.textCol;
+  let mutedCol = spec.mutedCol;
+  let accent1 = spec.accent1;
+  let accent2 = spec.accent2;
+  let accent3 = spec.accent3;
+  let weekendCol = spec.weekendCol;
+
+  // Ensure light-sheet styles (Sample 1, 2, 3, 4) have crisp white/light sheet backgrounds when variant rotates into them
+  if (colorSet === "default" && (styleIdx === 0 || styleIdx === 1 || styleIdx === 2 || styleIdx === 3)) {
+    cardBg = "#ffffff";
+    textCol = styleIdx === 1 ? "#1d4ed8" : "#1e293b";
+    mutedCol = "#475569";
+  }
+
+  if (colorSet === "palette" && m.C?.cols && m.C.cols.length >= 3) {
+    accent1 = m.C.cols[0];
+    accent2 = m.C.cols[1];
+    accent3 = m.C.cols[2];
+    weekendCol = m.C.cols[0];
+  } else if (colorSet === "gold_noir") {
+    cardBg = "#0b0f17";
+    headerBg = "#161e2e";
+    textCol = "#f8fafc";
+    mutedCol = "#94a3b8";
+    accent1 = "#f59e0b";
+    accent2 = "#fde047";
+    accent3 = "#d97706";
+    weekendCol = "#fbbf24";
+  } else if (colorSet === "swiss_white") {
+    cardBg = "#ffffff";
+    headerBg = "#111827";
+    textCol = "#111827";
+    mutedCol = "#64748b";
+    accent1 = "#e11d48";
+    accent2 = "#0284c7";
+    accent3 = "#f59e0b";
+    weekendCol = "#e11d48";
+  } else if (colorSet === "emerald_cream") {
+    cardBg = "#fbf8f3";
+    headerBg = "#133a2c";
+    textCol = "#133a2c";
+    mutedCol = "#647a71";
+    accent1 = "#10b981";
+    accent2 = "#f59e0b";
+    accent3 = "#0d9488";
+    weekendCol = "#e11d48";
+  } else if (colorSet === "royal_cobalt") {
+    cardBg = "#f8fafc";
+    headerBg = "#0f1d3a";
+    textCol = "#0f1d3a";
+    mutedCol = "#64748b";
+    accent1 = "#2563eb";
+    accent2 = "#f59e0b";
+    accent3 = "#06b6d4";
+    weekendCol = "#e11d48";
+  }
+
+  // Rotate accent harmonies when variant > 0 so every click on UNIQUE GENERATE produces a distinct design!
+  if (variant > 0 && colorSet === "default") {
+    const huePal = [
+      ["#f43f2e", "#f59e0b", "#2563eb"], // Sample 1 Coral Red + Amber + Royal Blue
+      ["#dc2626", "#991b1b", "#1d4ed8"], // Sample 2 Crimson Ruby + Cobalt Blue
+      ["#ea580c", "#2a9df4", "#84bd00"], // Sample 3 Vivid Orange + Rainbow
+      ["#0d9f4f", "#10b981", "#047857"], // Sample 4 Emerald Green Table
+      ["#8b5cf6", "#ec4899", "#06b6d4"], // Royal Violet & Magenta
+      ["#0284c7", "#f59e0b", "#10b981"], // Ocean Sapphire & Gold
+    ][variant % 6];
+    accent1 = huePal[0];
+    accent2 = huePal[1];
+    accent3 = huePal[2];
+    weekendCol = "#ef4444";
+  }
+
+  const effectiveTheme: CalendarArtTheme =
+    variant === 0
+      ? spec.theme
+      : ([
+          "swiss_editorial",
+          "corporate_modern",
+          "memphis_pop_studio",
+          "nordic_clean_grid",
+          "luxury_gold_noir",
+          "bauhaus_geometric",
+          "botanical_organic",
+          "pastel_minimal",
+          "retro_70s_groovy",
+          "cyber_tech_neon",
+          "japanese_zen_arch",
+          "executive_dark_slate",
+        ] as CalendarArtTheme[])[(variant + spec.subIdx) % 12];
+
+  if (viewMode === "week") {
+    drawWeeklyPlannerBoard(
+      m,
+      parts,
+      effectiveTheme,
+      year,
+      month1To12,
+      weekStart,
+      aspect,
+      cardBg,
+      headerBg,
+      textCol,
+      mutedCol,
+      accent1,
+      accent2,
+      accent3,
+      weekendCol,
+      variant
+    );
+    m.raw(parts.join(""));
+    return;
+  }
+
+  if (viewMode === "1m") {
+    // Single Month Hero Wall Calendar Card (Centered Vertical Poster on Presentation Board)
+    const cw = 760;
+    const ch = 900;
+    const cx0 = (T - cw) * 0.5;
+    const cy0 = (T - ch) * 0.5;
+    drawSingleMonthCalendarBox(
+      m,
+      parts,
+      effectiveTheme,
+      year,
+      month1To12,
+      weekStart,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      aspect,
+      true,
+      cardBg,
+      headerBg,
+      textCol,
+      mutedCol,
+      accent1,
+      accent2,
+      accent3,
+      weekendCol,
+      variant,
+      styleIdx
+    );
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // Multi-Month Calendar Board (12m = 4×3, 12m_3x4 = 3×4, 6m = 3×2, 4m = 4×1, 3m = 3×1)
+  const sheetX = 36;
+  const sheetY = 36;
+  const sheetW = 928;
+  const sheetH = 928;
+
+  // Outer Calendar Sheet Card
+  parts.push(
+    `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
+      sheetH
+    )}" fill="${cardBg}"/>`
+  );
+
+  const subTitleStr =
+    viewMode === "3m"
+      ? `QUARTERLY 3-MONTH CALENDAR  |  ${CALENDAR_MONTH_SHORT[(month1To12 - 1) % 12]} - ${
+          CALENDAR_MONTH_SHORT[(month1To12 + 1) % 12]
+        }`
+      : viewMode === "4m"
+      ? `FOUR-MONTH SEASONAL CALENDAR  |  ${CALENDAR_MONTH_SHORT[(month1To12 - 1) % 12]} - ${
+          CALENDAR_MONTH_SHORT[(month1To12 + 2) % 12]
+        }`
+      : viewMode === "6m"
+      ? `HALF-YEAR 6-MONTH CALENDAR  |  ${CALENDAR_MONTH_SHORT[(month1To12 - 1) % 12]} - ${
+          CALENDAR_MONTH_SHORT[(month1To12 + 4) % 12]
+        }`
+      : "ANNUAL 12-MONTH COMMERCIAL WALL & DESK CALENDAR";
+
+  // Generous Top Hero Header Area (Matches the dramatic top year headers in user's 4 reference images!)
+  const topBannerH = viewMode === "3m" || viewMode === "4m" ? 168 : 162;
+  drawCalendarSheetHeroTopHeader(
+    parts,
+    styleIdx,
+    year,
+    subTitleStr,
+    sheetX,
+    sheetY,
+    sheetW,
+    sheetH,
+    topBannerH,
+    aspect,
+    cardBg,
+    headerBg,
+    textCol,
+    mutedCol,
+    accent1,
+    accent2,
+    accent3
+  );
+
+  let cols = 4;
+  let rows = 3;
+  let totalMonths = 12;
+  let startM = 1;
+
+  if (viewMode === "12m_3x4") {
+    cols = 3;
+    rows = 4;
+    totalMonths = 12;
+    startM = 1;
+  } else if (viewMode === "6m") {
+    cols = 3;
+    rows = 2;
+    totalMonths = 6;
+    startM = month1To12;
+  } else if (viewMode === "4m") {
+    cols = 4;
+    rows = 1;
+    totalMonths = 4;
+    startM = month1To12;
+  } else if (viewMode === "3m") {
+    cols = 3;
+    rows = 1;
+    totalMonths = 3;
+    startM = month1To12;
+  }
+
+  const padX = 28;
+  const padY = 20;
+  const gapX = 20;
+  const gapY = 18;
+  const gridX = sheetX + padX;
+  const gridY = sheetY + topBannerH + padY;
+  const gridW = sheetW - padX * 2;
+  const gridH = sheetH - topBannerH - padY - 26;
+  const boxW = (gridW - gapX * (cols - 1)) / cols;
+  const boxH = (gridH - gapY * (rows - 1)) / rows;
+
+  for (let idx = 0; idx < totalMonths; idx++) {
+    const r = Math.floor(idx / cols);
+    const c = idx % cols;
+    const bx = gridX + c * (boxW + gapX);
+    const by = gridY + r * (boxH + gapY);
+    const curM = ((startM - 1 + idx) % 12) + 1;
+    drawSingleMonthCalendarBox(
+      m,
+      parts,
+      effectiveTheme,
+      year,
+      curM,
+      weekStart,
+      bx,
+      by,
+      boxW,
+      boxH,
+      aspect,
+      totalMonths <= 4,
+      cardBg,
+      headerBg,
+      textCol,
+      mutedCol,
+      accent1,
+      accent2,
+      accent3,
+      weekendCol,
+      variant,
+      styleIdx
+    );
+  }
+
+  m.raw(parts.join(""));
+}
+
+function registerMasterCalendarCollection() {
+  for (const cm of MASTER_CALENDAR_MODES) {
+    registerMode({
+      id: cm.id,
+      name: cm.name,
+      cat: "Calendar",
+      look: {
+        bg: "#000000",
+        ink: cm.textCol,
+        cols: [cm.accent1, cm.accent2, cm.accent3, cm.headerBg, cm.weekendCol],
+        style: "flat",
+        sw: 2,
+      },
+      params: [
+        {
+          k: "year",
+          l: "CALENDAR YEAR (2024 – 2035 PERPETUAL)",
+          def: cm.defYear,
+          type: "select",
+          opts: [
+            ["2025", "2025 CALENDAR YEAR"],
+            ["2026", "2026 CALENDAR YEAR (BEST-SELLER)"],
+            ["2027", "2027 CALENDAR YEAR (NEW YEAR)"],
+            ["2028", "2028 CALENDAR YEAR (LEAP YEAR)"],
+            ["2029", "2029 CALENDAR YEAR"],
+            ["2030", "2030 CALENDAR YEAR"],
+            ["2031", "2031 CALENDAR YEAR"],
+            ["2032", "2032 CALENDAR YEAR"],
+          ],
+        },
+        {
+          k: "viewMode",
+          l: "CALENDAR LAYOUT (12 MONTHS / SINGLE MONTH / WEEKLY)",
+          def: cm.defView,
+          type: "select",
+          opts: [
+            ["12m", "12 MONTHS FULL YEAR (4×3 LANDSCAPE SHEET)"],
+            ["12m_3x4", "12 MONTHS FULL YEAR (3×4 VERTICAL POSTER)"],
+            ["1m", "SINGLE MONTH WALL / DESK CALENDAR PAGE"],
+            ["3m", "3 MONTHS QUARTERLY TRIPTYCH CALENDAR"],
+            ["4m", "4 MONTHS SEASONAL QUAD CALENDAR"],
+            ["6m", "6 MONTHS HALF-YEAR (3×2) CALENDAR"],
+            ["week", "7-DAY WEEKLY PLANNER & SCHEDULE SHEET"],
+          ],
+        },
+        {
+          k: "month",
+          l: "ACTIVE / STARTING MONTH (JAN – DEC)",
+          def: cm.defMonth,
+          type: "select",
+          opts: [
+            ["1", "01 · JANUARY"],
+            ["2", "02 · FEBRUARY"],
+            ["3", "03 · MARCH"],
+            ["4", "04 · APRIL"],
+            ["5", "05 · MAY"],
+            ["6", "06 · JUNE"],
+            ["7", "07 · JULY"],
+            ["8", "08 · AUGUST"],
+            ["9", "09 · SEPTEMBER"],
+            ["10", "10 · OCTOBER"],
+            ["11", "11 · NOVEMBER"],
+            ["12", "12 · DECEMBER"],
+          ],
+        },
+        {
+          k: "weekStart",
+          l: "WEEK STARTS ON (SUNDAY / MONDAY / SATURDAY)",
+          def: cm.defWeekStart,
+          type: "select",
+          opts: [
+            ["sun", "SUNDAY FIRST (SUN – SAT · INTERNATIONAL)"],
+            ["mon", "MONDAY FIRST (MON – SUN · EUROPE / ISO)"],
+            ["sat", "SATURDAY FIRST (SAT – FRI · SOUTH ASIA / ME)"],
+          ],
+        },
+        {
+          k: "colorSet",
+          l: "CALENDAR STUDIO COLOUR THEME",
+          def: "default",
+          type: "select",
+          opts: [
+            ["default", "ORIGINAL CURATED THEME PALETTE"],
+            ["swiss_white", "SWISS CLEAN WHITE & CRIMSON RED"],
+            ["gold_noir", "24K LUXURY GOLD & OBSIDIAN NOIR"],
+            ["emerald_cream", "BOTANICAL EMERALD & WARM CREAM"],
+            ["royal_cobalt", "CORPORATE ROYAL COBALT & SLATE"],
+            ["palette", "ACTIVE STUDIO PALETTE COLOURS"],
+          ],
+        },
+        {
+          k: "variant",
+          l: "DESIGN VARIATION (EVERY CLICK CHANGES LAYOUT)",
+          min: 0,
+          max: 24,
+          step: 1,
+          def: 0,
+        },
+      ],
+      draw(m: any, q: any) {
+        renderMasterCalendarCollection(m, q, cm);
+      },
+    });
+  }
+}
+
+registerMasterCalendarCollection();
+
+/* ============================================================================
+ * 60-MODE HAND-LETTERED CALLIGRAPHY & ORNATE TYPOGRAPHY STUDIO
+ * Replicates Sample 1 (image_531df334.png - Connected Brush Script + Tapered Swash Tail)
+ * and Sample 2 (image_f9b7def3.png - Ornate Victorian Spiral Scroll Flourishes,
+ * 5-Petal Sunburst Crown & Symmetrical Double-Looped Infinity Scroll Base)
+ * plus 14 more commercial microstock hand-lettering & ornament styles!
+ * Supports both 1 PC Hero Calligraphy and Multi-Piece Sets (2, 4, 6, 9, 12 PCS).
+ * ============================================================================ */
+
+export type TypographyOccasionKey =
+  | "birthday"
+  | "wedding"
+  | "congrats"
+  | "thankyou"
+  | "holiday"
+  | "motivational"
+  | "coffee"
+  | "family"
+  | "summer"
+  | "sale"
+  | "islamic"
+  | "welcome";
+
+export interface MasterTypographyModeSpec {
+  id: string;
+  name: string;
+  shortLabel: string;
+  occasion: TypographyOccasionKey;
+  defPcs: string;
+  defFontStyle: string;
+  defFlourishStyle: string;
+  defColorSet: string;
+  boardBg: string;
+  inkCol: string;
+  accent1: string;
+  accent2: string;
+  accent3: string;
+  phraseIdx: number;
+}
+
+// 12 Commercial Microstock Occasion Phrase Packs (12 two-line phrases per occasion = 144 hand-lettered phrases!)
+export const TYPOGRAPHY_OCCASION_PHRASES: Record<TypographyOccasionKey, [string, string][]> = {
+  birthday: [
+    ["Happy", "Birthday"],
+    ["Make a", "Wish"],
+    ["Best", "Wishes"],
+    ["Let's", "Party"],
+    ["Happy", "Cake Day"],
+    ["Cheers to", "You"],
+    ["Birthday", "Queen"],
+    ["Sweet", "Celebration"],
+    ["Hip Hip", "Hooray"],
+    ["Party", "Time"],
+    ["Shine", "Bright"],
+    ["Born to", "Sparkle"],
+  ],
+  wedding: [
+    ["Happy", "Anniversary"],
+    ["Forever &", "Always"],
+    ["Just", "Married"],
+    ["Better", "Together"],
+    ["True", "Love"],
+    ["Save the", "Date"],
+    ["Mr &", "Mrs"],
+    ["Love You", "More"],
+    ["Happily", "Ever After"],
+    ["Endless", "Love"],
+    ["Two", "Hearts"],
+    ["Be", "Mine"],
+  ],
+  congrats: [
+    ["Warmest", "Congrats"],
+    ["You", "Did It"],
+    ["Class of", "2026"],
+    ["Proud of", "You"],
+    ["Dream", "Big"],
+    ["Well", "Done"],
+    ["Best of", "Luck"],
+    ["New", "Chapter"],
+    ["Future is", "Yours"],
+    ["Big", "Success"],
+    ["Bravo &", "Cheers"],
+    [" Shine", "On"],
+  ],
+  thankyou: [
+    ["Thank", "You"],
+    ["So", "Grateful"],
+    ["Many", "Thanks"],
+    ["Thanks a", "Million"],
+    ["With", "Gratitude"],
+    ["Appreciate", "You"],
+    ["Kindness", "Matters"],
+    ["Forever", "Thankful"],
+    ["Warm", "Blessings"],
+    ["From the", "Heart"],
+    ["Big", "Thanks"],
+    ["Stay", "Blessed"],
+  ],
+  holiday: [
+    ["Happy", "New Year"],
+    ["Merry", "Christmas"],
+    ["Happy", "Holidays"],
+    ["Season's", "Greetings"],
+    ["Joy to the", "World"],
+    ["Peace &", "Love"],
+    ["Winter", "Magic"],
+    ["Festive", "Cheers"],
+    ["Let it", "Snow"],
+    ["Warm", "Wishes"],
+    ["Holy", "Night"],
+    [" Joyful", "Season"],
+  ],
+  motivational: [
+    ["Never", "Give Up"],
+    ["Dream &", "Believe"],
+    ["Good Vibes", "Only"],
+    ["Stay", "Positive"],
+    ["Make it", "Happen"],
+    ["Work", "Hard"],
+    ["Be", "Fearless"],
+    ["Chase", "Dreams"],
+    ["Stay", "Humble"],
+    ["Rise &", "Shine"],
+    ["Keep", "Going"],
+    ["Always", "Unstoppable"],
+  ],
+  coffee: [
+    ["But First", "Coffee"],
+    ["Coffee", "Time"],
+    ["Fresh", "Brewed"],
+    ["Love &", "Espresso"],
+    ["Daily", "Grind"],
+    ["Cafe", "Mocha"],
+    ["Sweet", "Bakery"],
+    ["Hot", "Cocoa"],
+    ["Tea &", "Books"],
+    ["Cozy", "Mug"],
+    ["Morning", "Brew"],
+    ["Sip &", "Relax"],
+  ],
+  family: [
+    ["Happy", "Mother's Day"],
+    ["Best Mom", "Ever"],
+    ["Happy", "Father's Day"],
+    ["Super", "Dad"],
+    ["Home Sweet", "Home"],
+    ["Family", "First"],
+    ["Love My", "Mom"],
+    ["World's", "Best Dad"],
+    ["Blessed", "Family"],
+    ["Sweet", "Mama"],
+    ["Hero", "Dad"],
+    ["Together", "Forever"],
+  ],
+  summer: [
+    ["Hello", "Summer"],
+    ["Summer", "Vibes"],
+    ["Beach", "Please"],
+    ["Wild &", "Free"],
+    ["Adventure", "Awaits"],
+    ["Sunshine", "State"],
+    ["Ocean", "Breeze"],
+    ["Let's", "Travel"],
+    ["Tropical", "Paradise"],
+    ["Sweet", "Wanderlust"],
+    ["Good", "Times"],
+    ["Sunny", "Aloha"],
+  ],
+  sale: [
+    ["Mega", "Sale"],
+    ["Special", "Offer"],
+    ["Black", "Friday"],
+    ["New", "Arrival"],
+    ["Best", "Deal"],
+    ["Big", "Discount"],
+    ["Limited", "Edition"],
+    ["Shop", "Now"],
+    ["Flash", "Sale"],
+    ["VIP", "Member"],
+    ["Grand", "Opening"],
+    ["Free", "Gift"],
+  ],
+  islamic: [
+    ["Eid", "Mubarak"],
+    ["Ramadan", "Kareem"],
+    ["Jumma", "Mubarak"],
+    ["All", "Praise"],
+    ["Peace &", "Blessings"],
+    ["Happy", "Eid Day"],
+    ["Blessed", "Friday"],
+    ["Eid", "Saeed"],
+    ["Sacred", "Month"],
+    ["Holy", "Ramadan"],
+    ["Faith &", "Grace"],
+    ["Divine", "Mercy"],
+  ],
+  welcome: [
+    ["Warm", "Welcome"],
+    ["Hello", "Gorgeous"],
+    ["Have a", "Nice Day"],
+    ["Good", "Morning"],
+    ["Sweet", "Dreams"],
+    ["Hello", "Spring"],
+    ["Autumn", "Vibes"],
+    ["Cozy", "Season"],
+    ["Smile", "Always"],
+    ["Enjoy", "Today"],
+    ["Lovely", "Day"],
+    ["Welcome", "Home"],
+  ],
+};
+
+// ============================================================================
+// VARIABLE-WIDTH CALLIGRAPHY BRUSH STROKE ENGINE (100% Closed Vector Outlines)
+// Converts a sequence of [x, y, pressureWidth] points into a smooth Catmull-Rom
+// variable-width filled polygon path with rounded nib caps, isotropic aspect-ratio
+// normal calculation, 3-point tangent smoothing (zero self-intersection kinks),
+// and authentic thick-downstroke / thin-upstroke calligraphic modulation!
+// ============================================================================
+function drawCalligraphyBrushStroke(
+  pts: [number, number, number][],
+  baseHalfWidth: number,
+  col: string,
+  nibModulation = true,
+  aspect = 1
+): string {
+  if (pts.length < 2) return "";
+
+  const safeAsp = Math.max(0.45, Math.min(2.4, aspect || 1));
+
+  // 1. Sample smooth centerline + pressure via Catmull-Rom spline interpolation
+  const samples: { x: number; y: number; r: number }[] = [];
+  const stepsPerSeg = 7;
+  const n = pts.length;
+
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(n - 1, i + 2)];
+    const maxStep = i === n - 2 ? stepsPerSeg : stepsPerSeg - 1;
+
+    for (let s = 0; s <= maxStep; s++) {
+      const t = s / stepsPerSeg;
+      const t2 = t * t;
+      const t3 = t2 * t;
+
+      const x =
+        0.5 *
+        (2 * p1[0] +
+          (-p0[0] + p2[0]) * t +
+          (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 +
+          (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3);
+      const y =
+        0.5 *
+        (2 * p1[1] +
+          (-p0[1] + p2[1]) * t +
+          (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 +
+          (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3);
+      const r =
+        0.5 *
+        (2 * p1[2] +
+          (-p0[2] + p2[2]) * t +
+          (2 * p0[2] - 5 * p1[2] + 4 * p2[2] - p3[2]) * t2 +
+          (-p0[2] + 3 * p1[2] - 3 * p2[2] + p3[2]) * t3);
+
+      if (samples.length > 0) {
+        const prev = samples[samples.length - 1];
+        if (Math.hypot((x - prev.x) * safeAsp, y - prev.y) < 0.14) continue;
+      }
+      samples.push({ x, y, r: Math.max(0.1, r) });
+    }
+  }
+
+  if (samples.length < 2) return "";
+
+  const m = samples.length;
+
+  // 2. Compute isotropic physical tangents first, then smooth them to eliminate sharp corner kinks
+  const rawTan: [number, number][] = [];
+  for (let i = 0; i < m; i++) {
+    const pPrev = samples[Math.max(0, i - 1)];
+    const pNext = samples[Math.min(m - 1, i + 1)];
+    let dx = (pNext.x - pPrev.x) * safeAsp;
+    let dy = pNext.y - pPrev.y;
+    const len = Math.hypot(dx, dy) || 1;
+    rawTan.push([dx / len, dy / len]);
+  }
+
+  const leftPts: [number, number][] = [];
+  const rightPts: [number, number][] = [];
+
+  for (let i = 0; i < m; i++) {
+    const t0 = rawTan[Math.max(0, i - 1)];
+    const t1 = rawTan[i];
+    const t2 = rawTan[Math.min(m - 1, i + 1)];
+    let tx = t0[0] * 0.25 + t1[0] * 0.5 + t2[0] * 0.25;
+    let ty = t0[1] * 0.25 + t1[1] * 0.5 + t2[1] * 0.25;
+    const tLen = Math.hypot(tx, ty) || 1;
+    tx /= tLen;
+    ty /= tLen;
+
+    // Perpendicular normal vector in isotropic physical space
+    const nx = -ty;
+    const ny = tx;
+
+    // Authentic Brush Pen Nib Modulation:
+    // Downstrokes (ty > 0) swell thicker; upstrokes (ty < 0, tx > 0) thin gracefully
+    let nibFactor = 1.0;
+    if (nibModulation) {
+      const downBias = ty * 0.82 - tx * 0.28;
+      nibFactor = 0.76 + 0.34 * Math.max(-0.62, Math.min(1, downBias));
+    }
+
+    const hw = Math.max(0.28, baseHalfWidth * samples[i].r * nibFactor);
+    leftPts.push([samples[i].x + (nx * hw) / safeAsp, samples[i].y + ny * hw]);
+    rightPts.push([samples[i].x - (nx * hw) / safeAsp, samples[i].y - ny * hw]);
+  }
+
+  // 3. Build rounded end cap & start cap in isotropic physical space
+  const endCenter = samples[m - 1];
+  const endL = leftPts[m - 1];
+  const endDx = (endL[0] - endCenter.x) * safeAsp;
+  const endDy = endL[1] - endCenter.y;
+  const endRad = Math.hypot(endDx, endDy);
+  const endAng0 = Math.atan2(endDy, endDx);
+  const endCap: [number, number][] = [];
+  if (endRad > 0.45) {
+    for (let c = 1; c <= 4; c++) {
+      const a = endAng0 - (c / 5) * Math.PI;
+      endCap.push([
+        endCenter.x + (Math.cos(a) * endRad) / safeAsp,
+        endCenter.y + Math.sin(a) * endRad,
+      ]);
+    }
+  }
+
+  const startCenter = samples[0];
+  const startR = rightPts[0];
+  const startDx = (startR[0] - startCenter.x) * safeAsp;
+  const startDy = startR[1] - startCenter.y;
+  const startRad = Math.hypot(startDx, startDy);
+  const startAng0 = Math.atan2(startDy, startDx);
+  const startCap: [number, number][] = [];
+  if (startRad > 0.45) {
+    for (let c = 1; c <= 4; c++) {
+      const a = startAng0 - (c / 5) * Math.PI;
+      startCap.push([
+        startCenter.x + (Math.cos(a) * startRad) / safeAsp,
+        startCenter.y + Math.sin(a) * startRad,
+      ]);
+    }
+  }
+
+  const allPoly: [number, number][] = [
+    ...leftPts,
+    ...endCap,
+    ...rightPts.slice().reverse(),
+    ...startCap,
+  ];
+
+  let d = "";
+  for (let i = 0; i < allPoly.length; i++) {
+    d += (i === 0 ? "M" : "L") + `${f1(allPoly[i][0])} ${f1(allPoly[i][1])}`;
+  }
+  d += "Z";
+  return `<path d="${d}" fill="${col}"/>`;
+}
+
+// Draw a Calligraphic Sunburst Teardrop / Petal Droplet (Like the 5 top petals in Sample 2 image_f9b7def3.png!)
+function drawCalligraphyTeardrop(
+  cx: number,
+  cy: number,
+  length: number,
+  maxRadius: number,
+  angleRad: number,
+  col: string,
+  aspect = 1
+): string {
+  const safeAsp = Math.max(0.45, Math.min(2.4, aspect || 1));
+  const cosA = Math.cos(angleRad) / safeAsp;
+  const sinA = Math.sin(angleRad);
+  const pts: [number, number, number][] = [
+    [cx, cy, 0.14],
+    [cx + cosA * length * 0.35, cy + sinA * length * 0.35, 0.56],
+    [cx + cosA * length * 0.72, cy + sinA * length * 0.72, 1.0],
+    [cx + cosA * length * 0.94, cy + sinA * length * 0.94, 0.72],
+    [cx + cosA * length, cy + sinA * length, 0.24],
+  ];
+  return drawCalligraphyBrushStroke(pts, maxRadius, col, false, safeAsp);
+}
+
+// Draw a Solid Vector Ink Dot (Used inside Victorian scroll curls and "i"/"j" dots)
+function drawCalligraphyDot(
+  cx: number,
+  cy: number,
+  r: number,
+  col: string,
+  aspect = 1
+): string {
+  const safeAsp = Math.max(0.45, Math.min(2.4, aspect || 1));
+  const pts: [number, number][] = [];
+  for (let k = 0; k < 20; k++) {
+    const a = (k / 20) * Math.PI * 2;
+    const px = cx + (Math.cos(a) * r * 0.95 - Math.sin(a) * r * 0.16) / safeAsp;
+    const py = cy + Math.sin(a) * r * 1.05;
+    pts.push([px, py]);
+  }
+  return `<polygon points="${pts.map((p) => `${f1(p[0])},${f1(p[1])}`).join(" ")}" fill="${col}"/>`;
+}
+
+// ============================================================================
+// CONNECTED CURSIVE BRUSH CALLIGRAPHY ALPHABET (A-Z, a-z, 0-9, &, ', !)
+// Clean, non-crossing open-counter cursive glyphs calibrated to Sample 1 & Sample 2:
+//   y = 0   -> Cap / Ascender top
+//   y = 5.4 -> Lowercase x-height top
+//   y = 14  -> Baseline
+//   y = 20.5 -> Descender loop bottom
+// Every lowercase glyph has wide open counters and a clean right exit ligature
+// to [adv + 0.35, 10.2, 0.30] without overlapping left entry strokes!
+// ============================================================================
+interface BrushGlyphDef {
+  adv: number;
+  strokes: [number, number, number][][];
+  dots?: [number, number, number][]; // [x, y, radiusFactor]
+}
+
+const BRUSH_SCRIPT_GLYPHS: Record<string, BrushGlyphDef> = {
+  // ---------------- LOWERCASE CONNECTED CURSIVE (a - z) ----------------
+  a: {
+    adv: 9.0,
+    strokes: [
+      // Wide open oval counter
+      [
+        [6.6, 6.8, 0.42],
+        [4.4, 5.4, 0.52],
+        [1.8, 7.0, 0.92],
+        [1.3, 10.6, 1.02],
+        [2.8, 13.7, 0.82],
+        [5.4, 13.0, 0.48],
+        [6.8, 9.6, 0.42],
+      ],
+      // Right downstroke stem + clean exit ligature
+      [
+        [7.1, 5.6, 0.94],
+        [6.8, 10.4, 1.04],
+        [7.0, 13.5, 0.84],
+        [8.2, 13.7, 0.46],
+        [9.4, 10.2, 0.3],
+      ],
+    ],
+  },
+  b: {
+    adv: 8.8,
+    strokes: [
+      // Tall clean brush ascender stem
+      [
+        [2.4, 0.4, 0.96],
+        [1.9, 7.4, 1.06],
+        [1.8, 13.4, 0.92],
+      ],
+      // Open rounded right bowl + exit ligature
+      [
+        [2.0, 8.8, 0.44],
+        [4.5, 5.6, 0.64],
+        [6.8, 7.0, 0.96],
+        [6.7, 11.2, 1.02],
+        [4.5, 13.7, 0.84],
+        [2.1, 12.8, 0.48],
+        [5.6, 12.6, 0.4],
+        [9.1, 10.2, 0.3],
+      ],
+    ],
+  },
+  c: {
+    adv: 7.6,
+    strokes: [
+      [
+        [6.4, 7.0, 0.62],
+        [4.6, 5.4, 0.52],
+        [2.0, 7.0, 0.94],
+        [1.4, 10.6, 1.04],
+        [3.0, 13.7, 0.86],
+        [5.8, 13.3, 0.48],
+        [8.0, 10.2, 0.3],
+      ],
+    ],
+  },
+  d: {
+    adv: 9.2,
+    strokes: [
+      // Wide open oval bowl
+      [
+        [6.6, 6.8, 0.42],
+        [4.4, 5.4, 0.52],
+        [1.8, 7.0, 0.92],
+        [1.3, 10.6, 1.02],
+        [2.8, 13.7, 0.82],
+        [5.4, 13.0, 0.48],
+        [6.8, 9.6, 0.42],
+      ],
+      // Tall ascender stem + exit ligature
+      [
+        [7.4, 0.4, 0.96],
+        [6.9, 7.6, 1.06],
+        [7.0, 13.4, 0.88],
+        [8.3, 13.7, 0.46],
+        [9.6, 10.2, 0.3],
+      ],
+    ],
+  },
+  e: {
+    adv: 7.8,
+    strokes: [
+      [
+        [1.7, 9.6, 0.38],
+        [5.4, 8.6, 0.46],
+        [6.4, 6.6, 0.66],
+        [4.5, 5.4, 0.58],
+        [1.9, 7.0, 0.94],
+        [1.4, 10.8, 1.04],
+        [3.2, 13.7, 0.86],
+        [6.0, 13.3, 0.48],
+        [8.2, 10.2, 0.3],
+      ],
+    ],
+  },
+  f: {
+    adv: 7.2,
+    strokes: [
+      // Graceful curved top hook + straight descender stem
+      [
+        [5.8, 1.4, 0.62],
+        [4.2, 0.4, 0.72],
+        [2.8, 2.8, 0.96],
+        [2.4, 10.2, 1.06],
+        [1.9, 17.8, 0.96],
+        [1.5, 20.0, 0.62],
+      ],
+      // Clean crossbar + exit ligature
+      [
+        [0.8, 7.2, 0.52],
+        [3.4, 6.8, 0.72],
+        [5.6, 6.6, 0.46],
+      ],
+    ],
+  },
+  g: {
+    adv: 9.0,
+    strokes: [
+      // Open oval counter
+      [
+        [6.6, 6.8, 0.42],
+        [4.4, 5.4, 0.52],
+        [1.8, 7.0, 0.92],
+        [1.3, 10.6, 1.02],
+        [2.8, 13.6, 0.82],
+        [5.4, 12.9, 0.48],
+        [6.8, 9.6, 0.42],
+      ],
+      // Clean open descender loop + rising exit ligature
+      [
+        [7.1, 5.6, 0.94],
+        [6.7, 12.2, 1.04],
+        [6.1, 18.2, 0.98],
+        [4.2, 20.4, 0.78],
+        [2.0, 19.2, 0.52],
+        [2.8, 15.6, 0.4],
+        [6.4, 12.4, 0.36],
+        [9.4, 10.2, 0.3],
+      ],
+    ],
+  },
+  h: {
+    adv: 9.0,
+    strokes: [
+      // Clean tall single-pass ascender stem (like "Birthday" in Sample 1)
+      [
+        [2.4, 0.4, 0.96],
+        [1.9, 7.4, 1.06],
+        [1.7, 13.7, 0.96],
+      ],
+      // Open arch shoulder + right stem + exit ligature
+      [
+        [1.9, 9.8, 0.42],
+        [4.4, 5.6, 0.62],
+        [6.8, 6.4, 0.94],
+        [6.8, 10.6, 1.04],
+        [7.0, 13.5, 0.86],
+        [8.2, 13.7, 0.46],
+        [9.4, 10.2, 0.3],
+      ],
+    ],
+  },
+  i: {
+    adv: 5.4,
+    strokes: [
+      [
+        [2.4, 5.6, 0.94],
+        [2.1, 10.4, 1.04],
+        [2.4, 13.5, 0.86],
+        [3.8, 13.7, 0.46],
+        [5.8, 10.2, 0.3],
+      ],
+    ],
+    dots: [[2.8, 2.5, 1.05]],
+  },
+  j: {
+    adv: 5.8,
+    strokes: [
+      [
+        [3.4, 5.6, 0.94],
+        [3.0, 12.6, 1.04],
+        [2.4, 18.4, 0.96],
+        [0.8, 20.4, 0.76],
+        [-0.8, 19.0, 0.5],
+        [0.4, 15.6, 0.38],
+        [3.6, 12.2, 0.34],
+        [6.2, 10.2, 0.3],
+      ],
+    ],
+    dots: [[3.8, 2.5, 1.05]],
+  },
+  k: {
+    adv: 8.8,
+    strokes: [
+      // Clean tall ascender stem
+      [
+        [2.3, 0.4, 0.96],
+        [1.8, 7.4, 1.06],
+        [1.6, 13.7, 0.96],
+      ],
+      // Upper loop + diagonal leg + exit ligature
+      [
+        [6.6, 5.6, 0.78],
+        [4.2, 8.2, 0.68],
+        [2.2, 9.4, 0.58],
+        [5.0, 10.8, 0.94],
+        [6.8, 13.5, 0.88],
+        [8.0, 13.7, 0.46],
+        [9.2, 10.2, 0.3],
+      ],
+    ],
+  },
+  l: {
+    adv: 5.4,
+    strokes: [
+      // Clean tall single-pass ascender + curved baseline tail
+      [
+        [2.5, 0.4, 0.96],
+        [2.0, 7.6, 1.06],
+        [2.2, 13.4, 0.9],
+        [3.6, 13.7, 0.48],
+        [5.8, 10.2, 0.3],
+      ],
+    ],
+  },
+  m: {
+    adv: 13.4,
+    strokes: [
+      [
+        [1.5, 5.6, 0.94],
+        [1.3, 13.7, 1.02],
+      ],
+      [
+        [1.6, 9.4, 0.42],
+        [3.9, 5.6, 0.62],
+        [6.0, 6.2, 0.94],
+        [5.8, 13.7, 1.02],
+      ],
+      [
+        [6.1, 9.4, 0.42],
+        [8.6, 5.6, 0.62],
+        [10.7, 6.2, 0.94],
+        [10.7, 13.4, 0.94],
+        [12.0, 13.7, 0.46],
+        [13.8, 10.2, 0.3],
+      ],
+    ],
+  },
+  n: {
+    adv: 9.2,
+    strokes: [
+      [
+        [1.7, 5.6, 0.94],
+        [1.5, 13.7, 1.02],
+      ],
+      [
+        [1.8, 9.4, 0.42],
+        [4.4, 5.6, 0.62],
+        [6.8, 6.2, 0.94],
+        [6.8, 13.4, 0.94],
+        [8.1, 13.7, 0.46],
+        [9.6, 10.2, 0.3],
+      ],
+    ],
+  },
+  o: {
+    adv: 8.6,
+    strokes: [
+      // Wide open oval bowl
+      [
+        [4.5, 5.4, 0.54],
+        [1.8, 7.0, 0.94],
+        [1.4, 10.6, 1.04],
+        [3.0, 13.7, 0.86],
+        [5.8, 13.1, 0.82],
+        [6.9, 9.4, 0.94],
+        [5.3, 5.6, 0.62],
+        [4.4, 5.4, 0.5],
+      ],
+      // Top-right flick exit connector
+      [
+        [6.4, 8.6, 0.46],
+        [7.6, 9.6, 0.42],
+        [9.0, 9.8, 0.3],
+      ],
+    ],
+  },
+  p: {
+    adv: 9.0,
+    strokes: [
+      // Tall descender brush stem (like "Happy" in Sample 1 & 2)
+      [
+        [2.2, 5.4, 0.96],
+        [1.7, 12.6, 1.06],
+        [1.2, 19.6, 0.98],
+        [1.0, 20.6, 0.64],
+      ],
+      // Wide open rounded right lobe + exit connector
+      [
+        [2.1, 8.8, 0.42],
+        [4.6, 5.5, 0.64],
+        [7.0, 6.8, 0.96],
+        [6.8, 11.2, 1.02],
+        [4.5, 13.6, 0.82],
+        [2.3, 12.6, 0.46],
+        [5.8, 12.8, 0.4],
+        [9.4, 10.2, 0.3],
+      ],
+    ],
+  },
+  q: {
+    adv: 9.0,
+    strokes: [
+      [
+        [6.6, 6.8, 0.42],
+        [4.4, 5.4, 0.52],
+        [1.8, 7.0, 0.92],
+        [1.3, 10.6, 1.02],
+        [2.8, 13.6, 0.82],
+        [5.4, 12.9, 0.48],
+        [6.8, 9.6, 0.42],
+      ],
+      [
+        [7.1, 5.6, 0.94],
+        [6.5, 13.4, 1.04],
+        [6.0, 20.0, 0.94],
+        [7.5, 17.6, 0.46],
+        [9.4, 10.2, 0.3],
+      ],
+    ],
+  },
+  r: {
+    adv: 7.2,
+    strokes: [
+      // Left short stem
+      [
+        [1.8, 5.6, 0.92],
+        [1.6, 13.7, 1.0],
+      ],
+      // Arch shoulder + right dip + exit ligature (like "Birthday" in Sample 1)
+      [
+        [1.8, 8.8, 0.44],
+        [3.8, 5.6, 0.72],
+        [5.4, 6.2, 0.9],
+        [5.0, 12.8, 0.92],
+        [6.1, 13.7, 0.48],
+        [7.6, 10.2, 0.3],
+      ],
+    ],
+  },
+  s: {
+    adv: 7.8,
+    strokes: [
+      // Clean S-curve without crisscrossing entry line
+      [
+        [5.8, 6.4, 0.66],
+        [4.0, 5.4, 0.72],
+        [2.0, 6.8, 0.92],
+        [3.2, 9.2, 0.88],
+        [6.0, 11.2, 1.02],
+        [4.4, 13.7, 0.92],
+        [1.6, 13.0, 0.68],
+      ],
+      [
+        [5.0, 12.8, 0.42],
+        [8.2, 10.2, 0.3],
+      ],
+    ],
+  },
+  t: {
+    adv: 6.6,
+    strokes: [
+      // Tall ascender stem + baseline curve
+      [
+        [3.3, 1.2, 0.96],
+        [2.6, 8.2, 1.06],
+        [2.7, 13.4, 0.92],
+        [4.2, 13.7, 0.5],
+        [7.0, 10.2, 0.3],
+      ],
+      // Crossbar
+      [
+        [0.9, 5.2, 0.6],
+        [3.3, 4.8, 0.76],
+        [5.8, 4.5, 0.56],
+      ],
+    ],
+  },
+  u: {
+    adv: 9.2,
+    strokes: [
+      [
+        [1.8, 5.6, 0.94],
+        [1.6, 11.4, 1.04],
+        [3.1, 13.7, 0.86],
+        [5.7, 12.6, 0.5],
+        [6.9, 8.6, 0.42],
+      ],
+      [
+        [7.0, 5.6, 0.94],
+        [6.8, 10.8, 1.04],
+        [7.0, 13.5, 0.86],
+        [8.2, 13.7, 0.46],
+        [9.6, 10.2, 0.3],
+      ],
+    ],
+  },
+  v: {
+    adv: 8.2,
+    strokes: [
+      [
+        [1.6, 5.6, 0.94],
+        [2.7, 11.8, 1.04],
+        [4.1, 13.7, 0.86],
+        [6.2, 9.6, 0.6],
+        [6.8, 5.8, 0.7],
+        [7.2, 8.8, 0.44],
+        [8.6, 10.0, 0.3],
+      ],
+    ],
+  },
+  w: {
+    adv: 12.0,
+    strokes: [
+      [
+        [1.6, 5.6, 0.94],
+        [1.9, 12.0, 1.04],
+        [3.5, 13.7, 0.84],
+        [5.4, 10.4, 0.56],
+        [5.9, 6.4, 0.82],
+        [6.2, 12.2, 1.02],
+        [7.9, 13.7, 0.84],
+        [10.0, 9.6, 0.62],
+        [10.3, 5.8, 0.7],
+        [10.8, 8.8, 0.44],
+        [12.4, 10.0, 0.3],
+      ],
+    ],
+  },
+  x: {
+    adv: 8.0,
+    strokes: [
+      [
+        [1.5, 5.8, 0.88],
+        [3.9, 9.8, 1.02],
+        [6.1, 13.5, 0.86],
+        [7.3, 13.7, 0.46],
+        [8.4, 10.2, 0.3],
+      ],
+      [
+        [6.3, 5.6, 0.66],
+        [3.7, 9.8, 0.52],
+        [1.3, 13.7, 0.66],
+      ],
+    ],
+  },
+  y: {
+    adv: 9.2,
+    strokes: [
+      // Left u-cup
+      [
+        [1.8, 5.6, 0.94],
+        [1.6, 11.2, 1.04],
+        [3.1, 13.6, 0.84],
+        [5.6, 12.4, 0.5],
+        [6.9, 8.6, 0.42],
+      ],
+      // Right descender loop + rising tail (like "Happy" & "Birthday" in Sample 1 & 2)
+      [
+        [7.1, 5.4, 0.94],
+        [6.6, 12.4, 1.06],
+        [5.9, 18.6, 1.0],
+        [4.0, 20.6, 0.82],
+        [1.9, 19.2, 0.54],
+        [2.7, 15.6, 0.4],
+        [6.5, 12.2, 0.36],
+        [9.6, 10.2, 0.3],
+      ],
+    ],
+  },
+  z: {
+    adv: 8.0,
+    strokes: [
+      [
+        [1.6, 6.0, 0.72],
+        [4.4, 5.6, 0.84],
+        [6.4, 6.0, 0.92],
+        [3.6, 10.0, 0.74],
+        [1.6, 13.4, 0.88],
+        [4.6, 13.6, 0.92],
+        [6.8, 13.2, 0.54],
+        [8.4, 10.2, 0.3],
+      ],
+    ],
+  },
+
+  // ---------------- UPPERCASE CALLIGRAPHY CAPITALS (A - Z) ----------------
+  A: {
+    adv: 11.6,
+    strokes: [
+      // Left sweeping brush leg
+      [
+        [0.8, 13.6, 0.64],
+        [2.6, 11.2, 0.54],
+        [5.2, 5.0, 0.56],
+        [7.2, 0.4, 0.88],
+      ],
+      // Right heavy brush leg + exit connector
+      [
+        [7.2, 0.4, 0.96],
+        [7.5, 7.4, 1.08],
+        [8.0, 13.4, 0.94],
+        [9.4, 13.7, 0.48],
+        [11.6, 10.2, 0.32],
+      ],
+      // Curved calligraphy crossbar
+      [
+        [2.0, 9.2, 0.48],
+        [5.6, 8.2, 0.76],
+        [9.4, 8.4, 0.48],
+      ],
+    ],
+  },
+  B: {
+    adv: 11.8,
+    strokes: [
+      // Main brush downstroke stem (like "Birthday" in Sample 1 & 2)
+      [
+        [4.2, 0.6, 0.98],
+        [3.2, 7.6, 1.1],
+        [2.2, 13.8, 0.94],
+      ],
+      // Top entry swash loop + wide open upper bowl + wide open lower bowl
+      [
+        [0.4, 5.2, 0.44],
+        [2.4, 1.2, 0.6],
+        [6.6, 0.4, 0.82],
+        [9.6, 2.2, 1.0],
+        [8.8, 5.4, 0.86],
+        [5.6, 6.8, 0.62],
+        [3.6, 6.8, 0.54],
+        [7.4, 7.2, 0.86],
+        [10.0, 9.6, 1.08],
+        [8.8, 13.2, 0.96],
+        [4.8, 14.0, 0.82],
+        [1.4, 12.6, 0.58],
+      ],
+    ],
+  },
+  C: {
+    adv: 10.6,
+    strokes: [
+      [
+        [8.8, 3.4, 0.56],
+        [9.2, 1.2, 0.76],
+        [6.4, 0.4, 0.68],
+        [2.6, 3.2, 1.02],
+        [1.4, 8.6, 1.08],
+        [3.2, 13.4, 0.94],
+        [7.0, 13.7, 0.66],
+        [10.4, 10.2, 0.32],
+      ],
+    ],
+  },
+  D: {
+    adv: 11.6,
+    strokes: [
+      [
+        [3.8, 0.8, 0.98],
+        [2.8, 7.8, 1.1],
+        [2.2, 13.6, 0.92],
+      ],
+      [
+        [1.0, 2.6, 0.48],
+        [5.6, 0.4, 0.78],
+        [9.6, 3.2, 1.04],
+        [9.8, 8.8, 1.08],
+        [7.0, 13.4, 0.92],
+        [2.4, 13.8, 0.7],
+        [1.2, 11.6, 0.46],
+      ],
+    ],
+  },
+  E: {
+    adv: 10.6,
+    strokes: [
+      [
+        [8.4, 1.8, 0.66],
+        [5.4, 0.4, 0.72],
+        [2.6, 2.2, 1.0],
+        [3.2, 5.4, 0.86],
+        [6.4, 6.4, 0.62],
+        [3.6, 6.6, 0.6],
+        [1.6, 9.8, 1.06],
+        [3.4, 13.6, 0.92],
+        [7.4, 13.6, 0.64],
+        [10.4, 10.2, 0.32],
+      ],
+    ],
+  },
+  F: {
+    adv: 10.6,
+    strokes: [
+      [
+        [1.6, 2.4, 0.52],
+        [5.6, 0.6, 0.8],
+        [9.6, 0.8, 0.66],
+      ],
+      [
+        [5.4, 1.0, 0.96],
+        [4.2, 7.6, 1.08],
+        [2.8, 13.6, 0.94],
+        [1.2, 12.8, 0.54],
+      ],
+      [
+        [2.4, 7.2, 0.54],
+        [5.4, 6.8, 0.76],
+        [8.0, 6.6, 0.5],
+      ],
+    ],
+  },
+  G: {
+    adv: 11.2,
+    strokes: [
+      // Stays cleanly above baseline (0..14) so "Good" never collides with "Morning"!
+      [
+        [8.8, 2.8, 0.66],
+        [6.2, 0.4, 0.7],
+        [2.4, 3.4, 1.02],
+        [1.4, 8.8, 1.08],
+        [3.4, 13.6, 0.94],
+        [7.2, 13.2, 0.84],
+        [8.6, 9.6, 0.98],
+        [8.4, 7.6, 0.86],
+      ],
+      [
+        [5.6, 8.0, 0.56],
+        [8.6, 7.6, 0.78],
+        [8.4, 13.2, 0.88],
+        [9.6, 13.7, 0.46],
+        [11.2, 10.2, 0.32],
+      ],
+    ],
+  },
+  H: {
+    adv: 12.4,
+    strokes: [
+      // Left calligraphy stem with graceful entry hook (like "Happy" in Sample 1 & 2)
+      [
+        [0.4, 3.8, 0.46],
+        [2.6, 1.0, 0.66],
+        [4.2, 0.4, 1.02],
+        [3.0, 7.6, 1.1],
+        [1.8, 13.6, 0.94],
+        [0.6, 12.8, 0.52],
+      ],
+      // Right calligraphy stem + exit connector into next letter
+      [
+        [9.6, 0.4, 1.0],
+        [8.4, 7.4, 1.1],
+        [8.0, 13.2, 0.94],
+        [9.4, 13.7, 0.5],
+        [12.2, 10.2, 0.32],
+      ],
+      // Sweeping curved crossbar
+      [
+        [1.2, 8.2, 0.46],
+        [5.4, 6.8, 0.76],
+        [10.0, 6.2, 0.46],
+      ],
+    ],
+  },
+  I: {
+    adv: 7.8,
+    strokes: [
+      [
+        [1.6, 2.4, 0.52],
+        [4.6, 0.6, 0.76],
+        [5.2, 1.2, 1.0],
+        [4.0, 7.8, 1.08],
+        [2.8, 13.6, 0.92],
+        [1.2, 12.8, 0.52],
+      ],
+    ],
+  },
+  J: {
+    adv: 8.8,
+    strokes: [
+      [
+        [2.4, 2.2, 0.48],
+        [6.4, 0.4, 0.8],
+        [6.8, 2.0, 1.0],
+        [5.8, 9.6, 1.08],
+        [4.2, 13.6, 0.94],
+        [1.8, 13.4, 0.72],
+        [1.0, 11.2, 0.48],
+      ],
+    ],
+  },
+  K: {
+    adv: 11.8,
+    strokes: [
+      [
+        [0.8, 3.2, 0.46],
+        [3.8, 0.4, 1.0],
+        [2.6, 7.6, 1.1],
+        [1.6, 13.8, 0.94],
+      ],
+      [
+        [9.8, 0.8, 0.8],
+        [6.4, 5.2, 0.66],
+        [3.0, 7.6, 0.62],
+        [6.6, 9.6, 1.02],
+        [8.8, 13.4, 0.94],
+        [10.2, 13.7, 0.46],
+        [11.8, 10.2, 0.32],
+      ],
+    ],
+  },
+  L: {
+    adv: 10.6,
+    strokes: [
+      [
+        [2.6, 2.8, 0.52],
+        [5.2, 0.4, 0.86],
+        [4.4, 5.8, 1.08],
+        [2.8, 12.4, 1.02],
+        [1.4, 13.6, 0.76],
+        [4.8, 12.8, 0.8],
+        [8.4, 13.7, 0.86],
+        [10.6, 10.2, 0.32],
+      ],
+    ],
+  },
+  M: {
+    adv: 14.8,
+    strokes: [
+      [
+        [0.8, 13.4, 0.62],
+        [2.4, 7.6, 0.56],
+        [4.4, 0.6, 0.94],
+        [5.9, 7.4, 1.02],
+        [6.8, 12.8, 0.86],
+        [9.0, 6.2, 0.56],
+        [11.4, 0.6, 0.96],
+        [11.0, 8.2, 1.08],
+        [11.2, 13.4, 0.94],
+        [12.6, 13.7, 0.46],
+        [14.8, 10.2, 0.32],
+      ],
+    ],
+  },
+  N: {
+    adv: 12.4,
+    strokes: [
+      [
+        [0.8, 13.4, 0.62],
+        [2.4, 7.4, 0.56],
+        [4.2, 0.6, 0.94],
+        [6.6, 7.6, 1.06],
+        [8.6, 13.6, 0.94],
+        [9.8, 7.2, 0.56],
+        [11.0, 0.6, 0.82],
+      ],
+    ],
+  },
+  O: {
+    adv: 11.6,
+    strokes: [
+      [
+        [6.4, 0.6, 0.62],
+        [2.6, 3.0, 1.02],
+        [1.4, 8.6, 1.08],
+        [3.4, 13.6, 0.92],
+        [7.8, 13.0, 0.84],
+        [9.8, 7.8, 1.04],
+        [8.4, 2.2, 0.82],
+        [5.6, 1.8, 0.52],
+        [5.4, 5.2, 0.46],
+        [8.8, 6.4, 0.4],
+      ],
+    ],
+  },
+  P: {
+    adv: 11.0,
+    strokes: [
+      [
+        [4.2, 0.8, 0.98],
+        [3.2, 7.6, 1.1],
+        [2.0, 13.8, 0.94],
+      ],
+      [
+        [0.8, 4.2, 0.48],
+        [3.2, 1.0, 0.64],
+        [7.2, 0.4, 0.86],
+        [9.8, 2.8, 1.04],
+        [8.6, 6.8, 0.92],
+        [4.8, 8.0, 0.66],
+        [2.8, 7.4, 0.46],
+      ],
+    ],
+  },
+  Q: {
+    adv: 11.8,
+    strokes: [
+      [
+        [6.4, 0.6, 0.62],
+        [2.6, 3.0, 1.02],
+        [1.4, 8.6, 1.08],
+        [3.4, 13.6, 0.92],
+        [7.8, 13.0, 0.84],
+        [9.8, 7.8, 1.04],
+        [8.4, 2.2, 0.82],
+        [5.6, 1.8, 0.52],
+      ],
+      [
+        [4.4, 11.4, 0.54],
+        [7.6, 12.6, 0.9],
+        [10.0, 14.2, 0.82],
+        [11.8, 10.4, 0.34],
+      ],
+    ],
+  },
+  R: {
+    adv: 11.8,
+    strokes: [
+      [
+        [4.2, 0.8, 0.98],
+        [3.2, 7.6, 1.1],
+        [2.0, 13.8, 0.94],
+      ],
+      [
+        [0.8, 4.2, 0.48],
+        [3.2, 1.0, 0.64],
+        [7.2, 0.4, 0.86],
+        [9.6, 2.6, 1.02],
+        [8.4, 6.2, 0.88],
+        [4.6, 7.2, 0.66],
+        [3.4, 7.2, 0.6],
+        [7.0, 9.6, 1.02],
+        [9.0, 13.4, 0.92],
+        [10.4, 13.7, 0.46],
+        [11.8, 10.2, 0.32],
+      ],
+    ],
+  },
+  S: {
+    adv: 10.6,
+    strokes: [
+      [
+        [8.8, 2.2, 0.66],
+        [6.4, 0.4, 0.72],
+        [3.0, 1.8, 0.98],
+        [2.8, 5.2, 0.92],
+        [6.6, 7.6, 1.02],
+        [8.8, 10.8, 1.06],
+        [6.2, 13.8, 0.92],
+        [2.2, 13.2, 0.76],
+        [1.2, 11.0, 0.54],
+      ],
+    ],
+  },
+  T: {
+    adv: 10.8,
+    strokes: [
+      [
+        [1.2, 2.4, 0.54],
+        [5.6, 0.6, 0.84],
+        [10.0, 0.8, 0.66],
+      ],
+      [
+        [5.8, 1.0, 0.98],
+        [4.6, 7.6, 1.1],
+        [3.2, 13.6, 0.94],
+        [1.6, 12.8, 0.54],
+      ],
+    ],
+  },
+  U: {
+    adv: 11.8,
+    strokes: [
+      [
+        [1.2, 2.8, 0.48],
+        [3.4, 0.6, 0.94],
+        [2.4, 8.6, 1.08],
+        [3.8, 13.6, 0.9],
+        [7.2, 12.4, 0.54],
+        [9.0, 6.8, 0.46],
+      ],
+      [
+        [9.4, 0.8, 0.94],
+        [8.6, 8.4, 1.08],
+        [8.8, 13.4, 0.92],
+        [10.0, 13.7, 0.46],
+        [11.8, 10.2, 0.32],
+      ],
+    ],
+  },
+  V: {
+    adv: 11.2,
+    strokes: [
+      [
+        [1.2, 2.8, 0.48],
+        [3.4, 0.6, 0.94],
+        [3.8, 8.4, 1.08],
+        [5.4, 13.8, 0.9],
+        [8.0, 8.2, 0.56],
+        [9.8, 1.0, 0.76],
+      ],
+    ],
+  },
+  W: {
+    adv: 14.8,
+    strokes: [
+      [
+        [1.0, 2.6, 0.48],
+        [3.0, 0.6, 0.94],
+        [3.2, 8.6, 1.06],
+        [4.6, 13.8, 0.86],
+        [7.0, 8.4, 0.54],
+        [7.8, 3.2, 0.84],
+        [8.4, 9.4, 1.04],
+        [9.8, 13.8, 0.86],
+        [12.2, 8.2, 0.56],
+        [13.8, 1.0, 0.76],
+      ],
+    ],
+  },
+  X: {
+    adv: 11.4,
+    strokes: [
+      [
+        [1.4, 1.6, 0.54],
+        [3.4, 0.8, 0.9],
+        [6.0, 7.2, 1.08],
+        [8.6, 13.4, 0.92],
+        [10.4, 13.6, 0.46],
+      ],
+      [
+        [9.8, 1.0, 0.74],
+        [5.6, 7.2, 0.56],
+        [1.6, 13.6, 0.74],
+      ],
+    ],
+  },
+  Y: {
+    adv: 11.6,
+    strokes: [
+      [
+        [1.2, 2.6, 0.48],
+        [3.2, 0.6, 0.94],
+        [3.0, 6.8, 1.06],
+        [4.8, 9.6, 0.84],
+        [7.8, 7.6, 0.52],
+        [9.4, 1.0, 0.82],
+      ],
+      [
+        [9.2, 1.6, 0.94],
+        [8.2, 8.8, 1.08],
+        [7.6, 13.6, 0.94],
+        [6.4, 13.8, 0.64],
+      ],
+    ],
+  },
+  Z: {
+    adv: 10.8,
+    strokes: [
+      [
+        [2.0, 1.4, 0.66],
+        [6.0, 0.8, 0.86],
+        [9.4, 1.2, 0.94],
+        [5.6, 7.4, 0.76],
+        [1.8, 13.2, 0.9],
+        [6.0, 13.6, 0.92],
+        [10.0, 12.8, 0.54],
+      ],
+    ],
+  },
+
+  // ---------------- DIGITS & SYMBOLS (0-9, &, ', !, -) ----------------
+  "&": {
+    adv: 10.8,
+    strokes: [
+      [
+        [9.0, 13.6, 0.76],
+        [5.6, 9.4, 1.0],
+        [3.4, 4.4, 0.92],
+        [4.6, 1.0, 0.7],
+        [7.2, 2.0, 0.76],
+        [5.8, 5.4, 0.64],
+        [2.2, 9.4, 1.0],
+        [2.4, 13.4, 0.92],
+        [6.4, 13.2, 0.7],
+        [9.6, 8.2, 0.5],
+      ],
+    ],
+  },
+  "'": {
+    adv: 3.6,
+    strokes: [
+      [
+        [2.2, 1.0, 0.86],
+        [1.8, 3.2, 0.66],
+        [1.0, 4.8, 0.34],
+      ],
+    ],
+  },
+  "!": {
+    adv: 5.0,
+    strokes: [
+      [
+        [3.0, 0.6, 1.0],
+        [2.5, 5.8, 0.9],
+        [2.2, 9.8, 0.44],
+      ],
+    ],
+    dots: [[2.0, 13.0, 1.08]],
+  },
+  "-": {
+    adv: 6.6,
+    strokes: [
+      [
+        [1.2, 8.2, 0.64],
+        [3.4, 7.8, 0.82],
+        [5.6, 7.6, 0.6],
+      ],
+    ],
+  },
+  "0": {
+    adv: 9.4,
+    strokes: [
+      [
+        [5.2, 0.8, 0.62],
+        [2.0, 3.6, 1.0],
+        [1.4, 9.2, 1.06],
+        [3.6, 13.6, 0.88],
+        [7.0, 12.2, 0.82],
+        [8.0, 6.8, 1.0],
+        [6.4, 1.4, 0.74],
+        [4.8, 0.8, 0.54],
+      ],
+    ],
+  },
+  "1": {
+    adv: 6.6,
+    strokes: [
+      [
+        [1.8, 3.4, 0.52],
+        [4.2, 0.8, 0.94],
+        [3.4, 7.6, 1.06],
+        [2.6, 13.8, 0.94],
+      ],
+    ],
+  },
+  "2": {
+    adv: 9.4,
+    strokes: [
+      [
+        [2.0, 3.6, 0.62],
+        [4.8, 0.8, 0.82],
+        [8.0, 2.4, 1.0],
+        [6.6, 6.8, 0.86],
+        [2.0, 13.2, 0.92],
+        [5.8, 13.6, 0.9],
+        [8.8, 13.0, 0.56],
+      ],
+    ],
+  },
+  "3": {
+    adv: 9.4,
+    strokes: [
+      [
+        [2.2, 2.4, 0.62],
+        [5.4, 0.8, 0.82],
+        [8.0, 2.8, 0.98],
+        [5.6, 6.4, 0.76],
+        [4.0, 6.8, 0.62],
+        [7.6, 8.2, 1.0],
+        [7.8, 12.2, 1.0],
+        [4.4, 13.8, 0.86],
+        [1.6, 12.2, 0.6],
+      ],
+    ],
+  },
+  "4": {
+    adv: 9.6,
+    strokes: [
+      [
+        [6.6, 0.8, 0.8],
+        [1.6, 9.4, 0.86],
+        [5.6, 9.4, 0.82],
+        [8.8, 9.2, 0.56],
+      ],
+      [
+        [6.8, 1.0, 0.94],
+        [6.0, 7.8, 1.06],
+        [5.4, 13.8, 0.92],
+      ],
+    ],
+  },
+  "5": {
+    adv: 9.4,
+    strokes: [
+      [
+        [8.0, 1.0, 0.76],
+        [3.4, 1.2, 0.86],
+        [2.4, 6.2, 0.9],
+        [6.0, 5.8, 0.92],
+        [8.0, 8.8, 1.04],
+        [6.4, 13.0, 0.92],
+        [2.2, 13.4, 0.7],
+      ],
+    ],
+  },
+  "6": {
+    adv: 9.4,
+    strokes: [
+      [
+        [7.6, 1.4, 0.66],
+        [3.6, 4.2, 0.96],
+        [1.8, 9.8, 1.06],
+        [3.8, 13.8, 0.9],
+        [7.4, 12.2, 0.94],
+        [7.4, 8.2, 0.9],
+        [4.2, 7.2, 0.66],
+        [2.2, 9.2, 0.54],
+      ],
+    ],
+  },
+  "7": {
+    adv: 9.0,
+    strokes: [
+      [
+        [1.8, 1.6, 0.72],
+        [5.4, 1.2, 0.86],
+        [8.4, 1.2, 0.94],
+        [5.4, 7.6, 1.02],
+        [3.0, 13.8, 0.92],
+      ],
+    ],
+  },
+  "8": {
+    adv: 9.4,
+    strokes: [
+      [
+        [5.4, 0.8, 0.72],
+        [2.6, 2.8, 0.94],
+        [3.8, 6.2, 0.86],
+        [7.4, 8.8, 1.02],
+        [6.6, 13.0, 0.94],
+        [3.0, 13.4, 0.86],
+        [2.0, 9.8, 0.86],
+        [5.4, 6.6, 0.74],
+        [7.8, 3.4, 0.86],
+        [5.4, 0.8, 0.66],
+      ],
+    ],
+  },
+  "9": {
+    adv: 9.4,
+    strokes: [
+      [
+        [7.6, 4.4, 0.82],
+        [5.4, 0.8, 0.76],
+        [2.4, 2.6, 1.0],
+        [2.4, 6.8, 0.94],
+        [5.8, 7.6, 0.7],
+        [7.6, 4.6, 0.92],
+        [6.4, 10.6, 1.04],
+        [3.6, 13.8, 0.8],
+      ],
+    ],
+  },
+};
+
+// Measure total horizontal advance units of a string in Brush Script
+function measureBrushScriptUnits(text: string): number {
+  let total = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === " ") {
+      total += 5.4;
+      continue;
+    }
+    const g =
+      BRUSH_SCRIPT_GLYPHS[ch] ||
+      BRUSH_SCRIPT_GLYPHS[ch.toLowerCase()] ||
+      BRUSH_SCRIPT_GLYPHS[ch.toUpperCase()];
+    total += g ? g.adv : 7.8;
+  }
+  return total;
+}
+
+// Render a Connected Cursive Brush Script Line in True Isotropic Physical Space
+// (Completely eliminates the double-aspect-ratio horizontal squashing bug!)
+function drawBrushScriptLine(
+  text: string,
+  cx: number,
+  yTop: number,
+  capH: number,
+  aspect: number,
+  col: string,
+  options?: {
+    slantTiltDeg?: number;     // Rising baseline tilt angle (e.g. -6.2 deg like Sample 1)
+    archCurve?: number;        // Upward baseline arch in px
+    bounceAmp?: number;        // Playful letter-by-letter vertical bounce
+    strokeWeight?: number;     // Multiplier on brush thickness (default 1.0)
+    entrySwashH?: boolean;     // Ornate Victorian entry spiral on initial capital (Sample 2)
+    exitOverArchY?: boolean;   // Ornate Victorian overarching exit tail on final letter (Sample 2)
+  }
+): { svg: string; leftX: number; rightX: number; baseLineY: number } {
+  const clean = text.trim();
+  if (!clean) return { svg: "", leftX: cx, rightX: cx, baseLineY: yTop + capH };
+
+  const safeAsp = Math.max(0.45, Math.min(2.4, aspect || 1));
+  // Single isotropic scale factor (14 glyph vertical units = capH)
+  const sc = capH / 14;
+  const totalUnits = measureBrushScriptUnits(clean);
+  const totalIsoW = totalUnits * sc;
+  const isoStart = -totalIsoW * 0.5;
+
+  const tiltRad = ((options?.slantTiltDeg ?? -4.8) * Math.PI) / 180;
+  const sinT = Math.sin(tiltRad);
+  const cosT = Math.cos(tiltRad);
+  const archAmt = options?.archCurve ?? 0;
+  const bounceAmt = options?.bounceAmp ?? 0;
+  const weightMul = options?.strokeWeight ?? 1.0;
+
+  // Calibrated brush nib half-width so downstrokes are bold & lush while inner counters of e/a/o/B/d stay wide open
+  const baseHalfW = Math.max(0.75, capH * 0.044 * weightMul);
+  const yCenter = yTop + capH * 0.5;
+
+  // Transform glyph-unit coordinates (uX, uY) into isotropic physical offset (isoX, isoY),
+  // rotate in physical space by tiltRad, and divide X by safeAsp ONCE to map into 0..1000 SVG space!
+  const xformUnit = (uX: number, uY: number, charBounceY: number): [number, number] => {
+    const isoRawX = isoStart + uX * sc;
+    const isoRawY = (uY - 7) * sc;
+    // Calligraphic forward italic slant (10.5 deg)
+    const italicIsoX = isoRawX + (14 - uY) * sc * 0.175;
+    const normT = totalIsoW > 1 ? (italicIsoX - isoStart) / totalIsoW : 0.5;
+    const archY = -Math.sin(Math.max(0, Math.min(1, normT)) * Math.PI) * archAmt;
+    const isoY = isoRawY + archY + charBounceY;
+
+    // Physical rotation around word center
+    const rotIsoX = italicIsoX * cosT - isoY * sinT;
+    const rotIsoY = italicIsoX * sinT + isoY * cosT;
+
+    return [cx + rotIsoX / safeAsp, yCenter + rotIsoY];
+  };
+
+  const out: string[] = [];
+  let curU = 0;
+
+  // Optional Ornate Victorian Entry Spiral Loop on initial capital letter (Sample 2 image_f9b7def3.png!)
+  if (options?.entrySwashH) {
+    const entryLoop: [number, number, number][] = (
+      [
+        [-2.2, 6.2, 0.56],
+        [-3.6, 5.2, 0.48],
+        [-3.4, 3.2, 0.42],
+        [-1.8, 2.8, 0.44],
+        [-1.2, 4.4, 0.48],
+        [-2.8, 6.8, 0.44],
+        [-4.8, 5.2, 0.4],
+        [-5.0, 1.4, 0.44],
+        [-2.8, -1.6, 0.54],
+        [0.4, -1.2, 0.72],
+        [2.6, 2.2, 0.88],
+        [3.6, 6.4, 0.76],
+      ] as [number, number, number][]
+    ).map(([gx, gy, gr]) => {
+      const [tx, ty] = xformUnit(gx, gy, 0);
+      return [tx, ty, gr];
+    });
+    out.push(drawCalligraphyBrushStroke(entryLoop, baseHalfW * 0.84, col, true, safeAsp));
+  }
+
+  for (let i = 0; i < clean.length; i++) {
+    const ch = clean[i];
+    if (ch === " ") {
+      curU += 5.4;
+      continue;
+    }
+    const g =
+      BRUSH_SCRIPT_GLYPHS[ch] ||
+      BRUSH_SCRIPT_GLYPHS[ch.toLowerCase()] ||
+      BRUSH_SCRIPT_GLYPHS[ch.toUpperCase()];
+    if (!g) {
+      curU += 7.8;
+      continue;
+    }
+
+    const isLastCharOfWord = i === clean.length - 1 || clean[i + 1] === " ";
+    const charBounce = bounceAmt ? Math.sin(i * 2.1) * bounceAmt : 0;
+
+    for (let sIdx = 0; sIdx < g.strokes.length; sIdx++) {
+      let rawStroke = g.strokes[sIdx];
+      // Soften the exit connector ligature on the final lowercase letter of a word
+      if (
+        isLastCharOfWord &&
+        sIdx === g.strokes.length - 1 &&
+        rawStroke.length >= 4 &&
+        ch >= "a" &&
+        ch <= "z"
+      ) {
+        const lastPt = rawStroke[rawStroke.length - 1];
+        const prevPt = rawStroke[rawStroke.length - 2];
+        rawStroke = [
+          ...rawStroke.slice(0, -1),
+          [
+            prevPt[0] + (lastPt[0] - prevPt[0]) * 0.55,
+            prevPt[1] + (lastPt[1] - prevPt[1]) * 0.5,
+            0.24,
+          ],
+        ];
+      }
+
+      const mappedPts: [number, number, number][] = rawStroke.map(([gx, gy, gr]) => {
+        const [tx, ty] = xformUnit(curU + gx, gy, charBounce);
+        return [tx, ty, gr];
+      });
+      out.push(drawCalligraphyBrushStroke(mappedPts, baseHalfW, col, true, safeAsp));
+    }
+
+    if (g.dots) {
+      for (const [dx, dy, dr] of g.dots) {
+        const [tx, ty] = xformUnit(curU + dx, dy, charBounce);
+        out.push(drawCalligraphyDot(tx, ty, baseHalfW * 1.16 * dr, col, safeAsp));
+      }
+    }
+
+    // Optional Ornate Overarching Exit Umbrella Arch on final letter (Sample 2 image_f9b7def3.png!)
+    if (options?.exitOverArchY && i === clean.length - 1) {
+      const archPts: [number, number, number][] = (
+        [
+          [curU + g.adv * 0.72, 11.2, 0.34],
+          [curU + g.adv + 2.6, 7.4, 0.42],
+          [curU + g.adv + 3.4, 2.2, 0.7],
+          [curU + g.adv + 1.0, -1.8, 0.92],
+          [curU - 3.5, -2.4, 0.8],
+          [curU - 8.8, -0.4, 0.32],
+        ] as [number, number, number][]
+      ).map(([gx, gy, gr]) => {
+        const [tx, ty] = xformUnit(gx, gy, 0);
+        return [tx, ty, gr];
+      });
+      out.push(drawCalligraphyBrushStroke(archPts, baseHalfW * 0.88, col, true, safeAsp));
+    }
+
+    curU += g.adv;
+  }
+
+  const halfSvgW = (totalIsoW * 0.5) / safeAsp;
+  return {
+    svg: out.join(""),
+    leftX: cx - halfSvgW,
+    rightX: cx + halfSvgW,
+    baseLineY: yTop + capH,
+  };
+}
+
+// ============================================================================
+// 16 DISTINCT CALLIGRAPHY FLOURISH, SWASH & ORNAMENT ARCHITECTURES
+// Style 0 = Exact Sample 1 (image_531df334.png - Bold Tapered Brush Swash Underline Tail)
+// Style 1 = Exact Sample 2 (image_f9b7def3.png - 5 Sunburst Petals, Left/Right Victorian Spiral
+//           Scroll Volutes, Ringed Dot Accents & Bottom Symmetrical Double-Looped Infinity Scroll)
+// Styles 2..15 = 14 Additional Best-Selling Microstock Calligraphy Ornament Architectures!
+// All ornaments use descender-safe `safeTopY` and `safeBotY` anchors so they NEVER collide with text!
+// ============================================================================
+function drawTypographyFlourishOrnament(
+  parts: string[],
+  styleIdx: number,
+  cx: number,
+  cy: number,
+  boxW: number,
+  boxH: number,
+  safeTopY: number,
+  safeBotY: number,
+  wordSpanW: number,
+  baseStrokeW: number,
+  aspect: number,
+  inkCol: string,
+  accent1: string,
+  accent2: string,
+  accent3: string,
+  bgCol: string
+) {
+  const s = ((styleIdx % 16) + 16) % 16;
+  const safeAsp = Math.max(0.45, Math.min(2.4, aspect || 1));
+  const scX = 1 / safeAsp;
+  const sw = Math.max(0.85, baseStrokeW);
+  const isoBoxW = boxW * safeAsp;
+  const isoWordW = wordSpanW * safeAsp;
+
+  // Helper to transform isotropic physical offsets (dx, dy) around (refX, refY) into 0..1000 SVG space
+  const pt = (
+    refX: number,
+    refY: number,
+    dxIso: number,
+    dyIso: number,
+    pr: number
+  ): [number, number, number] => [refX + dxIso * scX, refY + dyIso, pr];
+
+  if (s === 0) {
+    // ========================================================================
+    // STYLE 0 — EXACT SAMPLE 1 (image_531df334.png):
+    // Bold Sweeping Tapered Brush Swash Underline Tail beneath Line 2
+    // ========================================================================
+    const swashY = safeBotY + boxH * 0.018;
+    const span = Math.min(isoBoxW * 0.34, isoWordW * 0.44);
+    const swashPts: [number, number, number][] = [
+      pt(cx, swashY, -span * 0.72, -boxH * 0.005, 0.36),
+      pt(cx, swashY, -span * 0.68, boxH * 0.022, 0.72),
+      pt(cx, swashY, -span * 0.38, boxH * 0.028, 0.96),
+      pt(cx, swashY, span * 0.14, -boxH * 0.012, 1.12),
+      pt(cx, swashY, span * 0.56, -boxH * 0.026, 1.02),
+      pt(cx, swashY, span * 0.74, -boxH * 0.006, 0.84),
+      pt(cx, swashY, span * 0.72, boxH * 0.022, 0.72),
+      pt(cx, swashY, span * 0.56, boxH * 0.026, 0.54),
+    ];
+    parts.push(drawCalligraphyBrushStroke(swashPts, sw * 1.15, inkCol, false, safeAsp));
+  } else if (s === 1) {
+    // ========================================================================
+    // STYLE 1 — EXACT SAMPLE 2 (image_f9b7def3.png):
+    // 1. 5 Radiating Sunburst Teardrop Petals at top center above "Happy"
+    // 2. Left Double-Spiral Victorian Scroll Volute + Solid Ink Dot
+    // 3. Right Double-Spiral Victorian Scroll Volute + Ringed Dot Target
+    // 4. Bottom Symmetrical Double-Looped Infinity Scroll Ornament
+    // ========================================================================
+    const topY = safeTopY - boxH * 0.008;
+    const petalLen = boxH * 0.058;
+    const petalAnglesDeg = [-56, -28, 0, 28, 56];
+    const petalScale = [0.68, 0.86, 1.04, 0.86, 0.68];
+    for (let k = 0; k < 5; k++) {
+      const angRad = ((petalAnglesDeg[k] - 90) * Math.PI) / 180;
+      const dist0 = boxH * 0.018;
+      const px0 = cx + Math.cos(angRad) * dist0 * scX;
+      const py0 = topY + Math.sin(angRad) * dist0;
+      parts.push(
+        drawCalligraphyTeardrop(
+          px0,
+          py0,
+          petalLen * petalScale[k],
+          sw * 0.94 * petalScale[k],
+          angRad,
+          inkCol,
+          safeAsp
+        )
+      );
+    }
+
+    // 2. Left Victorian Spiral Scroll Curl + Dot
+    const sideSpan = Math.min(isoBoxW * 0.36, isoWordW * 0.5 + boxH * 0.04);
+    const leftAnchorX = cx - sideSpan * scX;
+    const leftAnchorY = safeTopY + boxH * 0.12;
+    const rScroll = boxH * 0.045;
+    const leftSpiral: [number, number, number][] = [
+      pt(leftAnchorX, leftAnchorY, rScroll * 0.5, rScroll * 0.42, 0.32),
+      pt(leftAnchorX, leftAnchorY, -rScroll * 0.35, rScroll * 0.68, 0.62),
+      pt(leftAnchorX, leftAnchorY, -rScroll * 1.15, rScroll * 0.25, 0.92),
+      pt(leftAnchorX, leftAnchorY, -rScroll * 1.1, -rScroll * 0.65, 0.9),
+      pt(leftAnchorX, leftAnchorY, -rScroll * 0.3, -rScroll * 0.78, 0.7),
+      pt(leftAnchorX, leftAnchorY, rScroll * 0.18, -rScroll * 0.22, 0.54),
+      pt(leftAnchorX, leftAnchorY, -rScroll * 0.15, rScroll * 0.15, 0.46),
+      pt(leftAnchorX, leftAnchorY, -rScroll * 0.52, -rScroll * 0.08, 0.42),
+    ];
+    parts.push(drawCalligraphyBrushStroke(leftSpiral, sw * 0.84, inkCol, false, safeAsp));
+    parts.push(
+      drawCalligraphyDot(
+        leftAnchorX + rScroll * 0.38 * scX,
+        leftAnchorY + rScroll * 0.12,
+        sw * 0.92,
+        inkCol,
+        safeAsp
+      )
+    );
+
+    // 3. Right Victorian Spiral Scroll Curl + Ringed Dot
+    const rightAnchorX = cx + sideSpan * scX;
+    const rightAnchorY = safeTopY + boxH * 0.17;
+    const rightSpiral: [number, number, number][] = [
+      pt(rightAnchorX, rightAnchorY, -rScroll * 0.85, rScroll * 0.55, 0.36),
+      pt(rightAnchorX, rightAnchorY, -rScroll * 0.65, -rScroll * 0.45, 0.66),
+      pt(rightAnchorX, rightAnchorY, rScroll * 0.25, -rScroll * 0.88, 0.94),
+      pt(rightAnchorX, rightAnchorY, rScroll * 1.05, -rScroll * 0.25, 0.94),
+      pt(rightAnchorX, rightAnchorY, rScroll * 0.88, rScroll * 0.62, 0.76),
+      pt(rightAnchorX, rightAnchorY, rScroll * 0.12, rScroll * 0.65, 0.6),
+      pt(rightAnchorX, rightAnchorY, -rScroll * 0.22, rScroll * 0.12, 0.48),
+      pt(rightAnchorX, rightAnchorY, rScroll * 0.22, -rScroll * 0.18, 0.44),
+      pt(rightAnchorX, rightAnchorY, rScroll * 0.42, rScroll * 0.12, 0.42),
+    ];
+    parts.push(drawCalligraphyBrushStroke(rightSpiral, sw * 0.84, inkCol, false, safeAsp));
+    const ringCx = rightAnchorX + rScroll * 0.15 * scX;
+    const ringCy = rightAnchorY - rScroll * 1.28;
+    parts.push(drawCalligraphyDot(ringCx, ringCy, sw * 1.4, inkCol, safeAsp));
+    parts.push(drawCalligraphyDot(ringCx, ringCy, sw * 0.88, bgCol, safeAsp));
+    parts.push(drawCalligraphyDot(ringCx, ringCy, sw * 0.5, inkCol, safeAsp));
+
+    // 4. Bottom Symmetrical Double-Looped Infinity Scroll Flourish
+    const botY = safeBotY + boxH * 0.015;
+    const wSpan = Math.min(isoBoxW * 0.28, isoWordW * 0.36);
+    const hLoop = boxH * 0.042;
+
+    for (const side of [-1, 1]) {
+      const wingPts: [number, number, number][] = [
+        pt(cx, botY, -side * wSpan * 0.06, hLoop * 0.92, 0.32),
+        pt(cx, botY, side * wSpan * 0.08, hLoop * 0.35, 0.52),
+        pt(cx, botY, side * wSpan * 0.36, -hLoop * 0.22, 0.82),
+        pt(cx, botY, side * wSpan * 0.78, -hLoop * 0.25, 1.0),
+        pt(cx, botY, side * wSpan * 0.98, hLoop * 0.25, 0.86),
+        pt(cx, botY, side * wSpan * 0.88, hLoop * 0.72, 0.66),
+        pt(cx, botY, side * wSpan * 0.72, hLoop * 0.55, 0.52),
+      ];
+      parts.push(drawCalligraphyBrushStroke(wingPts, sw * 0.84, inkCol, false, safeAsp));
+
+      const innerLoop: [number, number, number][] = [
+        pt(cx, botY, side * wSpan * 0.38, -hLoop * 0.15, 0.4),
+        pt(cx, botY, side * wSpan * 0.54, hLoop * 0.38, 0.56),
+        pt(cx, botY, side * wSpan * 0.42, hLoop * 0.82, 0.54),
+        pt(cx, botY, side * wSpan * 0.24, hLoop * 0.52, 0.46),
+        pt(cx, botY, side * wSpan * 0.34, hLoop * 0.12, 0.36),
+      ];
+      parts.push(drawCalligraphyBrushStroke(innerLoop, sw * 0.6, inkCol, false, safeAsp));
+    }
+    const centerDrop: [number, number, number][] = [
+      pt(cx, botY, 0, hLoop * 0.32, 0.4),
+      pt(cx, botY, -wSpan * 0.08, hLoop * 0.86, 0.5),
+      pt(cx, botY, 0, hLoop * 1.15, 0.54),
+      pt(cx, botY, wSpan * 0.08, hLoop * 0.86, 0.5),
+      pt(cx, botY, 0, hLoop * 0.32, 0.4),
+    ];
+    parts.push(drawCalligraphyBrushStroke(centerDrop, sw * 0.5, inkCol, false, safeAsp));
+  } else if (s === 2) {
+    // STYLE 2: Royal Calligraphic Crown at Top + Symmetrical Wing Swash at Bottom
+    const topY = safeTopY - boxH * 0.01;
+    const cw = isoBoxW * 0.11;
+    const ch = boxH * 0.056;
+    const crownPts: [number, number, number][] = [
+      pt(cx, topY, -cw * 0.75, 0, 0.62),
+      pt(cx, topY, -cw * 0.95, -ch * 0.72, 0.76),
+      pt(cx, topY, -cw * 0.42, -ch * 0.25, 0.6),
+      pt(cx, topY, 0, -ch, 0.92),
+      pt(cx, topY, cw * 0.42, -ch * 0.25, 0.6),
+      pt(cx, topY, cw * 0.95, -ch * 0.72, 0.76),
+      pt(cx, topY, cw * 0.75, 0, 0.62),
+      pt(cx, topY, -cw * 0.75, 0, 0.62),
+    ];
+    parts.push(drawCalligraphyBrushStroke(crownPts, sw * 0.66, accent1, false, safeAsp));
+    parts.push(drawCalligraphyDot(cx, topY - ch * 1.25, sw * 0.88, accent2, safeAsp));
+    parts.push(drawCalligraphyDot(cx - cw * 1.05 * scX, topY - ch * 0.92, sw * 0.7, accent2, safeAsp));
+    parts.push(drawCalligraphyDot(cx + cw * 1.05 * scX, topY - ch * 0.92, sw * 0.7, accent2, safeAsp));
+
+    const botY = safeBotY + boxH * 0.018;
+    const wSpan = Math.min(isoBoxW * 0.34, isoWordW * 0.44);
+    for (const side of [-1, 1]) {
+      const w1: [number, number, number][] = [
+        pt(cx, botY, side * wSpan * 0.1, 0, 0.36),
+        pt(cx, botY, side * wSpan * 0.48, -boxH * 0.018, 0.9),
+        pt(cx, botY, side * wSpan * 0.95, boxH * 0.012, 0.72),
+        pt(cx, botY, side * wSpan * 0.82, boxH * 0.036, 0.46),
+      ];
+      parts.push(drawCalligraphyBrushStroke(w1, sw * 0.84, inkCol, false, safeAsp));
+    }
+    parts.push(drawCalligraphyDot(cx, botY, sw * 1.25, accent1, safeAsp));
+  } else if (s === 3) {
+    // STYLE 3: Top 4-Point Sparkle Stars + Bottom Botanical Laurel & Ribbon Swash
+    const topY = safeTopY - boxH * 0.018;
+    for (const [dx, dy, rad] of [
+      [0, -boxH * 0.025, boxH * 0.032],
+      [-isoBoxW * 0.1, -boxH * 0.008, boxH * 0.022],
+      [isoBoxW * 0.1, -boxH * 0.008, boxH * 0.022],
+    ]) {
+      const sx = cx + dx * scX;
+      const sy = topY + dy;
+      const rOut = rad;
+      const rIn = rad * 0.26;
+      const sPts: [number, number][] = [];
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2 - Math.PI * 0.5;
+        const r = k % 2 === 0 ? rOut : rIn;
+        sPts.push([sx + Math.cos(a) * r * scX, sy + Math.sin(a) * r]);
+      }
+      parts.push(
+        `<polygon points="${sPts.map((p) => `${f1(p[0])},${f1(p[1])}`).join(" ")}" fill="${accent1}"/>`
+      );
+    }
+
+    const botY = safeBotY + boxH * 0.018;
+    const span = Math.min(isoBoxW * 0.34, isoWordW * 0.42);
+    const mainSwash: [number, number, number][] = [
+      pt(cx, botY, -span * 0.85, boxH * 0.012, 0.32),
+      pt(cx, botY, -span * 0.3, -boxH * 0.015, 0.94),
+      pt(cx, botY, span * 0.3, boxH * 0.02, 0.94),
+      pt(cx, botY, span * 0.85, -boxH * 0.012, 0.32),
+    ];
+    parts.push(drawCalligraphyBrushStroke(mainSwash, sw * 0.92, inkCol, false, safeAsp));
+    for (let l = -3; l <= 3; l++) {
+      if (l === 0) continue;
+      const lx = cx + l * span * 0.22 * scX;
+      const ly = botY + (l % 2 === 0 ? -boxH * 0.018 : boxH * 0.018);
+      const ang = l > 0 ? -0.45 : Math.PI + 0.45;
+      parts.push(drawCalligraphyTeardrop(lx, ly, boxH * 0.036, sw * 0.68, ang, accent2, safeAsp));
+    }
+  } else if (s === 4) {
+    // STYLE 4: Romantic Heart-Loop Center Flourish Swash + Top Floating Calligraphic Heart
+    const topY = safeTopY - boxH * 0.022;
+    const hr = boxH * 0.024;
+    const topHeart: [number, number, number][] = [
+      pt(cx, topY, 0, hr * 0.6, 0.44),
+      pt(cx, topY, -hr * 1.15, -hr * 0.5, 0.8),
+      pt(cx, topY, -hr * 0.5, -hr * 1.25, 0.74),
+      pt(cx, topY, 0, -hr * 0.45, 0.54),
+      pt(cx, topY, hr * 0.5, -hr * 1.25, 0.74),
+      pt(cx, topY, hr * 1.15, -hr * 0.5, 0.8),
+      pt(cx, topY, 0, hr * 0.6, 0.44),
+    ];
+    parts.push(drawCalligraphyBrushStroke(topHeart, sw * 0.66, accent1, false, safeAsp));
+
+    const botY = safeBotY + boxH * 0.02;
+    const span = Math.min(isoBoxW * 0.34, isoWordW * 0.44);
+    const hLoop = boxH * 0.032;
+    const heartLine: [number, number, number][] = [
+      pt(cx, botY, -span, boxH * 0.008, 0.28),
+      pt(cx, botY, -span * 0.35, 0, 0.8),
+      pt(cx, botY, 0, hLoop * 0.85, 0.7),
+      pt(cx, botY, -hLoop * 0.9, -hLoop * 0.35, 0.74),
+      pt(cx, botY, -hLoop * 0.35, -hLoop * 0.95, 0.66),
+      pt(cx, botY, 0, -hLoop * 0.35, 0.54),
+      pt(cx, botY, hLoop * 0.35, -hLoop * 0.95, 0.66),
+      pt(cx, botY, hLoop * 0.9, -hLoop * 0.35, 0.74),
+      pt(cx, botY, 0, hLoop * 0.85, 0.7),
+      pt(cx, botY, span * 0.35, 0, 0.8),
+      pt(cx, botY, span, boxH * 0.008, 0.28),
+    ];
+    parts.push(drawCalligraphyBrushStroke(heartLine, sw * 0.76, inkCol, false, safeAsp));
+  } else if (s === 5) {
+    // STYLE 5: Vintage Apothecary Oval Filigree Frame + Top & Bottom Scroll Crests
+    const ocy = (safeTopY + safeBotY) * 0.5;
+    const rx = Math.min(boxW * 0.46, wordSpanW * 0.58 + boxW * 0.06);
+    const ry = Math.min(boxH * 0.45, (safeBotY - safeTopY) * 0.56 + boxH * 0.045);
+    const ovalPts: [number, number, number][] = [];
+    for (let k = 0; k <= 36; k++) {
+      const a = (k / 36) * Math.PI * 2;
+      const wMod = 0.55 + 0.45 * Math.abs(Math.cos(a));
+      ovalPts.push([cx + Math.cos(a) * rx, ocy + Math.sin(a) * ry, wMod]);
+    }
+    parts.push(drawCalligraphyBrushStroke(ovalPts, sw * 0.64, accent1, false, safeAsp));
+    for (const vDir of [-1, 1]) {
+      const py = ocy + vDir * ry;
+      for (const hSide of [-1, 1]) {
+        const cPts: [number, number, number][] = [
+          pt(cx, py, 0, 0, 0.46),
+          pt(cx, py, hSide * isoBoxW * 0.07, vDir * boxH * 0.022, 0.76),
+          pt(cx, py, hSide * isoBoxW * 0.11, -vDir * boxH * 0.008, 0.54),
+        ];
+        parts.push(drawCalligraphyBrushStroke(cPts, sw * 0.68, inkCol, false, safeAsp));
+      }
+    }
+  } else if (s === 6) {
+    // STYLE 6: Radiant 9-Ray Vintage Sunburst Halo + Bold Swooshing Brush Tail
+    const topY = safeTopY - boxH * 0.008;
+    const rays = 9;
+    for (let r = 0; r < rays; r++) {
+      const t = r / (rays - 1);
+      const angDeg = -68 + t * 136;
+      const angRad = ((angDeg - 90) * Math.PI) / 180;
+      const isLong = r % 2 === 0;
+      const r0 = boxH * 0.024;
+      const rLen = boxH * (isLong ? 0.068 : 0.044);
+      const px0 = cx + Math.cos(angRad) * r0 * scX;
+      const py0 = topY + Math.sin(angRad) * r0;
+      parts.push(
+        drawCalligraphyTeardrop(
+          px0,
+          py0,
+          rLen,
+          sw * (isLong ? 0.82 : 0.6),
+          angRad,
+          isLong ? inkCol : accent1,
+          safeAsp
+        )
+      );
+    }
+    const botY = safeBotY + boxH * 0.018;
+    const span = Math.min(isoBoxW * 0.34, isoWordW * 0.44);
+    const swash: [number, number, number][] = [
+      pt(cx, botY, -span * 0.78, boxH * 0.02, 0.34),
+      pt(cx, botY, -span * 0.15, -boxH * 0.012, 1.08),
+      pt(cx, botY, span * 0.65, -boxH * 0.02, 0.94),
+      pt(cx, botY, span * 0.82, boxH * 0.012, 0.46),
+    ];
+    parts.push(drawCalligraphyBrushStroke(swash, sw * 1.04, inkCol, false, safeAsp));
+  } else if (s === 7) {
+    // STYLE 7: Botanical Olive & Eucalyptus Leaf Wreath Embracing the Calligraphy
+    const ocy = (safeTopY + safeBotY) * 0.5;
+    const rx = Math.min(boxW * 0.45, wordSpanW * 0.56 + boxW * 0.05);
+    const ry = Math.min(boxH * 0.43, (safeBotY - safeTopY) * 0.52 + boxH * 0.03);
+    for (const side of [-1, 1]) {
+      const stemPts: [number, number, number][] = [];
+      for (let k = 0; k <= 12; k++) {
+        const t = k / 12;
+        const a = (0.78 - t * 1.56) * Math.PI * 0.5;
+        const sx = cx + side * Math.cos(a) * rx;
+        const sy = ocy + Math.sin(a) * ry;
+        stemPts.push([sx, sy, 0.32 + 0.34 * (1 - t)]);
+      }
+      parts.push(drawCalligraphyBrushStroke(stemPts, sw * 0.58, inkCol, false, safeAsp));
+
+      for (let k = 2; k <= 10; k += 2) {
+        const [lx, ly] = stemPts[k];
+        const leafAng = side > 0 ? -Math.PI * 0.35 : -Math.PI * 0.65;
+        parts.push(
+          drawCalligraphyTeardrop(lx, ly, boxH * 0.038, sw * 0.72, leafAng, accent1, safeAsp)
+        );
+      }
+    }
+  } else if (s === 8) {
+    // STYLE 8: Retro Varsity / Baseball Jersey Sweeping Tail Underline wraps cleanly beneath word
+    const botY = safeBotY + boxH * 0.016;
+    const span = Math.min(isoBoxW * 0.35, isoWordW * 0.45);
+    const varsityTail: [number, number, number][] = [
+      pt(cx, botY, span * 0.62, -boxH * 0.022, 0.5),
+      pt(cx, botY, span * 0.85, 0, 0.82),
+      pt(cx, botY, span * 0.45, boxH * 0.022, 1.04),
+      pt(cx, botY, -span * 0.35, boxH * 0.03, 1.12),
+      pt(cx, botY, -span * 0.85, boxH * 0.012, 0.7),
+      pt(cx, botY, -span * 0.65, -boxH * 0.01, 0.36),
+    ];
+    parts.push(drawCalligraphyBrushStroke(varsityTail, sw * 1.1, accent1, false, safeAsp));
+  } else if (s === 9) {
+    // STYLE 9: Art-Deco Stepped Diamond Crest & Symmetrical Spear-Tip Rules (Cleanly above & below text!)
+    const topY = safeTopY - boxH * 0.022;
+    const botY = safeBotY + boxH * 0.022;
+    const span = Math.min(isoBoxW * 0.32, isoWordW * 0.42);
+    for (const [ry, vSign] of [
+      [topY, -1],
+      [botY, 1],
+    ]) {
+      const dr = boxH * 0.02;
+      const dPoly = [
+        [cx, ry - dr],
+        [cx + dr * scX, ry],
+        [cx, ry + dr],
+        [cx - dr * scX, ry],
+      ];
+      parts.push(
+        `<polygon points="${dPoly.map((p) => `${f1(p[0])},${f1(p[1])}`).join(" ")}" fill="${accent1}"/>`
+      );
+      for (const side of [-1, 1]) {
+        const rulePts: [number, number, number][] = [
+          pt(cx, ry, side * dr * 1.6, 0, 0.82),
+          pt(cx, ry, side * span * 0.55, vSign * boxH * 0.003, 0.62),
+          pt(cx, ry, side * span * 0.92, 0, 0.18),
+        ];
+        parts.push(drawCalligraphyBrushStroke(rulePts, sw * 0.7, inkCol, false, safeAsp));
+      }
+    }
+  } else if (s === 10) {
+    // STYLE 10: Festive Party Confetti, Curling Ribbon Streamers & Sparkle Drops
+    const ocy = (safeTopY + safeBotY) * 0.5;
+    const span = Math.min(isoBoxW * 0.39, isoWordW * 0.52 + boxH * 0.04);
+    for (const side of [-1, 1]) {
+      const stPts: [number, number, number][] = [
+        pt(cx, ocy, side * span * 0.84, -boxH * 0.13, 0.34),
+        pt(cx, ocy, side * span * 0.98, -boxH * 0.05, 0.74),
+        pt(cx, ocy, side * span * 0.86, boxH * 0.02, 0.66),
+        pt(cx, ocy, side * span * 1.0, boxH * 0.09, 0.8),
+        pt(cx, ocy, side * span * 0.86, boxH * 0.15, 0.34),
+      ];
+      parts.push(drawCalligraphyBrushStroke(stPts, sw * 0.72, accent1, false, safeAsp));
+      parts.push(
+        drawCalligraphyDot(
+          cx + side * span * 0.76 * scX,
+          ocy - boxH * 0.17,
+          sw * 0.9,
+          accent2,
+          safeAsp
+        )
+      );
+      parts.push(
+        drawCalligraphyDot(
+          cx + side * span * 0.8 * scX,
+          ocy + boxH * 0.17,
+          sw * 0.82,
+          accent3,
+          safeAsp
+        )
+      );
+    }
+    const botY = safeBotY + boxH * 0.018;
+    const waveSwash: [number, number, number][] = [
+      pt(cx, botY, -span * 0.65, boxH * 0.008, 0.32),
+      pt(cx, botY, -span * 0.22, -boxH * 0.018, 0.92),
+      pt(cx, botY, span * 0.22, boxH * 0.018, 0.92),
+      pt(cx, botY, span * 0.65, -boxH * 0.012, 0.32),
+    ];
+    parts.push(drawCalligraphyBrushStroke(waveSwash, sw * 0.94, inkCol, false, safeAsp));
+  } else if (s === 11) {
+    // STYLE 11: Double-Wave Calligraphic Feather Plume Underline & Top Teardrop Trio
+    const topY = safeTopY - boxH * 0.01;
+    for (const [ang, sc] of [
+      [-32, 0.82],
+      [0, 1.04],
+      [32, 0.82],
+    ]) {
+      const rad = ((ang - 90) * Math.PI) / 180;
+      parts.push(
+        drawCalligraphyTeardrop(
+          cx + Math.cos(rad) * boxH * 0.016 * scX,
+          topY + Math.sin(rad) * boxH * 0.016,
+          boxH * 0.054 * sc,
+          sw * 0.88 * sc,
+          rad,
+          inkCol,
+          safeAsp
+        )
+      );
+    }
+    const botY = safeBotY + boxH * 0.016;
+    const span = Math.min(isoBoxW * 0.34, isoWordW * 0.44);
+    for (let wIdx = 0; wIdx < 2; wIdx++) {
+      const wy = botY + wIdx * boxH * 0.025;
+      const wScale = wIdx === 0 ? 1.0 : 0.66;
+      const wPts: [number, number, number][] = [
+        pt(cx, wy, -span * 0.75 * wScale, boxH * 0.012, 0.3),
+        pt(cx, wy, -span * 0.2 * wScale, -boxH * 0.012, 0.94),
+        pt(cx, wy, span * 0.45 * wScale, boxH * 0.016, 0.9),
+        pt(cx, wy, span * 0.78 * wScale, -boxH * 0.008, 0.3),
+      ];
+      parts.push(
+        drawCalligraphyBrushStroke(
+          wPts,
+          sw * (wIdx === 0 ? 0.92 : 0.64),
+          wIdx === 0 ? inkCol : accent1,
+          false,
+          safeAsp
+        )
+      );
+    }
+  } else if (s === 12) {
+    // STYLE 12: Top & Bottom Badge Crest Arcs Cleanly Above & Below the Script (Zero text overlap!)
+    const arcSpan = Math.min(isoBoxW * 0.28, isoWordW * 0.36);
+    const topArcY = safeTopY - boxH * 0.015;
+    const botArcY = safeBotY + boxH * 0.018;
+    const topArc: [number, number, number][] = [
+      pt(cx, topArcY, -arcSpan, boxH * 0.018, 0.32),
+      pt(cx, topArcY, -arcSpan * 0.45, -boxH * 0.018, 0.82),
+      pt(cx, topArcY, 0, -boxH * 0.026, 0.96),
+      pt(cx, topArcY, arcSpan * 0.45, -boxH * 0.018, 0.82),
+      pt(cx, topArcY, arcSpan, boxH * 0.018, 0.32),
+    ];
+    const botArc: [number, number, number][] = [
+      pt(cx, botArcY, -arcSpan, -boxH * 0.016, 0.32),
+      pt(cx, botArcY, -arcSpan * 0.45, boxH * 0.018, 0.82),
+      pt(cx, botArcY, 0, boxH * 0.026, 0.96),
+      pt(cx, botArcY, arcSpan * 0.45, boxH * 0.018, 0.82),
+      pt(cx, botArcY, arcSpan, -boxH * 0.016, 0.32),
+    ];
+    parts.push(drawCalligraphyBrushStroke(topArc, sw * 0.76, accent1, false, safeAsp));
+    parts.push(drawCalligraphyBrushStroke(botArc, sw * 0.76, accent1, false, safeAsp));
+    parts.push(drawCalligraphyDot(cx, topArcY - boxH * 0.042, sw * 0.95, accent2, safeAsp));
+    parts.push(drawCalligraphyDot(cx, botArcY + boxH * 0.042, sw * 0.95, accent2, safeAsp));
+  } else if (s === 13) {
+    // STYLE 13: 4 Symmetrical Victorian S-Curve Arabesque Corner Scrolls (Cleanly outside safeTopY / safeBotY)
+    const ocy = (safeTopY + safeBotY) * 0.5;
+    const dx0 = Math.min(isoBoxW * 0.35, isoWordW * 0.46 + boxH * 0.03);
+    const dy0 = Math.min(boxH * 0.42, (safeBotY - safeTopY) * 0.54 + boxH * 0.02);
+    for (const sx of [-1, 1]) {
+      for (const sy of [-1, 1]) {
+        const cornerPts: [number, number, number][] = [
+          pt(cx, ocy, sx * dx0 * 0.42, sy * dy0, 0.32),
+          pt(cx, ocy, sx * dx0 * 0.82, sy * dy0 * 1.04, 0.82),
+          pt(cx, ocy, sx * dx0 * 1.02, sy * dy0 * 0.82, 0.78),
+          pt(cx, ocy, sx * dx0 * 0.9, sy * dy0 * 0.62, 0.48),
+        ];
+        parts.push(drawCalligraphyBrushStroke(cornerPts, sw * 0.72, inkCol, false, safeAsp));
+      }
+    }
+  } else if (s === 14) {
+    // STYLE 14: Minimalist Luxury Signature Loop Tail + Fine Top Kicker Rule
+    const topY = safeTopY - boxH * 0.022;
+    const ruleW = Math.min(isoBoxW * 0.2, isoWordW * 0.26);
+    parts.push(
+      `<rect x="${f1(cx - ruleW * scX)}" y="${f1(topY)}" width="${f1(
+        ruleW * 2 * scX
+      )}" height="${f1(Math.max(1.3, sw * 0.42))}" fill="${accent1}"/>`
+    );
+    const botY = safeBotY + boxH * 0.018;
+    const span = Math.min(isoBoxW * 0.34, isoWordW * 0.44);
+    const sigLoop: [number, number, number][] = [
+      pt(cx, botY, -span * 0.55, boxH * 0.016, 0.34),
+      pt(cx, botY, span * 0.15, -boxH * 0.018, 0.82),
+      pt(cx, botY, span * 0.45, boxH * 0.028, 0.7),
+      pt(cx, botY, span * 0.1, boxH * 0.036, 0.56),
+      pt(cx, botY, -span * 0.2, boxH * 0.004, 0.5),
+      pt(cx, botY, span * 0.82, -boxH * 0.012, 0.32),
+    ];
+    parts.push(drawCalligraphyBrushStroke(sigLoop, sw * 0.8, inkCol, false, safeAsp));
+  } else {
+    // STYLE 15: Baroque Symmetrical Lyre Scrollwork Crown & Base
+    const topY = safeTopY - boxH * 0.02;
+    const botY = safeBotY + boxH * 0.02;
+    const span = Math.min(isoBoxW * 0.28, isoWordW * 0.36);
+    for (const [ry, vDir] of [
+      [topY, -1],
+      [botY, 1],
+    ]) {
+      for (const side of [-1, 1]) {
+        const lyre: [number, number, number][] = [
+          pt(cx, ry, 0, vDir * boxH * 0.026, 0.4),
+          pt(cx, ry, side * span * 0.28, -vDir * boxH * 0.008, 0.84),
+          pt(cx, ry, side * span * 0.72, vDir * boxH * 0.024, 0.8),
+          pt(cx, ry, side * span * 0.92, -vDir * boxH * 0.004, 0.56),
+          pt(cx, ry, side * span * 0.76, -vDir * boxH * 0.02, 0.42),
+        ];
+        parts.push(drawCalligraphyBrushStroke(lyre, sw * 0.74, inkCol, false, safeAsp));
+      }
+      parts.push(drawCalligraphyDot(cx, ry - vDir * boxH * 0.01, sw * 0.9, accent1, safeAsp));
+    }
+  }
+}
+
+// Render 1 Complete Hand-Lettered Calligraphy Artwork inside Bounding Box (bx, by, bw, bh)
+function drawSingleTypographyPiece(
+  parts: string[],
+  line1Text: string,
+  line2Text: string,
+  fontStyle: string,
+  flourishStyleIdx: number,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
+  aspect: number,
+  isMultiGridCell: boolean,
+  cardBg: string,
+  inkCol: string,
+  accent1: string,
+  accent2: string,
+  accent3: string,
+  showCardFrame: boolean
+) {
+  if (isMultiGridCell && showCardFrame) {
+    const strokeCol = mixCol(cardBg, inkCol, 0.14);
+    parts.push(
+      `<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(
+        bh
+      )}" fill="${cardBg}" stroke="${strokeCol}" stroke-width="1.4"/>`
+    );
+  }
+
+  const safeAsp = Math.max(0.45, Math.min(2.4, aspect || 1));
+  const cx = bx + bw * 0.5;
+  const cy = by + bh * 0.5;
+  const s = ((flourishStyleIdx % 16) + 16) % 16;
+
+  // Measure physical width of both lines in glyph units so we scale to fit both horizontal AND vertical bounds!
+  const u1 = Math.max(24, measureBrushScriptUnits(line1Text));
+  const u2 = Math.max(24, measureBrushScriptUnits(line2Text));
+  const maxUnits = Math.max(u1, u2, 42);
+  const availIsoW = bw * safeAsp * 0.76;
+  const maxCapHByWidth = (availIsoW / maxUnits) * 14;
+
+  // Detect whether Line 1 or Line 2 contains descender letters (f, g, j, p, q, y)
+  const line1HasDesc = /[fgjpqy]/.test(line1Text);
+  const line2HasDesc = /[fgjpqy]/.test(line2Text);
+
+  const rawCapH2 = Math.min(bh * 0.205, maxCapHByWidth);
+  const capH2 = Math.max(bh * 0.105, rawCapH2);
+  const capH1 =
+    fontStyle === "vintage_serif"
+      ? capH2 * 0.54
+      : Math.min(capH2 * 0.88, (availIsoW / Math.max(u1, 36)) * 14);
+
+  // Add extra vertical gap between Line 1 and Line 2 whenever Line 1 has descenders (like "Happy" -> "Birthday")
+  const lineGap =
+    fontStyle === "vintage_serif"
+      ? bh * 0.055
+      : line1HasDesc
+      ? capH1 * 0.42 + bh * 0.015
+      : bh * 0.036;
+
+  const descExtra2 = line2HasDesc ? capH2 * 0.46 : capH2 * 0.06;
+  const totalVisualH = capH1 + lineGap + capH2 + descExtra2;
+
+  const line1Top = cy - totalVisualH * 0.5 + (line2HasDesc ? capH2 * 0.04 : 0);
+  const line2Top = line1Top + capH1 + lineGap;
+  const line2Bot = line2Top + capH2;
+
+  // Descender-safe top & bottom ornament clearance coordinates (Guarantees zero collision with g, y, p, j, f!)
+  const safeTopY = line1Top - capH1 * 0.14;
+  const safeBotY = line2Bot + descExtra2 + bh * 0.012;
+
+  const isSample1 = s === 0;
+  const isSample2 = s === 1;
+  const isMonoline = fontStyle === "luxury_monoline" || fontStyle === "monoline";
+
+  const tiltDeg = isSample1 ? -6.2 : isSample2 ? -3.8 : fontStyle === "vintage_serif" ? 0 : -4.5;
+  const archAmt = isSample2 ? capH1 * 0.11 : capH1 * 0.06;
+  const bounceAmt = isSample2 ? capH1 * 0.04 : 0;
+  const weightMul = isMonoline ? 0.65 : isSample1 ? 1.06 : 0.98;
+
+  let wordSpanW = bw * 0.52;
+
+  if (fontStyle === "vintage_serif") {
+    // Line 1 in Crisp Display Vector Capitals + Line 2 in Connected Brush Script Calligraphy
+    const serifH = Math.min(capH1 * 0.78, bw * safeAsp * 0.064);
+    parts.push(
+      drawPosterVectorTextString(
+        line1Text.toUpperCase(),
+        cx,
+        line1Top + (capH1 - serifH) * 0.5,
+        serifH,
+        safeAsp,
+        "wide",
+        accent1,
+        "center"
+      )
+    );
+    const res2 = drawBrushScriptLine(line2Text, cx, line2Top, capH2 * 1.04, safeAsp, inkCol, {
+      slantTiltDeg: -4.0,
+      archCurve: archAmt,
+      bounceAmp: bounceAmt,
+      strokeWeight: weightMul,
+    });
+    parts.push(res2.svg);
+    wordSpanW = Math.max(bw * 0.36, res2.rightX - res2.leftX);
+  } else {
+    // Line 1 & Line 2 both in Crisp Connected Cursive Brush Script Calligraphy (Sample 1 & Sample 2 style!)
+    const res1 = drawBrushScriptLine(line1Text, cx, line1Top, capH1, safeAsp, inkCol, {
+      slantTiltDeg: tiltDeg,
+      archCurve: archAmt,
+      bounceAmp: bounceAmt,
+      strokeWeight: weightMul,
+      entrySwashH: isSample2,
+      exitOverArchY: isSample2,
+    });
+    const res2 = drawBrushScriptLine(line2Text, cx, line2Top, capH2, safeAsp, inkCol, {
+      slantTiltDeg: tiltDeg,
+      archCurve: archAmt * 0.85,
+      bounceAmp: bounceAmt,
+      strokeWeight: weightMul * 1.02,
+    });
+    parts.push(res1.svg);
+    parts.push(res2.svg);
+    wordSpanW = Math.max(bw * 0.36, res1.rightX - res1.leftX, res2.rightX - res2.leftX);
+  }
+
+  // Draw the Flourish / Swash / Victorian Scroll / Sunburst / Crown / Wreath Ornament using safeTopY & safeBotY
+  const baseStrokeW = Math.max(0.85, capH2 * 0.044 * weightMul);
+  drawTypographyFlourishOrnament(
+    parts,
+    s,
+    cx,
+    cy,
+    bw,
+    bh,
+    safeTopY,
+    safeBotY,
+    wordSpanW,
+    baseStrokeW,
+    safeAsp,
+    inkCol,
+    accent1,
+    accent2,
+    accent3,
+    cardBg
+  );
+}
+
+const BASE_12_TYPOGRAPHY_FAMILIES: {
+  occasion: TypographyOccasionKey;
+  familyTitle: string;
+  shortPrefix: string;
+  boardBg: string;
+  inkCol: string;
+  accent1: string;
+  accent2: string;
+  accent3: string;
+  editions: {
+    title: string;
+    pcs: string;
+    fontStyle: string;
+    flourishStyle: string;
+    colorSet: string;
+    phraseIdx: number;
+  }[];
+}[] = [
+  {
+    occasion: "birthday",
+    familyTitle: "Happy Birthday Brush Script & Victorian Flourish Calligraphy",
+    shortPrefix: "BIRTHDAY SCRIPT",
+    boardBg: "#ffffff",
+    inkCol: "#111111",
+    accent1: "#111111",
+    accent2: "#e11d48",
+    accent3: "#f59e0b",
+    editions: [
+      {
+        title: "Happy Birthday Brush Script & Swash Tail (Sample 1 Hero)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "0",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Happy Birthday Ornate Victorian Scroll & Sunburst (Sample 2 Hero)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "1",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Birthday Hand-Lettered 4-Piece Calligraphy Set (2×2 Bundle)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Birthday Celebration 6-Piece Calligraphy Sticker Sheet (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Birthday Quotes 9-Piece Mega Hand-Lettering Pack (3×3)",
+        pcs: "9",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "wedding",
+    familyTitle: "Wedding, Anniversary & Romantic Love Flourish Calligraphy",
+    shortPrefix: "WEDDING LOVE",
+    boardBg: "#ffffff",
+    inkCol: "#18181b",
+    accent1: "#be123c",
+    accent2: "#d97706",
+    accent3: "#18181b",
+    editions: [
+      {
+        title: "Happy Anniversary Ornate Romantic Scroll Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "4",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Forever & Always Victorian Flourish Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "1",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Wedding & Love 4-Piece Calligraphy Badge Collection (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Save The Date & Bridal 6-Piece Lettering Bundle (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "Romantic Quotes 12-Piece Mega Wedding Typography Sheet (4×3)",
+        pcs: "12",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "congrats",
+    familyTitle: "Congratulations, Graduation & Achievement Hand-Lettering",
+    shortPrefix: "CONGRATS",
+    boardBg: "#ffffff",
+    inkCol: "#0f172a",
+    accent1: "#d97706",
+    accent2: "#0284c7",
+    accent3: "#0f172a",
+    editions: [
+      {
+        title: "Warmest Congrats Royal Crown & Wing Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "2",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "You Did It Brush Swash Hand-Lettered Poster (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "0",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Graduation & Congrats 4-Piece Calligraphy Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Achievement & Success 6-Piece Typography Bundle (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "Graduation 9-Piece Hand-Lettered Sticker Pack (3×3)",
+        pcs: "9",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "thankyou",
+    familyTitle: "Thank You, Gratitude & Appreciation Brush Calligraphy",
+    shortPrefix: "THANK YOU",
+    boardBg: "#ffffff",
+    inkCol: "#111827",
+    accent1: "#111827",
+    accent2: "#b45309",
+    accent3: "#0d9488",
+    editions: [
+      {
+        title: "Thank You Classic Brush Script & Swash Tail (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "0",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Thank You Ornate Victorian Scroll Flourish (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "1",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Gratitude & Thank You 4-Piece Calligraphy Card Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Appreciation 6-Piece Hand-Lettered Phrase Pack (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Thank You 12-Piece Commercial Stationery Bundle (4×3)",
+        pcs: "12",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "holiday",
+    familyTitle: "Happy New Year, Christmas & Festive Holiday Calligraphy",
+    shortPrefix: "HOLIDAY FESTIVE",
+    boardBg: "#ffffff",
+    inkCol: "#111827",
+    accent1: "#dc2626",
+    accent2: "#d97706",
+    accent3: "#15803d",
+    editions: [
+      {
+        title: "Happy New Year Ornate Starburst & Scroll Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "1",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Merry Christmas Victorian Flourish Hand-Lettering (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "3",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Holiday & New Year 4-Piece Calligraphy Greeting Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Season's Greetings 6-Piece Festive Lettering Bundle (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "Winter Holiday 9-Piece Calligraphy Badge Collection (3×3)",
+        pcs: "9",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "motivational",
+    familyTitle: "Motivational, Inspiring & Positive Vibes Hand-Lettering",
+    shortPrefix: "MOTIVATIONAL",
+    boardBg: "#ffffff",
+    inkCol: "#09090b",
+    accent1: "#e11d48",
+    accent2: "#f59e0b",
+    accent3: "#0284c7",
+    editions: [
+      {
+        title: "Never Give Up Varsity Brush Tail Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "8",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Good Vibes Only Radiant Sunburst Hand-Lettering (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "6",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "Motivational Quotes 4-Piece Typography Poster Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Inspiring Hustle 6-Piece Hand-Lettered Bundle (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Positive Quotes 12-Piece Mega Lettering Sheet (4×3)",
+        pcs: "12",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "coffee",
+    familyTitle: "Coffee Shop, Cafe & Bakery Chalkboard/Ink Hand-Lettering",
+    shortPrefix: "COFFEE CAFE",
+    boardBg: "#ffffff",
+    inkCol: "#1c1917",
+    accent1: "#92400e",
+    accent2: "#d97706",
+    accent3: "#1c1917",
+    editions: [
+      {
+        title: "But First Coffee Vintage Cafe Brush Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "5",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Coffee Time Ornate Scroll & Steam Swash Lettering (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "1",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Coffee & Espresso 4-Piece Cafe Menu Lettering Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Bakery & Cafe 6-Piece Vintage Typography Bundle (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "Coffee Lover 9-Piece Hand-Lettered Sticker Pack (3×3)",
+        pcs: "9",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "family",
+    familyTitle: "Mother's Day, Father's Day & Sweet Family Calligraphy",
+    shortPrefix: "MOM DAD FAMILY",
+    boardBg: "#ffffff",
+    inkCol: "#111827",
+    accent1: "#e11d48",
+    accent2: "#0284c7",
+    accent3: "#d97706",
+    editions: [
+      {
+        title: "Happy Mother's Day Heart & Scroll Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "4",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Happy Father's Day Royal Crest Brush Lettering (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "2",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "Mom, Dad & Family 4-Piece Greeting Calligraphy Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Home Sweet Home 6-Piece Family Typography Bundle (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 4,
+      },
+      {
+        title: "Family Love 9-Piece Hand-Lettered Gift Collection (3×3)",
+        pcs: "9",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "summer",
+    familyTitle: "Hello Summer, Beach & Travel Adventure Hand-Lettering",
+    shortPrefix: "SUMMER TRAVEL",
+    boardBg: "#ffffff",
+    inkCol: "#0f172a",
+    accent1: "#ea580c",
+    accent2: "#0284c7",
+    accent3: "#f59e0b",
+    editions: [
+      {
+        title: "Hello Summer Sunburst & Wave Brush Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "6",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Summer Vibes Sweeping Brush Swash Lettering (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "0",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Summer & Beach 4-Piece T-Shirt Lettering Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Travel & Wanderlust 6-Piece Adventure Typography Set (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 3,
+      },
+      {
+        title: "Tropical Summer 9-Piece Hand-Lettered Bundle (3×3)",
+        pcs: "9",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "sale",
+    familyTitle: "Mega Sale, Special Offer & Retail Promo Hand-Lettering",
+    shortPrefix: "SALE PROMO",
+    boardBg: "#ffffff",
+    inkCol: "#09090b",
+    accent1: "#e11d48",
+    accent2: "#f59e0b",
+    accent3: "#09090b",
+    editions: [
+      {
+        title: "Mega Sale Bold Brush Swash & Starburst Badge (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "0",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Special Offer Ornate Seal & Ribbon Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "12",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Retail Sale & Promo 4-Piece Calligraphy Tag Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Black Friday & Discount 6-Piece Store Banner Set (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "E-Commerce Promo 12-Piece Hand-Lettered Sticker Sheet (4×3)",
+        pcs: "12",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "islamic",
+    familyTitle: "Eid Mubarak, Ramadan Kareem & Festive Arabesque Calligraphy",
+    shortPrefix: "EID RAMADAN",
+    boardBg: "#ffffff",
+    inkCol: "#111827",
+    accent1: "#d97706",
+    accent2: "#047857",
+    accent3: "#111827",
+    editions: [
+      {
+        title: "Eid Mubarak Ornate Arabesque Scroll Calligraphy (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "1",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Ramadan Kareem Royal Filigree & Crown Lettering (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "15",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Eid & Ramadan 4-Piece Greeting Calligraphy Set (2×2)",
+        pcs: "4",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Jumma & Eid 6-Piece Festive Hand-Lettered Bundle (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "Islamic Greetings 9-Piece Luxury Calligraphy Pack (3×3)",
+        pcs: "9",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+  {
+    occasion: "welcome",
+    familyTitle: "Welcome, Hello & Everyday Greeting Brush Calligraphy",
+    shortPrefix: "WELCOME QUOTES",
+    boardBg: "#ffffff",
+    inkCol: "#111827",
+    accent1: "#111827",
+    accent2: "#e11d48",
+    accent3: "#0284c7",
+    editions: [
+      {
+        title: "Warm Welcome Sweeping Brush Script & Swash (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "0",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Hello Gorgeous Ornate Victorian Scroll Lettering (1 PC)",
+        pcs: "1",
+        fontStyle: "script_brush",
+        flourishStyle: "1",
+        colorSet: "ink_white",
+        phraseIdx: 1,
+      },
+      {
+        title: "Everyday Greetings 2-Piece Duo Calligraphy Set (2×1)",
+        pcs: "2",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+      {
+        title: "Welcome & Hello 6-Piece Hand-Lettered Bundle (3×2)",
+        pcs: "6",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 2,
+      },
+      {
+        title: "Daily Quotes 12-Piece Ultimate Calligraphy Sheet (4×3)",
+        pcs: "12",
+        fontStyle: "script_brush",
+        flourishStyle: "auto",
+        colorSet: "ink_white",
+        phraseIdx: 0,
+      },
+    ],
+  },
+];
+
+export const MASTER_TYPOGRAPHY_MODES: MasterTypographyModeSpec[] = [];
+for (let fIdx = 0; fIdx < BASE_12_TYPOGRAPHY_FAMILIES.length; fIdx++) {
+  const fam = BASE_12_TYPOGRAPHY_FAMILIES[fIdx];
+  for (let eIdx = 0; eIdx < fam.editions.length; eIdx++) {
+    const num = fIdx * 5 + eIdx + 1; // Typography 1 .. Typography 60
+    const ed = fam.editions[eIdx];
+    MASTER_TYPOGRAPHY_MODES.push({
+      id: `typo_ms_${num}`,
+      name: `Typography ${num}: ${ed.title}`,
+      shortLabel: `TYPO ${num}: ${fam.shortPrefix} (${ed.pcs === "1" ? "1 PC HERO" : ed.pcs + " PCS SET"})`,
+      occasion: fam.occasion,
+      defPcs: ed.pcs,
+      defFontStyle: ed.fontStyle,
+      defFlourishStyle: ed.flourishStyle,
+      defColorSet: ed.colorSet,
+      boardBg: fam.boardBg,
+      inkCol: fam.inkCol,
+      accent1: fam.accent1,
+      accent2: fam.accent2,
+      accent3: fam.accent3,
+      phraseIdx: ed.phraseIdx,
+    });
+  }
+}
+
+function splitCustomPhraseToTwoLines(raw: string, fallback: [string, string]): [string, string] {
+  const trimmed = (raw || "").trim();
+  if (!trimmed) return fallback;
+  if (trimmed.includes("|")) {
+    const [a, b] = trimmed.split("|");
+    return [(a || "").trim() || fallback[0], (b || "").trim() || fallback[1]];
+  }
+  const words = trimmed.split(/\s+/);
+  if (words.length === 1) return [words[0], ""];
+  if (words.length === 2) return [words[0], words[1]];
+  const mid = Math.ceil(words.length / 2);
+  return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+}
+
+function renderMasterTypographyCollection(
+  m: any,
+  q: Record<string, any>,
+  spec: MasterTypographyModeSpec
+) {
+  const pcsVal = String(q.pcs || spec.defPcs || "1");
+  const occasion = (String(q.occasion || spec.occasion || "birthday") as TypographyOccasionKey);
+  const fontStyle = String(q.fontStyle || spec.defFontStyle || "script_brush");
+  const flourishParam = String(q.flourishStyle || spec.defFlourishStyle || "auto");
+  const colorSet = String(q.colorSet || spec.defColorSet || "ink_white");
+  const customText = String(q.customText || "").trim();
+  const variant = Math.max(0, Math.round(+(q.variant ?? 0)));
+
+  const dims = getRatioDims(
+    m.C?.px || 5200,
+    m.C?.ratio || getMicrostockTypographyRatio(pcsVal),
+    m.C?.artW,
+    m.C?.artH
+  );
+  const aspect = Math.max(0.5, Math.min(2.4, dims.w / Math.max(1, dims.h)));
+
+  // Resolve Colour Scheme (Default = Crisp Pure White #FFFFFF Sheet with Rich Black #111111 Calligraphy Ink, matching Sample 1 & Sample 2!)
+  let boardBg = "#ffffff";
+  let cardBg = "#ffffff";
+  let inkCol = "#111111";
+  let accent1 = "#111111";
+  let accent2 = "#111111";
+  let accent3 = "#111111";
+  let showCardFrame = false;
+
+  if (colorSet === "ink_white") {
+    boardBg = "#ffffff";
+    cardBg = "#ffffff";
+    inkCol = "#111111";
+    accent1 = "#111111";
+    accent2 = "#111111";
+    accent3 = "#111111";
+  } else if (colorSet === "ink_accent_white") {
+    boardBg = "#ffffff";
+    cardBg = "#ffffff";
+    inkCol = "#111827";
+    accent1 = spec.accent1 === "#111111" ? "#e11d48" : spec.accent1;
+    accent2 = spec.accent2;
+    accent3 = spec.accent3;
+  } else if (colorSet === "white_black") {
+    boardBg = "#000000";
+    cardBg = "#09090b";
+    inkCol = "#ffffff";
+    accent1 = "#ffffff";
+    accent2 = "#f59e0b";
+    accent3 = "#38bdf8";
+    showCardFrame = true;
+  } else if (colorSet === "gold_noir") {
+    boardBg = "#000000";
+    cardBg = "#0b0f17";
+    inkCol = "#fde047";
+    accent1 = "#f59e0b";
+    accent2 = "#fde047";
+    accent3 = "#d97706";
+    showCardFrame = true;
+  } else if (colorSet === "vintage_cream") {
+    boardBg = "#f6efe2";
+    cardBg = "#fbf8f3";
+    inkCol = "#2b1d14";
+    accent1 = "#c84b31";
+    accent2 = "#d97706";
+    accent3 = "#2d6a4f";
+    showCardFrame = true;
+  } else if (colorSet === "palette" && m.C?.cols && m.C.cols.length >= 3) {
+    boardBg = normalizeIllustratorColor(m.bg || m.C?.bg || "#ffffff", "#ffffff");
+    cardBg = boardBg;
+    inkCol = lumH(boardBg) < 128 ? "#ffffff" : normalizeIllustratorColor(m.ink || "#111111", "#111111");
+    accent1 = m.C.cols[0];
+    accent2 = m.C.cols[1];
+    accent3 = m.C.cols[2];
+  }
+
+  // Also respect user's direct Canvas Background picker override if they explicitly picked a colour in the Colour tab
+  if (m.bg && colorSet === "palette") {
+    boardBg = normalizeIllustratorColor(m.bg, boardBg);
+    cardBg = boardBg;
+  }
+
+  const parts: string[] = [];
+  parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${boardBg}" data-bg="1"/>`);
+
+  const phrasePack = TYPOGRAPHY_OCCASION_PHRASES[occasion] || TYPOGRAPHY_OCCASION_PHRASES.birthday;
+  const modeNum = Math.max(1, parseInt(spec.id.replace("typo_ms_", ""), 10) || 1);
+  const baseFlourishIdx =
+    flourishParam !== "auto" && !Number.isNaN(parseInt(flourishParam, 10))
+      ? (parseInt(flourishParam, 10) + variant) % 16
+      : (modeNum - 1 + variant) % 16;
+
+  // 1 PC HERO CALLIGRAPHY ARTWORK (Fills the entire Artboard like Sample 1 & Sample 2!)
+  if (pcsVal === "1") {
+    const pIdx = (spec.phraseIdx + (variant > 0 ? Math.floor(variant / 2) : 0)) % phrasePack.length;
+    const [l1, l2] = customText
+      ? splitCustomPhraseToTwoLines(customText, phrasePack[pIdx])
+      : phrasePack[pIdx];
+
+    drawSingleTypographyPiece(
+      parts,
+      l1,
+      l2,
+      fontStyle,
+      baseFlourishIdx,
+      54,
+      54,
+      892,
+      892,
+      aspect,
+      false,
+      cardBg,
+      inkCol,
+      accent1,
+      accent2,
+      accent3,
+      false
+    );
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // MULTI-PIECE CALLIGRAPHY & HAND-LETTERING SET (2, 4, 6, 9, 12 PCS)
+  let cols = 2;
+  let rows = 2;
+  if (pcsVal === "2") {
+    cols = 2;
+    rows = 1;
+  } else if (pcsVal === "4") {
+    cols = 2;
+    rows = 2;
+  } else if (pcsVal === "6") {
+    cols = 3;
+    rows = 2;
+  } else if (pcsVal === "9") {
+    cols = 3;
+    rows = 3;
+  } else if (pcsVal === "12") {
+    cols = 4;
+    rows = 3;
+  }
+
+  const padX = 36;
+  const padY = 36;
+  const gapX = 22;
+  const gapY = 22;
+  const gridW = T - padX * 2;
+  const gridH = T - padY * 2;
+  const cellW = (gridW - gapX * (cols - 1)) / cols;
+  const cellH = (gridH - gapY * (rows - 1)) / rows;
+  const totalCells = cols * rows;
+
+  const fontCycle = ["script_brush", "script_brush", "vintage_serif", "script_brush"];
+
+  for (let idx = 0; idx < totalCells; idx++) {
+    const r = Math.floor(idx / cols);
+    const c = idx % cols;
+    const bx = padX + c * (cellW + gapX);
+    const by = padY + r * (cellH + gapY);
+
+    const pIdx = (spec.phraseIdx + idx + variant) % phrasePack.length;
+    const [l1, l2] =
+      customText && idx === 0
+        ? splitCustomPhraseToTwoLines(customText, phrasePack[pIdx])
+        : phrasePack[pIdx];
+
+    const cellFlourishIdx =
+      flourishParam !== "auto" && !Number.isNaN(parseInt(flourishParam, 10))
+        ? (parseInt(flourishParam, 10) + idx + variant) % 16
+        : (baseFlourishIdx + idx) % 16;
+
+    const cellFont =
+      fontStyle === "script_brush" && idx % 4 === 2 && variant % 2 === 1
+        ? fontCycle[idx % fontCycle.length]
+        : fontStyle;
+
+    drawSingleTypographyPiece(
+      parts,
+      l1,
+      l2,
+      cellFont,
+      cellFlourishIdx,
+      bx,
+      by,
+      cellW,
+      cellH,
+      aspect,
+      true,
+      cardBg,
+      inkCol,
+      accent1,
+      accent2,
+      accent3,
+      showCardFrame
+    );
+  }
+
+  m.raw(parts.join(""));
+}
+
+function registerMasterTypographyCollection() {
+  for (const tm of MASTER_TYPOGRAPHY_MODES) {
+    registerMode({
+      id: tm.id,
+      name: tm.name,
+      cat: "Typography",
+      look: {
+        bg: tm.boardBg,
+        ink: tm.inkCol,
+        cols: [tm.inkCol, tm.accent1, tm.accent2, tm.accent3, "#111111"],
+        style: "flat",
+        sw: 2,
+      },
+      params: [
+        {
+          k: "pcs",
+          l: "TYPOGRAPHY LAYOUT (1 PC HERO OR MULTI-PIECE SET)",
+          def: tm.defPcs,
+          type: "select",
+          opts: [
+            ["1", "1 PC HERO CALLIGRAPHY ARTWORK (FULL ARTBOARD)"],
+            ["2", "2 PCS DUO HAND-LETTERING SET (2×1)"],
+            ["4", "4 PCS CALLIGRAPHY COLLECTION SET (2×2)"],
+            ["6", "6 PCS TYPOGRAPHY STICKER BUNDLE (3×2)"],
+            ["9", "9 PCS MEGA HAND-LETTERING PACK (3×3)"],
+            ["12", "12 PCS ULTIMATE CALLIGRAPHY SHEET (4×3)"],
+          ],
+        },
+        {
+          k: "occasion",
+          l: "OCCASION & TOPIC PHRASE PACK (12 TOPICS)",
+          def: tm.occasion,
+          type: "select",
+          opts: [
+            ["birthday", "🎂 HAPPY BIRTHDAY & CELEBRATION"],
+            ["wedding", "💍 WEDDING, LOVE & ANNIVERSARY"],
+            ["congrats", "🎓 CONGRATULATIONS & GRADUATION"],
+            ["thankyou", "🙏 THANK YOU & GRATITUDE"],
+            ["holiday", "🎄 HAPPY NEW YEAR & CHRISTMAS HOLIDAY"],
+            ["motivational", "🔥 MOTIVATIONAL & POSITIVE VIBES"],
+            ["coffee", "☕ COFFEE SHOP, CAFE & BAKERY"],
+            ["family", "👨‍👩‍👧 MOTHER'S DAY, FATHER'S DAY & FAMILY"],
+            ["summer", "🌴 HELLO SUMMER, BEACH & TRAVEL"],
+            ["sale", "🏷️ MEGA SALE, SPECIAL OFFER & PROMO"],
+            ["islamic", "🌙 EID MUBARAK & RAMADAN GREETINGS"],
+            ["welcome", "✨ WELCOME, HELLO & EVERYDAY QUOTES"],
+          ],
+        },
+        {
+          k: "flourishStyle",
+          l: "CALLIGRAPHY SWASH & FLOURISH ORNAMENT (16 STYLES)",
+          def: tm.defFlourishStyle,
+          type: "select",
+          opts: [
+            ["auto", "✦ AUTO ROTATE ALL 16 FLOURISH STYLES"],
+            ["0", "SAMPLE 1 · BOLD TAPERED BRUSH SWASH TAIL"],
+            ["1", "SAMPLE 2 · VICTORIAN SCROLLS, SUNBURST & INFINITY LOOP"],
+            ["2", "STYLE 3 · ROYAL CROWN & FEATHERED WING SCROLLS"],
+            ["3", "STYLE 4 · BOTANICAL LAUREL SPRIGS & SPARKLE STARS"],
+            ["4", "STYLE 5 · ROMANTIC HEART-LOOP CALLIGRAPHY SWASH"],
+            ["5", "STYLE 6 · VINTAGE APOTHECARY OVAL FILIGREE FRAME"],
+            ["6", "STYLE 7 · RADIANT 9-RAY VINTAGE SUNBURST HALO"],
+            ["7", "STYLE 8 · BOTANICAL OLIVE & EUCALYPTUS LEAF WREATH"],
+            ["8", "STYLE 9 · RETRO 3D VARSITY BASEBALL TAIL SWASH"],
+            ["9", "STYLE 10 · ART-DECO DIAMOND CREST & SPEAR RULES"],
+            ["10", "STYLE 11 · FESTIVE PARTY STREAMERS & SPARKLE DROPS"],
+            ["11", "STYLE 12 · DOUBLE-WAVE QUILL PLUME & TEARDROP TRIO"],
+            ["12", "STYLE 13 · SCALLOPED WAX-SEAL EMBLEM BADGE"],
+            ["13", "STYLE 14 · 4-CORNER BAROQUE ARABESQUE SCROLLS"],
+            ["14", "STYLE 15 · LUXURY EDITORIAL SIGNATURE LOOP"],
+            ["15", "STYLE 16 · BAROQUE SYMMETRICAL LYRE SCROLLWORK"],
+          ],
+        },
+        {
+          k: "fontStyle",
+          l: "HAND-LETTERING CALLIGRAPHY SCRIPT STYLE",
+          def: tm.defFontStyle,
+          type: "select",
+          opts: [
+            ["script_brush", "✒️ CONNECTED BRUSH SCRIPT CALLIGRAPHY (SAMPLE 1 & 2)"],
+            ["vintage_serif", "🏛️ VINTAGE DISPLAY CAPITALS + BRUSH SCRIPT MIX"],
+            ["ribbon_groovy", "🕶️ RETRO 3D EXTRUDED SHADOW BRUSH SCRIPT"],
+            ["luxury_monoline", "✨ FINE MONOLINE SIGNATURE CALLIGRAPHY"],
+          ],
+        },
+        {
+          k: "colorSet",
+          l: "CALLIGRAPHY INK & SHEET COLOUR THEME",
+          def: tm.defColorSet,
+          type: "select",
+          opts: [
+            ["ink_white", "CLASSIC BLACK CALLIGRAPHY INK ON CRISP WHITE (SAMPLE 1 & 2)"],
+            ["ink_accent_white", "BLACK CALLIGRAPHY INK + VIBRANT ACCENT ORNAMENTS"],
+            ["white_black", "CRISP WHITE CALLIGRAPHY ON PURE BLACK BOARD"],
+            ["gold_noir", "24K LUXURY GOLD FOIL ON OBSIDIAN NOIR"],
+            ["vintage_cream", "VINTAGE ESPRESSO & TERRACOTTA ON WARM CREAM"],
+            ["palette", "ACTIVE STUDIO PALETTE & BACKGROUND COLOURS"],
+          ],
+        },
+        {
+          k: "variant",
+          l: "DESIGN VARIATION (EVERY CLICK CHANGES PHRASE & FLOURISH)",
+          min: 0,
+          max: 32,
+          step: 1,
+          def: 0,
+        },
+      ],
+      draw(m: any, q: any) {
+        renderMasterTypographyCollection(m, q, tm);
+      },
+    });
+  }
+}
+
+registerMasterTypographyCollection();
+
 /* ---------------- renderer & smart random ---------------- */
 export function cfgFromP(P: PatternState) {
   return {
@@ -23284,7 +29813,27 @@ export function genParams(
       }
       return;
     }
-    if ((md.cat === "Poster" || md.cat === "Lighting") && p.k === "variant") {
+    if (md.cat === "Calendar" && (p.k === "year" || p.k === "viewMode" || p.k === "month" || p.k === "weekStart")) {
+      q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
+      return;
+    }
+    if (md.cat === "Typography" && (p.k === "pcs" || p.k === "occasion" || p.k === "fontStyle" || p.k === "customLine1" || p.k === "customLine2")) {
+      q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
+      return;
+    }
+    if ((md.cat === "Calendar" || md.cat === "Typography") && p.k === "colorSet") {
+      if (extremeDiverse && p.opts && p.opts.length > 1) {
+        const pickIdx =
+          batchIdx >= 0
+            ? (batchIdx * 5 + Math.floor(Math.random() * p.opts.length)) % p.opts.length
+            : Math.floor(Math.random() * p.opts.length);
+        q[p.k] = p.opts[pickIdx][0];
+      } else {
+        q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
+      }
+      return;
+    }
+    if ((md.cat === "Poster" || md.cat === "Lighting" || md.cat === "Calendar" || md.cat === "Typography") && p.k === "variant") {
       const curVar = Math.max(0, Math.round(+(curParams.variant ?? 0)));
       q.variant = extremeDiverse && batchIdx >= 0 ? ((batchIdx * 11 + curVar) % 48) + 1 : curVar + 1;
       return;
@@ -23354,7 +29903,9 @@ export function genParams(
       !isBgGrainParam(p.k) &&
       !(md.cat === "Brush" && p.k === "cm") &&
       !(md.cat === "Poster" && (p.k === "pcs" || (!extremeDiverse && p.k === "colorSet"))) &&
-      !(md.cat === "Lighting" && (p.k === "bgMode" || p.k === "pcs" || (!extremeDiverse && p.k === "colorSet")))
+      !(md.cat === "Lighting" && (p.k === "bgMode" || p.k === "pcs" || (!extremeDiverse && p.k === "colorSet"))) &&
+      !(md.cat === "Calendar" && (p.k === "year" || p.k === "viewMode" || p.k === "month" || p.k === "weekStart" || (!extremeDiverse && p.k === "colorSet"))) &&
+      !(md.cat === "Typography" && (p.k === "pcs" || p.k === "occasion" || p.k === "fontStyle" || (!extremeDiverse && p.k === "colorSet")))
   );
   const flipCount = extremeDiverse ? sel.length : Math.min(sel.length, 1 + Math.floor(Math.random() * 2));
   for (let t = 0; t < flipCount; t++) {
@@ -23493,6 +30044,8 @@ export function genCand(
   const allowStyleVary =
     md.cat !== "Poster" &&
     md.cat !== "Lighting" &&
+    md.cat !== "Calendar" &&
+    md.cat !== "Typography" &&
     md.cat !== "Brush" &&
     md.cat !== "Plain BG" &&
     md.cat !== "Gradient";
@@ -23529,12 +30082,26 @@ export function genCand(
   } else if (md.cat === "Lighting") {
     bg = "#000000";
     ink = "#ffffff";
+  } else if (md.cat === "Calendar") {
+    bg = P.bg || "#000000";
+    ink = "#ffffff";
+  } else if (md.cat === "Typography") {
+    bg = P.bg || "#ffffff";
+    ink = P.ink || "#111111";
   }
   const bgGrad: BgGradientMode =
-    md.cat === "Poster" || md.cat === "Lighting" ? "solid" : P.bgGrad || "solid";
+    md.cat === "Poster" || md.cat === "Lighting" || md.cat === "Calendar" || md.cat === "Typography"
+      ? "solid"
+      : P.bgGrad || "solid";
   const bgAngle = extremeDiverse && batchIdx >= 0 ? (batchIdx * 47) % 360 : Math.floor(Math.random() * 360);
   const bd: SurfaceTextureMode =
-    md.cat === "Brush" || md.cat === "Poster" || md.cat === "Lighting" ? "none" : P.bd || "none";
+    md.cat === "Brush" ||
+    md.cat === "Poster" ||
+    md.cat === "Lighting" ||
+    md.cat === "Calendar" ||
+    md.cat === "Typography"
+      ? "none"
+      : P.bd || "none";
   const bdc = mixCol(cols[1] || ink, bg, 0.45);
 
   const allowMx =
@@ -23544,7 +30111,9 @@ export function genCand(
     md.cat !== "Gradient" &&
     md.cat !== "Brush" &&
     md.cat !== "Poster" &&
-    md.cat !== "Lighting";
+    md.cat !== "Lighting" &&
+    md.cat !== "Calendar" &&
+    md.cat !== "Typography";
   const mxList: PatternState["mx"][] = extremeDiverse
     ? ["none", "mirror", "rot", "double", "none", "mirror"]
     : ["none", "none", "none", "mirror", "rot", "double"];
@@ -24651,6 +31220,8 @@ export function buildIllustratorSVG(
     modeCat === "Gradient" ||
     modeCat === "Texture" ||
     modeCat === "Poster" ||
+    modeCat === "Calendar" ||
+    modeCat === "Typography" ||
     modeCat === "Brush" ||
     modeCat === "Lighting";
   const isUnifiedOnePiece = isUnifiedCategory || P.svgStructure === "unified" || rep === 1;
@@ -24668,7 +31239,9 @@ export function buildIllustratorSVG(
   const doc = parser.parseFromString(singleTileSVG, "image/svg+xml");
   const svgRoot = doc.documentElement;
 
-  const isPosterMode = Boolean(P.mode && P.mode.startsWith("poster_"));
+  const isPosterMode = Boolean(
+    P.mode && (P.mode.startsWith("poster_") || P.mode.startsWith("cal_") || P.mode.startsWith("typo_"))
+  );
   const isLightingMode = Boolean(P.mode && P.mode.startsWith("light_"));
   const omitSvgBg =
     isLightingMode || (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
@@ -25734,7 +32307,7 @@ export function buildIllustratorEPS10(
   const doc = parser.parseFromString(flatSvg, "image/svg+xml");
   const root = doc.documentElement;
 
-  const isPosterMode = Boolean(P.mode && P.mode.startsWith("poster_"));
+  const isPosterMode = Boolean(P.mode && (P.mode.startsWith("poster_") || P.mode.startsWith("cal_")));
   const isLightingMode = Boolean(P.mode && P.mode.startsWith("light_"));
   const omitBg =
     isLightingMode || (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
@@ -26011,8 +32584,10 @@ export function buildIllustratorEPS10(
   lines.push(`%%PageBoundingBox: 0 0 ${safeOutW} ${safeOutH}`);
   lines.push("%%PageMedia: Plain");
   lines.push("gs");
-  // Clip strictly to Artboard BoundingBox 0 0 safeOutW safeOutH (groups entire design cleanly inside the artboard!)
-  lines.push(`np 0 0 m ${safeOutW} 0 l ${safeOutW} ${safeOutH} l 0 ${safeOutH} l cp clip np`);
+  // NOTE: Do NOT emit an outer `0 0 W H clip` here! buildIllustratorSVG ALREADY geometrically clips
+  // all shapes to `0..safeOutW x 0..safeOutH`. Emitting a PostScript `clip` here creates a top-level
+  // Clipping Path `<Path>` in Adobe Illustrator with Fill = None (red slash [/]) that blocks 1-click
+  // background color changes! Without `clip`, `ARTBOARD_BG_1` is a real 1-click editable rectangle!
 
   const KAPPA = 0.5522847498;
   const psX = (x: number) => f2(x);
@@ -27024,6 +33599,9 @@ export async function createZipArchiveBlob(entries: ZipEntryInput[]): Promise<Bl
 
 export interface MicrostockMetaRow {
   filename: string;
+  title?: string;
+  keywords?: string;
+  modeId?: string;
   modeName: string;
   cat: string;
   seed: number;
@@ -27032,52 +33610,443 @@ export interface MicrostockMetaRow {
   bd: string;
   w: number;
   h: number;
+  pcs?: string;
+  bgHex?: string;
+  c0Hex?: string;
+  style?: string;
+  idx?: number;
+}
+
+const SEO_ADJECTIVES = [
+  "Modern",
+  "Abstract",
+  "Luxury",
+  "Minimalist",
+  "Contemporary",
+  "Creative",
+  "Artistic",
+  "Dynamic",
+  "Geometric",
+  "Futuristic",
+  "Elegant",
+  "Premium",
+  "Vibrant",
+  "Aesthetic",
+  "Stylized",
+  "Decorative",
+  "Trendy",
+  "Harmonic",
+  "Sophisticated",
+  "Bold",
+  "Organic",
+  "Clean",
+  "Refined",
+  "Expressive",
+  "High-Contrast",
+  "Dimensional",
+  "Radiant",
+  "Bespoke",
+  "Architectural",
+  "Iconic",
+];
+
+const SEO_FINISH_TONES = [
+  "Studio",
+  "Editorial",
+  "Gallery",
+  "Exhibition",
+  "Commercial",
+  "Boutique",
+  "Signature",
+  "Artisan",
+  "Graphic",
+  "Visual",
+  "Digital",
+  "Print-Ready",
+  "Professional",
+  "Curated",
+  "Designer",
+  "Ultra-Clean",
+  "High-Impact",
+  "Deluxe",
+  "Atmospheric",
+  "Luminous",
+];
+
+const SEO_COMPOSITION_TERMS = [
+  "Composition",
+  "Collection",
+  "Concept",
+  "Artwork",
+  "Illustration",
+  "Layout",
+  "Arrangement",
+  "Series",
+  "Design",
+  "Visuals",
+  "Template",
+  "Presentation",
+  "Showcase",
+  "Aesthetic",
+  "Motif",
+  "Structure",
+];
+
+function classifyColorFamilyName(hex?: string): { label: string; tags: string[] } {
+  const [r, g, b] = hex2rgb(hex || "#000000");
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  const maxC = Math.max(r, g, b);
+  const minC = Math.min(r, g, b);
+  const sat = maxC === 0 ? 0 : (maxC - minC) / maxC;
+  if (lum < 25) return { label: "Obsidian Black", tags: ["black", "dark", "obsidian", "noir", "monochrome"] };
+  if (lum > 235 && sat < 0.12) return { label: "Pure Ivory White", tags: ["white", "light", "clean", "ivory", "minimal"] };
+  if (sat < 0.15) {
+    return lum < 128
+      ? { label: "Charcoal Slate", tags: ["slate", "charcoal", "gray", "neutral", "graphite"] }
+      : { label: "Silver Mist", tags: ["silver", "platinum", "gray", "neutral", "soft"] };
+  }
+  if (r >= g && r >= b) {
+    if (g > b + 45) return { label: "Golden Amber", tags: ["gold", "amber", "warm", "orange", "yellow", "vibrant"] };
+    if (b > g + 35) return { label: "Crimson Magenta", tags: ["magenta", "pink", "rose", "crimson", "berry"] };
+    return { label: "Coral Terracotta", tags: ["coral", "red", "terracotta", "warm", "crimson"] };
+  }
+  if (g >= r && g >= b) {
+    if (b > r + 25) return { label: "Emerald Teal", tags: ["teal", "emerald", "turquoise", "aqua", "mint"] };
+    return { label: "Botanical Sage", tags: ["green", "sage", "emerald", "forest", "botanical"] };
+  }
+  if (r > g + 25) return { label: "Royal Violet", tags: ["violet", "purple", "indigo", "amethyst", "lavender"] };
+  return { label: "Cobalt Sapphire", tags: ["blue", "cobalt", "sapphire", "navy", "azure"] };
+}
+
+export function buildMicrostockSeoIdentity(row: {
+  modeId?: string;
+  modeName: string;
+  cat: string;
+  seed: number;
+  ratio: string;
+  bgGrad?: string;
+  bd?: string;
+  w: number;
+  h: number;
+  pcs?: string;
+  bgHex?: string;
+  c0Hex?: string;
+  style?: string;
+  idx?: number;
+}): { title: string; fileSlug: string; keywords: string; category: string } {
+  const cleanModeName = row.modeName
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[#/_-]+/g, " ")
+    .replace(/\b(ref|set|pcs|habuhu|exact)\d*\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const cleanCat = (row.cat || "Graphic").trim();
+  const stepSalt = Math.abs((row.seed || 1) + (row.idx ?? 0) * 131);
+  const adj = SEO_ADJECTIVES[stepSalt % SEO_ADJECTIVES.length];
+  const tone = SEO_FINISH_TONES[(Math.floor(stepSalt / 7) + (row.idx ?? 0) * 3) % SEO_FINISH_TONES.length];
+  const comp = SEO_COMPOSITION_TERMS[(Math.floor(stepSalt / 19) + (row.idx ?? 0) * 5) % SEO_COMPOSITION_TERMS.length];
+  const accentInfo = classifyColorFamilyName(row.c0Hex);
+  const bgInfo = classifyColorFamilyName(row.bgHex);
+
+  const isPoster = cleanCat === "Poster" || (row.modeId && row.modeId.startsWith("poster_"));
+  const isCalendar = cleanCat === "Calendar" || (row.modeId && row.modeId.startsWith("cal_"));
+  const isTypography = cleanCat === "Typography" || (row.modeId && row.modeId.startsWith("typo_"));
+  const isBrush = cleanCat === "Brush" || (row.modeId && row.modeId.startsWith("brush_"));
+  const isLighting = cleanCat === "Lighting" || (row.modeId && row.modeId.startsWith("light_"));
+  const isBgCat =
+    cleanCat === "Plain BG" ||
+    cleanCat === "Background" ||
+    cleanCat === "Gradient" ||
+    cleanCat === "Texture";
+
+  const pcsNum = String(row.pcs || "4").replace("grid", " Grid");
+  const serialCode = `${String((row.idx ?? 0) + 1).padStart(3, "0")}-${String(row.seed).slice(-5)}`;
+
+  let subjectPhrase = "";
+  let catCoreKw: string[] = [];
+
+  if (isTypography) {
+    const layoutDesc =
+      row.pcs === "1"
+        ? "Hand-Lettered Calligraphy Brush Script Hero Typography Quote"
+        : row.pcs === "2"
+        ? "Dual 2-Piece Hand-Lettered Calligraphy Brush Script Set"
+        : row.pcs === "4"
+        ? "4-Piece Hand-Lettered Calligraphy & Ornate Swash Collection"
+        : row.pcs === "6"
+        ? "6-Piece Hand-Lettered Calligraphy & Flourish Bundle"
+        : row.pcs === "9"
+        ? "9-Piece Hand-Lettered Calligraphy & Greeting Phrases Pack"
+        : row.pcs === "12"
+        ? "12-Piece Mega Hand-Lettered Calligraphy & Typography Sheet"
+        : "Hand-Lettered Calligraphy Brush Script Typography Design";
+    subjectPhrase = `${adj} ${cleanModeName} ${layoutDesc} with ${accentInfo.label} Ink & Ornate Swashes`;
+    catCoreKw = [
+      "calligraphy",
+      "hand lettering",
+      "brush script",
+      "typography",
+      "happy birthday",
+      "lettering",
+      "hand drawn lettering",
+      "cursive script",
+      "calligraphy flourish",
+      "swash",
+      "ornate scroll",
+      "greeting card",
+      "typography quote",
+      "handwritten",
+      "brush calligraphy",
+      "wedding calligraphy",
+      "congratulations",
+      "thank you",
+      "vintage flourish",
+      "victorian scroll",
+      "lettering set",
+      "editable vector calligraphy",
+    ];
+  } else if (isCalendar) {
+    const viewDesc =
+      row.pcs === "12m"
+        ? "12 Months Full Year Desk & Wall Calendar Template"
+        : row.pcs === "12m_3x4"
+        ? "12 Months Vertical Wall Calendar Poster Sheet"
+        : row.pcs === "1m"
+        ? "Monthly Wall & Desk Calendar Page Planner"
+        : row.pcs === "3m"
+        ? "Quarterly 3 Months Triptych Calendar Organizer"
+        : row.pcs === "4m"
+        ? "Seasonal 4 Months Calendar Grid Layout"
+        : row.pcs === "6m"
+        ? "Half Year 6 Months Calendar Schedule Sheet"
+        : row.pcs === "week"
+        ? "7 Day Weekly Planner & To Do Schedule Template"
+        : "12 Months Annual Wall & Desk Calendar Template";
+    subjectPhrase = `${adj} ${cleanModeName} ${viewDesc} with ${accentInfo.label} Accents`;
+    catCoreKw = [
+      "calendar",
+      "calendar template",
+      "calendar 2026",
+      "calendar 2027",
+      "calendar 2028",
+      "wall calendar",
+      "desk calendar",
+      "12 months calendar",
+      "monthly calendar",
+      "weekly planner",
+      "schedule template",
+      "organizer",
+      "printable calendar",
+      "corporate calendar",
+      "annual calendar",
+      "year planner",
+      "agenda",
+      "date grid",
+      "stationery design",
+      "office calendar",
+      "minimalist calendar",
+      "editable vector calendar",
+    ];
+  } else if (isPoster) {
+    const layoutDesc =
+      row.pcs === "1"
+        ? "Vertical Wall Art Poster"
+        : row.pcs === "2"
+        ? "Dual 2-Piece Wall Art Poster Set"
+        : row.pcs === "3"
+        ? "Triptych 3-Piece Wall Art Poster Collection"
+        : row.pcs === "4grid"
+        ? "Quad 2x2 Gallery Poster Grid"
+        : `${pcsNum} Piece Wall Art Poster Set`;
+    subjectPhrase = `${adj} ${cleanModeName} ${layoutDesc} with ${accentInfo.label} Accents`;
+    catCoreKw = [
+      "poster",
+      "wall art",
+      "poster set",
+      "cover design",
+      "flyer",
+      "brochure",
+      "banner",
+      "minimalist poster",
+      "abstract poster",
+      "gallery wall",
+      "home decor",
+      "interior art",
+      "print template",
+      "book cover",
+      "event poster",
+      "editorial layout",
+      "swiss typography",
+      "modern poster",
+      "card set",
+      "triptych",
+      "vertical poster",
+    ];
+  } else if (isBrush) {
+    subjectPhrase = `${adj} ${cleanModeName} Vector Brush Stroke & ${accentInfo.label} Ink Grunge Stamp`;
+    catCoreKw = [
+      "brush stroke",
+      "paint stroke",
+      "grunge brush",
+      "ink smear",
+      "acrylic stroke",
+      "watercolor brush",
+      "distressed texture",
+      "calligraphy stroke",
+      "dry brush",
+      "paintroller",
+      "hand drawn stroke",
+      "artistic smear",
+      "splash",
+      "swash",
+      "banner elements",
+      "isolated vector",
+      "stamp",
+      "badge",
+    ];
+  } else if (isLighting) {
+    subjectPhrase = `${adj} ${cleanModeName} Optical Lens Flare & ${accentInfo.label} Glowing Light Beam`;
+    catCoreKw = [
+      "lighting effect",
+      "lens flare",
+      "glowing light",
+      "sunburst",
+      "light rays",
+      "sparkle",
+      "neon glow",
+      "spotlight",
+      "laser beam",
+      "bokeh light",
+      "starburst",
+      "flash",
+      "illumination",
+      "shine",
+      "optical flare",
+      "abstract light",
+      "energy wave",
+      "luminous",
+    ];
+  } else if (isBgCat) {
+    subjectPhrase = `${adj} ${cleanModeName} ${accentInfo.label} Abstract Mesh & ${tone} Vector Background`;
+    catCoreKw = [
+      "abstract background",
+      "gradient background",
+      "modern backdrop",
+      "wallpaper",
+      "landing page background",
+      "presentation background",
+      "luxury background",
+      "smooth gradient",
+      "wave background",
+      "geometric backdrop",
+      "banner background",
+      "ui background",
+      "digital art",
+      "minimal background",
+      "surface texture",
+    ];
+  } else {
+    subjectPhrase = `${adj} ${cleanModeName} Seamless Vector Pattern with ${accentInfo.label} & ${bgInfo.label} Motif`;
+    catCoreKw = [
+      "seamless pattern",
+      "repeating pattern",
+      "textile design",
+      "fabric print",
+      "surface pattern",
+      "wallpaper pattern",
+      "wrapping paper",
+      "apparel print",
+      "ornamental pattern",
+      "decorative motif",
+      "vector tile",
+      "geometric pattern",
+      "fashion textile",
+      "home textile",
+      "packaging design",
+      "stationary print",
+    ];
+  }
+
+  // Exact Title (human-readable, 100% unique per design, and matches filename word-for-word!)
+  const title = `${subjectPhrase} ${tone} ${comp} ${serialCode}`
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Exact File Name slug derived directly from Title so Title and File Name are 100% identical!
+  const fileSlug = title
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  const modeWords = cleanModeName
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3);
+
+  const rawKeywords = [
+    ...modeWords,
+    ...catCoreKw,
+    ...accentInfo.tags,
+    ...bgInfo.tags,
+    adj.toLowerCase(),
+    tone.toLowerCase(),
+    comp.toLowerCase(),
+    cleanCat.toLowerCase(),
+    "vector",
+    "illustration",
+    "eps10",
+    "commercial",
+    "high resolution",
+    "editable",
+    "scalable",
+    "graphic resource",
+    "modern design",
+    "creative",
+    "background",
+    "artwork",
+    "trendy",
+    "aesthetic",
+    "print ready",
+    "300 dpi",
+    row.ratio === "1:1" ? "square" : row.ratio === "3:4" || row.ratio === "9:16" ? "vertical" : "horizontal",
+    row.bgGrad && row.bgGrad !== "solid" ? `${row.bgGrad} gradient` : "flat vector",
+    row.bd && row.bd !== "none" ? `${row.bd} texture` : "clean vector",
+  ];
+
+  const seenKw = new Set<string>();
+  const uniqKeywords: string[] = [];
+  for (const kw of rawKeywords) {
+    const clean = kw.replace(/["']/g, "").trim().toLowerCase();
+    if (clean.length >= 3 && !seenKw.has(clean)) {
+      seenKw.add(clean);
+      uniqKeywords.push(clean);
+    }
+    if (uniqKeywords.length >= 45) break;
+  }
+
+  return {
+    title,
+    fileSlug,
+    keywords: uniqKeywords.join(", "),
+    category: "Graphic Resources",
+  };
 }
 
 export function buildMicrostockCSV(rows: MicrostockMetaRow[]): string {
   const header = "Filename,Title,Keywords,Category\n";
   const body = rows
-    .map((r) => {
-      const cleanName = r.modeName.replace(/"/g, "");
-      const cleanCat = r.cat.replace(/"/g, "");
-      const title = `${cleanName} Seamless Textile & Background Pattern - ${r.ratio} Commercial Vector Design #${r.seed}`;
-      const kw = [
-        "pattern",
-        "seamless",
-        "background",
-        "textile",
-        "fabric",
-        "vector",
-        "ornament",
-        "wallpaper",
-        "print",
-        "geometric",
-        "decorative",
-        "abstract",
-        "surface",
-        "design",
-        "graphic",
-        "texture",
-        "gradient",
-        "motif",
-        "backdrop",
-        "wrapping",
-        "apparel",
-        "fashion",
-        "modern",
-        "luxury",
-        "vintage",
-        cleanCat.toLowerCase(),
-        ...cleanName.toLowerCase().split(/\s+/),
-        r.bgGrad !== "solid" ? r.bgGrad : "flat",
-        r.bd !== "none" ? r.bd : "clean",
-      ];
-      const uniqKw = Array.from(new Set(kw.filter((w) => w.length > 2))).slice(0, 35);
-      return `"${r.filename}","${title}","${uniqKw.join(", ")}","Graphic Resources"`;
+    .map((r, i) => {
+      const seo = buildMicrostockSeoIdentity({
+        ...r,
+        idx: r.idx ?? i,
+      });
+      const finalTitle = (r.title || seo.title).replace(/"/g, "");
+      const finalKeywords = (r.keywords || seo.keywords).replace(/"/g, "");
+      return `"${r.filename}","${finalTitle}","${finalKeywords}","${seo.category}"`;
     })
     .join("\n");
   return header + body + "\n";
 }
+
 
 
 

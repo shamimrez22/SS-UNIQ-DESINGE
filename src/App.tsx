@@ -11,6 +11,8 @@ import {
   SurfaceTextureMode,
   RATIO_LIST,
   getMicrostockPosterRatio,
+  getMicrostockCalendarRatio,
+  getMicrostockTypographyRatio,
   getRatioDims,
   getExactTileGrid,
   buildBackgroundAndTextureSVG,
@@ -51,10 +53,13 @@ import {
   computeBlobCrc32AndSize,
   ZipEntryInput,
   buildMicrostockCSV,
+  buildMicrostockSeoIdentity,
   MicrostockMetaRow,
   ILLUSTRATOR_ARTBOARD_PRESETS,
   MASTER_POSTER_MODES,
   MASTER_LIGHTING_MODES,
+  MASTER_CALENDAR_MODES,
+  MASTER_TYPOGRAPHY_MODES,
   traceFabricImageToPatternCode,
 } from "./patternEngine";
 
@@ -234,9 +239,9 @@ export default function App() {
   const sessionSeenRef = useRef<Set<string>>(new Set());
   const busyRef = useRef<boolean>(false);
 
-  // Auto-Batch Generator State
+  // Auto-Batch Generator State (Defaults to "current" so batching generates variations of the exact active canvas design!)
   const [batchModalOpen, setBatchModalOpen] = useState<boolean>(false);
-  const [batchScope, setBatchScope] = useState<"all" | "category" | "favs" | "current">("all");
+  const [batchScope, setBatchScope] = useState<"current" | "category" | "favs" | "all">("current");
   const [batchFormat, setBatchFormat] = useState<"eps_jpg" | "eps" | "jpg" | "svg" | "both" | "all3">("eps_jpg");
   const [batchCount, setBatchCount] = useState<number>(10);
   const [batchBgMode, setBatchBgMode] = useState<"mix" | "gradient" | "texture" | "current">("mix");
@@ -333,7 +338,7 @@ export default function App() {
     ) => {
       const mObj = modes.find((x) => x.id === stateP.mode) || modes[0];
       const effectiveTransp =
-        mObj.cat === "Poster"
+        mObj.cat === "Poster" || mObj.cat === "Calendar" || mObj.cat === "Typography"
           ? false
           : Boolean(transp || mObj.cat === "Brush" || mObj.cat === "Lighting");
       const C = {
@@ -423,7 +428,7 @@ export default function App() {
 
   const curSVG = useMemo(() => {
     const omitBg =
-      curMode.cat === "Poster"
+      curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography"
         ? false
         : Boolean(P.transp || curMode.cat === "Brush" || curMode.cat === "Lighting");
     return buildSVGFor(P, MP, omitBg, P.grid);
@@ -497,12 +502,19 @@ export default function App() {
         const isBrush = m.cat === "Brush";
         const isPoster = m.cat === "Poster";
         const isLighting = m.cat === "Lighting";
+        const isCalendar = m.cat === "Calendar";
+        const isTypography = m.cat === "Typography";
         const prevModeObj = modes.find((x) => x.id === prev.mode);
         const wasBrushOrLight = prevModeObj?.cat === "Brush" || prevModeObj?.cat === "Lighting";
-        const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || (isLighting ? "1" : "4"));
+        const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || (isLighting || isTypography ? "1" : "4"));
+        const defViewMode = String(m.params.find((p) => p.k === "viewMode")?.def || "12m");
         const defBgMode = String(m.params.find((p) => p.k === "bgMode")?.def || "split");
         const targetRatio: CanvasRatio = isPoster
           ? getMicrostockPosterRatio(defPcs)
+          : isCalendar
+          ? getMicrostockCalendarRatio(defViewMode)
+          : isTypography
+          ? getMicrostockTypographyRatio(defPcs)
           : isLighting
           ? defBgMode === "split" || defPcs === "8" || defPcs === "4" || defPcs === "6" || defPcs === "12"
             ? "2:1"
@@ -515,15 +527,19 @@ export default function App() {
           mx: "none",
           bd: isPlainBg ? prev.bd : "none",
           transp:
-            isBrush || isLighting ? true : wasBrushOrLight || isPoster || isPlainBg ? false : prev.transp,
+            isBrush || isLighting
+              ? true
+              : wasBrushOrLight || isPoster || isCalendar || isTypography || isPlainBg
+              ? false
+              : prev.transp,
           svgStructure:
-            isPlainBg || isBrush || isPoster || isLighting
+            isPlainBg || isBrush || isPoster || isLighting || isCalendar || isTypography
               ? "unified"
               : prev.svgStructure || "separable",
-          view: isPlainBg || isBrush || isPoster || isLighting ? 1 : prev.view,
-          ratio: isPoster || isLighting ? targetRatio : prev.ratio,
-          artW: isPoster || isLighting ? d.w : prev.artW,
-          artH: isPoster || isLighting ? d.h : prev.artH,
+          view: isPlainBg || isBrush || isPoster || isLighting || isCalendar || isTypography ? 1 : prev.view,
+          ratio: isPoster || isLighting || isCalendar || isTypography ? targetRatio : prev.ratio,
+          artW: isPoster || isLighting || isCalendar || isTypography ? d.w : prev.artW,
+          artH: isPoster || isLighting || isCalendar || isTypography ? d.h : prev.artH,
         };
         if (m.look) {
           const L = m.look;
@@ -765,6 +781,392 @@ export default function App() {
     [curMode, modes, MP, P.px]
   );
 
+  // Quick 1-Click Calendar & Weekly Planner Studio Handlers (60 Commercial Microstock Calendar Sets)
+  const selectCalendarSet = useCallback(
+    (calModeId: string) => {
+      const m = modes.find((x) => x.id === calModeId);
+      if (!m) return;
+      const prevYear = curMode.cat === "Calendar" ? MP[curMode.id]?.year : undefined;
+      const prevView = curMode.cat === "Calendar" ? MP[curMode.id]?.viewMode : undefined;
+      const prevMonth = curMode.cat === "Calendar" ? MP[curMode.id]?.month : undefined;
+      const prevWeekStart = curMode.cat === "Calendar" ? MP[curMode.id]?.weekStart : undefined;
+      const defView = String(
+        prevView || m.params.find((p) => p.k === "viewMode")?.def || "12m"
+      );
+      const targetRatio = getMicrostockCalendarRatio(defView);
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [m.id]: {
+          ...(prevMP[m.id] || {}),
+          ...(prevYear !== undefined ? { year: prevYear } : {}),
+          viewMode: defView,
+          ...(prevMonth !== undefined ? { month: prevMonth } : {}),
+          ...(prevWeekStart !== undefined ? { weekStart: prevWeekStart } : {}),
+          variant: 0,
+        },
+      }));
+      selectMode(m);
+      setP((prev) => ({
+        ...prev,
+        mode: m.id,
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+        svgStructure: "unified",
+        view: 1,
+        transp: false,
+      }));
+      setCat("Calendar");
+      setRandNote(
+        `CALENDAR STUDIO LOADED · ${m.name.toUpperCase()} · 100% EDITABLE VECTOR DATES & MONTHS`
+      );
+    },
+    [modes, curMode, MP, P.px, selectMode]
+  );
+
+  const switchCalendarViewMode = useCallback(
+    (viewVal: string) => {
+      const targetCal =
+        curMode.cat === "Calendar"
+          ? curMode
+          : modes.find((m) => m.id === "cal_ms_1") || modes.find((m) => m.cat === "Calendar");
+      if (!targetCal) return;
+      const targetRatio = getMicrostockCalendarRatio(viewVal);
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetCal.id]: {
+          ...(prevMP[targetCal.id] || {}),
+          viewMode: viewVal,
+        },
+      }));
+      setP((prev) => ({
+        ...prev,
+        mode: targetCal.id,
+        transp: false,
+        bd: "none",
+        mx: "none",
+        svgStructure: "unified",
+        view: 1,
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+      }));
+      setCat("Calendar");
+    },
+    [curMode, modes, P.px]
+  );
+
+  const switchCalendarYear = useCallback(
+    (yearVal: string) => {
+      const targetCal =
+        curMode.cat === "Calendar"
+          ? curMode
+          : modes.find((m) => m.id === "cal_ms_1") || modes.find((m) => m.cat === "Calendar");
+      if (!targetCal) return;
+      const curView = String(
+        MP[targetCal.id]?.viewMode ||
+          targetCal.params.find((p) => p.k === "viewMode")?.def ||
+          "12m"
+      );
+      const targetRatio = getMicrostockCalendarRatio(curView);
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetCal.id]: {
+          ...(prevMP[targetCal.id] || {}),
+          year: yearVal,
+          viewMode: curView,
+        },
+      }));
+      if (curMode.cat !== "Calendar") {
+        setP((prev) => ({
+          ...prev,
+          mode: targetCal.id,
+          transp: false,
+          bd: "none",
+          mx: "none",
+          svgStructure: "unified",
+          view: 1,
+          ratio: targetRatio,
+          artW: d.w,
+          artH: d.h,
+        }));
+        setCat("Calendar");
+      }
+    },
+    [curMode, modes, MP, P.px]
+  );
+
+  const switchCalendarMonth = useCallback(
+    (monthVal: string) => {
+      const targetCal =
+        curMode.cat === "Calendar"
+          ? curMode
+          : modes.find((m) => m.id === "cal_ms_1") || modes.find((m) => m.cat === "Calendar");
+      if (!targetCal) return;
+      const curView = String(
+        MP[targetCal.id]?.viewMode ||
+          targetCal.params.find((p) => p.k === "viewMode")?.def ||
+          "12m"
+      );
+      // If user clicks a specific month while on 12-Month full year view, keep 12m or if on 1m/3m/4m/6m/week update active month
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetCal.id]: {
+          ...(prevMP[targetCal.id] || {}),
+          month: monthVal,
+        },
+      }));
+      if (curMode.cat !== "Calendar") {
+        const targetRatio = getMicrostockCalendarRatio(curView);
+        const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+        setP((prev) => ({
+          ...prev,
+          mode: targetCal.id,
+          transp: false,
+          bd: "none",
+          mx: "none",
+          svgStructure: "unified",
+          view: 1,
+          ratio: targetRatio,
+          artW: d.w,
+          artH: d.h,
+        }));
+        setCat("Calendar");
+      }
+    },
+    [curMode, modes, MP, P.px]
+  );
+
+  const switchCalendarWeekStart = useCallback(
+    (wsVal: "sun" | "mon" | "sat") => {
+      const targetCal =
+        curMode.cat === "Calendar"
+          ? curMode
+          : modes.find((m) => m.id === "cal_ms_1") || modes.find((m) => m.cat === "Calendar");
+      if (!targetCal) return;
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetCal.id]: {
+          ...(prevMP[targetCal.id] || {}),
+          weekStart: wsVal,
+        },
+      }));
+      if (curMode.cat !== "Calendar") {
+        selectMode(targetCal);
+        setCat("Calendar");
+      }
+    },
+    [curMode, modes, selectMode]
+  );
+
+  // Quick 1-Click Hand-Lettered Calligraphy & Ornate Typography Studio Handlers (60 Commercial Microstock Typography Sets)
+  const selectTypographySet = useCallback(
+    (typoModeId: string) => {
+      const m = modes.find((x) => x.id === typoModeId);
+      if (!m) return;
+      const prevPcs = curMode.cat === "Typography" ? MP[curMode.id]?.pcs : undefined;
+      const prevOccasion = curMode.cat === "Typography" ? MP[curMode.id]?.occasion : undefined;
+      const defPcs = String(
+        prevPcs || m.params.find((p) => p.k === "pcs")?.def || "1"
+      );
+      const targetRatio = getMicrostockTypographyRatio(defPcs);
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [m.id]: {
+          ...(prevMP[m.id] || {}),
+          pcs: defPcs,
+          ...(prevOccasion !== undefined ? { occasion: prevOccasion } : {}),
+          variant: 0,
+        },
+      }));
+      selectMode(m);
+      setP((prev) => ({
+        ...prev,
+        mode: m.id,
+        bg: m.look?.bg || "#ffffff",
+        ink: m.look?.ink || "#111111",
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+        svgStructure: "unified",
+        view: 1,
+        transp: false,
+      }));
+      setCat("Typography");
+      setRandNote(
+        `TYPOGRAPHY & CALLIGRAPHY STUDIO LOADED · ${m.name.toUpperCase()} · 100% PURE VECTOR BRUSH OUTLINES`
+      );
+    },
+    [modes, curMode, MP, P.px, selectMode]
+  );
+
+  const switchTypographyPcs = useCallback(
+    (pcsVal: string) => {
+      const targetTypo =
+        curMode.cat === "Typography"
+          ? curMode
+          : modes.find((m) => m.id === "typo_ms_1") || modes.find((m) => m.cat === "Typography");
+      if (!targetTypo) return;
+      const targetRatio = getMicrostockTypographyRatio(pcsVal);
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetTypo.id]: {
+          ...(prevMP[targetTypo.id] || {}),
+          pcs: pcsVal,
+        },
+      }));
+      setP((prev) => ({
+        ...prev,
+        mode: targetTypo.id,
+        bg: curMode.cat === "Typography" ? prev.bg : targetTypo.look?.bg || "#ffffff",
+        ink: curMode.cat === "Typography" ? prev.ink : targetTypo.look?.ink || "#111111",
+        transp: false,
+        bd: "none",
+        mx: "none",
+        svgStructure: "unified",
+        view: 1,
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+      }));
+      setCat("Typography");
+    },
+    [curMode, modes, P.px]
+  );
+
+  const switchTypographyOccasion = useCallback(
+    (occasionVal: string) => {
+      const targetTypo =
+        curMode.cat === "Typography"
+          ? curMode
+          : modes.find((m) => m.id === "typo_ms_1") || modes.find((m) => m.cat === "Typography");
+      if (!targetTypo) return;
+      const curPcs = String(
+        MP[targetTypo.id]?.pcs ||
+          targetTypo.params.find((p) => p.k === "pcs")?.def ||
+          "1"
+      );
+      const targetRatio = getMicrostockTypographyRatio(curPcs);
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetTypo.id]: {
+          ...(prevMP[targetTypo.id] || {}),
+          occasion: occasionVal,
+          pcs: curPcs,
+          phraseIdx: 0,
+        },
+      }));
+      if (curMode.cat !== "Typography") {
+        setP((prev) => ({
+          ...prev,
+          mode: targetTypo.id,
+          bg: targetTypo.look?.bg || "#ffffff",
+          ink: targetTypo.look?.ink || "#111111",
+          transp: false,
+          bd: "none",
+          mx: "none",
+          svgStructure: "unified",
+          view: 1,
+          ratio: targetRatio,
+          artW: d.w,
+          artH: d.h,
+        }));
+        setCat("Typography");
+      }
+    },
+    [curMode, modes, MP, P.px]
+  );
+
+  const switchTypographyFlourishStyle = useCallback(
+    (flourishVal: string) => {
+      const targetTypo =
+        curMode.cat === "Typography"
+          ? curMode
+          : modes.find((m) => m.id === "typo_ms_1") || modes.find((m) => m.cat === "Typography");
+      if (!targetTypo) return;
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetTypo.id]: {
+          ...(prevMP[targetTypo.id] || {}),
+          flourishStyle: flourishVal,
+        },
+      }));
+      if (curMode.cat !== "Typography") {
+        selectMode(targetTypo);
+        setCat("Typography");
+      }
+    },
+    [curMode, modes, selectMode]
+  );
+
+  const switchTypographyFontStyle = useCallback(
+    (fontVal: string) => {
+      const targetTypo =
+        curMode.cat === "Typography"
+          ? curMode
+          : modes.find((m) => m.id === "typo_ms_1") || modes.find((m) => m.cat === "Typography");
+      if (!targetTypo) return;
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetTypo.id]: {
+          ...(prevMP[targetTypo.id] || {}),
+          fontStyle: fontVal,
+        },
+      }));
+      if (curMode.cat !== "Typography") {
+        selectMode(targetTypo);
+        setCat("Typography");
+      }
+    },
+    [curMode, modes, selectMode]
+  );
+
+  const switchTypographyColorSet = useCallback(
+    (colorSetVal: string) => {
+      const targetTypo =
+        curMode.cat === "Typography"
+          ? curMode
+          : modes.find((m) => m.id === "typo_ms_1") || modes.find((m) => m.cat === "Typography");
+      if (!targetTypo) return;
+      const darkThemes = new Set(["white_black", "gold_black", "neon_cyber"]);
+      const nextBg =
+        colorSetVal === "white_black" || colorSetVal === "gold_black"
+          ? "#09090b"
+          : colorSetVal === "neon_cyber"
+          ? "#070913"
+          : colorSetVal === "vintage_sepia"
+          ? "#f5efe6"
+          : colorSetVal === "emerald_cream"
+          ? "#f8faf5"
+          : "#ffffff";
+      const nextInk = darkThemes.has(colorSetVal) ? "#ffffff" : "#111111";
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetTypo.id]: {
+          ...(prevMP[targetTypo.id] || {}),
+          colorSet: colorSetVal,
+        },
+      }));
+      setP((prev) => ({
+        ...prev,
+        mode: targetTypo.id,
+        bg: nextBg,
+        ink: nextInk,
+        transp: false,
+      }));
+      if (curMode.cat !== "Typography") {
+        setCat("Typography");
+      }
+    },
+    [curMode, modes]
+  );
+
   // Apply palette
   const applyPal = useCallback((idx: number) => {
     const p = PALS[idx];
@@ -823,6 +1225,8 @@ export default function App() {
       const isBrush = targetMode.cat === "Brush";
       const isPoster = targetMode.cat === "Poster";
       const isLighting = targetMode.cat === "Lighting";
+      const isCalendar = targetMode.cat === "Calendar";
+      const isTypography = targetMode.cat === "Typography";
       const isFullBgCat =
         targetMode.cat === "Plain BG" ||
         targetMode.cat === "Background" ||
@@ -834,18 +1238,18 @@ export default function App() {
         const stepIdx = batchIdx >= 0 ? batchIdx + attempt * 13 : attempt * 7;
         const cand = genCand(targetMode, curQ, baseP, withColours, extremeDiverse, stepIdx);
         const structSalt = nextUniqueStructuralSalt();
-        if (isPoster || isLighting) {
+        if (isPoster || isLighting || isCalendar || isTypography) {
           cand.q = {
             ...cand.q,
             variant: ((Math.round(+(curQ.variant ?? 0)) + structSalt + stepIdx) % 48) + 1,
           };
         }
         let bgGrad: BgGradientMode =
-          isBrush || isPoster || isLighting ? "solid" : baseP.bgGrad || "solid";
+          isBrush || isPoster || isLighting || isCalendar || isTypography ? "solid" : baseP.bgGrad || "solid";
         let bd: SurfaceTextureMode =
-          isBrush || isPoster || isLighting ? "none" : baseP.bd || "none";
+          isBrush || isPoster || isLighting || isCalendar || isTypography ? "none" : baseP.bd || "none";
 
-        if (!isBrush && !isPoster && !isLighting) {
+        if (!isBrush && !isPoster && !isLighting && !isCalendar && !isTypography) {
           if (bgPref === "gradient") {
             bgGrad = cand.gradModes[(stepIdx + Math.floor(Math.random() * cand.gradModes.length)) % cand.gradModes.length];
             bd = "none";
@@ -870,21 +1274,40 @@ export default function App() {
         const posterPcsVal = isPoster
           ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "4")
           : "";
-        const posterRatio = isPoster ? getMicrostockPosterRatio(posterPcsVal) : baseP.ratio;
-        const posterDims = isPoster
-          ? getRatioDims(Math.max(5200, +baseP.px || 5200), posterRatio)
-          : null;
+        const calViewVal = isCalendar
+          ? String(cand.q.viewMode || curQ.viewMode || targetMode.params.find((p) => p.k === "viewMode")?.def || "12m")
+          : "";
+        const typoPcsVal = isTypography
+          ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1")
+          : "";
+        const posterRatio = isPoster
+          ? getMicrostockPosterRatio(posterPcsVal)
+          : isCalendar
+          ? getMicrostockCalendarRatio(calViewVal)
+          : isTypography
+          ? getMicrostockTypographyRatio(typoPcsVal)
+          : baseP.ratio;
+        const posterDims =
+          isPoster || isCalendar || isTypography
+            ? getRatioDims(Math.max(5200, +baseP.px || 5200), posterRatio)
+            : null;
 
         const testP: PatternState = {
           ...baseP,
           mode: targetMode.id,
-          mx: isBrush || isPoster || isLighting || isFullBgCat ? "none" : cand.mx,
+          mx: isBrush || isPoster || isLighting || isCalendar || isTypography || isFullBgCat ? "none" : cand.mx,
           seed: cand.seed,
-          bg: isPoster ? "#000000" : cand.bg,
-          bg2: isPoster ? "#000000" : cand.bg2,
+          bg: isPoster
+            ? baseP.bg || "#000000"
+            : isCalendar
+            ? baseP.bg || cand.bg
+            : isTypography
+            ? baseP.bg || targetMode.look?.bg || "#ffffff"
+            : cand.bg,
+          bg2: isPoster ? baseP.bg || "#000000" : cand.bg2,
           bgGrad,
           bgAngle: cand.bgAngle,
-          ink: cand.ink,
+          ink: isTypography ? baseP.ink || targetMode.look?.ink || "#111111" : cand.ink,
           c0: cand.cols[0],
           c1: cand.cols[1],
           c2: cand.cols[2],
@@ -897,19 +1320,26 @@ export default function App() {
           bdc: cand.bdc,
           bdn: cand.bdn,
           bdo: cand.bdo,
-          transp: isBrush || isLighting ? true : isPoster || isFullBgCat ? false : baseP.transp,
+          transp:
+            isBrush || isLighting
+              ? true
+              : isPoster || isCalendar || isTypography || isFullBgCat
+              ? false
+              : baseP.transp,
           svgStructure:
-            isBrush || isPoster || isLighting || isFullBgCat ? "unified" : baseP.svgStructure,
-          view: isBrush || isPoster || isLighting || isFullBgCat ? 1 : baseP.view,
-          ratio: isPoster ? posterRatio : baseP.ratio,
-          artW: isPoster && posterDims ? posterDims.w : baseP.artW,
-          artH: isPoster && posterDims ? posterDims.h : baseP.artH,
+            isBrush || isPoster || isLighting || isCalendar || isTypography || isFullBgCat
+              ? "unified"
+              : baseP.svgStructure,
+          view: isBrush || isPoster || isLighting || isCalendar || isTypography || isFullBgCat ? 1 : baseP.view,
+          ratio: isPoster || isCalendar || isTypography ? posterRatio : baseP.ratio,
+          artW: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.w : baseP.artW,
+          artH: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.h : baseP.artH,
           safeEdge: baseP.safeEdge === true,
         };
         const designHash = computeDesignHash(testP, cand.q);
         const structHash = computeStructuralSimilarityHash(testP, cand.q);
         // Coarse per-batch anti-similarity signature (mode + dominant palette bucket + style + mx + variant + bg)
-        const coarseSig = `${targetMode.id}|${testP.bg.slice(0, 4)}|${testP.c0.slice(0, 4)}|${testP.style}|${testP.mx}|${testP.bgGrad}|${testP.bd}|${cand.q.variant ?? ""}|${cand.q.arch ?? ""}`;
+        const coarseSig = `${targetMode.id}|${testP.bg.slice(0, 4)}|${testP.c0.slice(0, 4)}|${testP.style}|${testP.mx}|${testP.bgGrad}|${testP.bd}|${cand.q.variant ?? ""}|${cand.q.arch ?? ""}|${cand.q.viewMode ?? ""}|${cand.q.year ?? ""}|${cand.q.occasion ?? ""}|${cand.q.flourishStyle ?? ""}|${cand.q.phraseIdx ?? ""}`;
         return { cand, testP, designHash, structHash, coarseSig };
       };
 
@@ -969,10 +1399,12 @@ export default function App() {
     []
   );
 
-  // Non-repeating interleaved brush, poster & lighting decks so every click on UNIQUE GENERATE produces a brand-new structural design
+  // Non-repeating interleaved brush, poster, lighting & calendar decks so every click on UNIQUE GENERATE produces a brand-new structural design
   const brushDeckRef = useRef<string[]>([]);
   const posterDeckRef = useRef<string[]>([]);
   const lightingDeckRef = useRef<string[]>([]);
+  const calendarDeckRef = useRef<string[]>([]);
+  const typographyDeckRef = useRef<string[]>([]);
 
   // Instant Hard-Locked Procedural Randomize (Every single test preview is permanently burned in localStorage so it NEVER generates again!)
   const smartRandom = useCallback(
@@ -1044,6 +1476,68 @@ export default function App() {
           const found = allLights.find((m) => m.id === nextLightId);
           if (found) targetMode = found;
         }
+      } else if (!keepCurrentMode && (curMode.cat === "Calendar" || cat === "Calendar")) {
+        const allCals = modes.filter((m) => m.cat === "Calendar");
+        if (allCals.length > 1) {
+          if (calendarDeckRef.current.length === 0) {
+            const ids = allCals.map((m) => m.id);
+            const interleaved: string[] = [];
+            const step = 7;
+            const visited = new Set<string>();
+            let cursor = Math.floor(Math.random() * ids.length);
+            for (let i = 0; i < ids.length; i++) {
+              while (visited.has(ids[cursor])) {
+                cursor = (cursor + 1) % ids.length;
+              }
+              interleaved.push(ids[cursor]);
+              visited.add(ids[cursor]);
+              cursor = (cursor + step) % ids.length;
+            }
+            if (interleaved[0] === curMode.id && interleaved.length > 1) {
+              interleaved.push(interleaved.shift()!);
+            }
+            calendarDeckRef.current = interleaved;
+          }
+          let nextCalId = calendarDeckRef.current.shift()!;
+          if (nextCalId === curMode.id && calendarDeckRef.current.length > 0) {
+            const altId = calendarDeckRef.current.shift()!;
+            calendarDeckRef.current.push(nextCalId);
+            nextCalId = altId;
+          }
+          const found = allCals.find((m) => m.id === nextCalId);
+          if (found) targetMode = found;
+        }
+      } else if (!keepCurrentMode && (curMode.cat === "Typography" || cat === "Typography")) {
+        const allTypos = modes.filter((m) => m.cat === "Typography");
+        if (allTypos.length > 1) {
+          if (typographyDeckRef.current.length === 0) {
+            const ids = allTypos.map((m) => m.id);
+            const interleaved: string[] = [];
+            const step = 7;
+            const visited = new Set<string>();
+            let cursor = Math.floor(Math.random() * ids.length);
+            for (let i = 0; i < ids.length; i++) {
+              while (visited.has(ids[cursor])) {
+                cursor = (cursor + 1) % ids.length;
+              }
+              interleaved.push(ids[cursor]);
+              visited.add(ids[cursor]);
+              cursor = (cursor + step) % ids.length;
+            }
+            if (interleaved[0] === curMode.id && interleaved.length > 1) {
+              interleaved.push(interleaved.shift()!);
+            }
+            typographyDeckRef.current = interleaved;
+          }
+          let nextTypoId = typographyDeckRef.current.shift()!;
+          if (nextTypoId === curMode.id && typographyDeckRef.current.length > 0) {
+            const altId = typographyDeckRef.current.shift()!;
+            typographyDeckRef.current.push(nextTypoId);
+            nextTypoId = altId;
+          }
+          const found = allTypos.find((m) => m.id === nextTypoId);
+          if (found) targetMode = found;
+        }
       }
       const prevPosterPcs =
         curMode.cat === "Poster"
@@ -1073,6 +1567,46 @@ export default function App() {
           : undefined;
       const prevLightVar =
         targetMode.cat === "Lighting" ? Math.round(+(MP[targetMode.id]?.variant ?? 0)) : 0;
+      const prevCalYear =
+        curMode.cat === "Calendar"
+          ? MP[curMode.id]?.year
+          : targetMode.cat === "Calendar"
+          ? MP[targetMode.id]?.year
+          : undefined;
+      const prevCalViewMode =
+        curMode.cat === "Calendar"
+          ? MP[curMode.id]?.viewMode
+          : targetMode.cat === "Calendar"
+          ? MP[targetMode.id]?.viewMode
+          : undefined;
+      const prevCalMonth =
+        curMode.cat === "Calendar"
+          ? MP[curMode.id]?.month
+          : targetMode.cat === "Calendar"
+          ? MP[targetMode.id]?.month
+          : undefined;
+      const prevCalWeekStart =
+        curMode.cat === "Calendar"
+          ? MP[curMode.id]?.weekStart
+          : targetMode.cat === "Calendar"
+          ? MP[targetMode.id]?.weekStart
+          : undefined;
+      const prevCalVar =
+        targetMode.cat === "Calendar" ? Math.round(+(MP[targetMode.id]?.variant ?? 0)) : 0;
+      const prevTypoPcs =
+        curMode.cat === "Typography"
+          ? MP[curMode.id]?.pcs
+          : targetMode.cat === "Typography"
+          ? MP[targetMode.id]?.pcs
+          : undefined;
+      const prevTypoOccasion =
+        curMode.cat === "Typography"
+          ? MP[curMode.id]?.occasion
+          : targetMode.cat === "Typography"
+          ? MP[targetMode.id]?.occasion
+          : undefined;
+      const prevTypoVar =
+        targetMode.cat === "Typography" ? Math.round(+(MP[targetMode.id]?.variant ?? 0)) : 0;
 
       const res = generateUniqueCandidateForMode(targetMode, P, MP, withColours, bgPref);
       if (res) {
@@ -1105,6 +1639,83 @@ export default function App() {
           res.testP.artW = posterDims.w;
           res.testP.artH = posterDims.h;
           // Burn the final poster configuration hash too
+          const finalH = computeDesignHash(res.testP, res.testMP[targetMode.id]);
+          const finalSt = computeStructuralSimilarityHash(res.testP, res.testMP[targetMode.id]);
+          setUniqCount(registerDesignHash(finalH, finalSt));
+        } else if (targetMode.cat === "Calendar") {
+          const salt = nextUniqueStructuralSalt();
+          const nextVar = ((prevCalVar + 1 + salt) % 240) + 1;
+          const effYear = String(
+            prevCalYear || targetMode.params.find((p) => p.k === "year")?.def || "2026"
+          );
+          const effViewMode = String(
+            prevCalViewMode || targetMode.params.find((p) => p.k === "viewMode")?.def || "12m"
+          );
+          const effMonth = String(
+            prevCalMonth || targetMode.params.find((p) => p.k === "month")?.def || "1"
+          );
+          const effWeekStart = String(
+            prevCalWeekStart || targetMode.params.find((p) => p.k === "weekStart")?.def || "sun"
+          );
+          const calThemes = [
+            "ref",
+            "swiss",
+            "gold",
+            "ocean",
+            "emerald",
+            "terracotta",
+            "pastel",
+            "cyber",
+            "royal",
+            "mono",
+          ];
+          const nextColorSet =
+            calThemes[(nextVar + salt + (res.cand.seed % 97)) % calThemes.length];
+          const calRatio: CanvasRatio = getMicrostockCalendarRatio(effViewMode);
+          const calDims = getRatioDims(Math.max(5200, +res.testP.px || 5200), calRatio);
+          res.testMP[targetMode.id] = {
+            ...res.testMP[targetMode.id],
+            variant: nextVar,
+            year: effYear,
+            viewMode: effViewMode,
+            month: effMonth,
+            weekStart: effWeekStart,
+            colorSet: nextColorSet,
+          };
+          res.testP.bg = targetMode.look?.bg || P.bg || "#000000";
+          res.testP.transp = false;
+          res.testP.ratio = calRatio;
+          res.testP.artW = calDims.w;
+          res.testP.artH = calDims.h;
+          const finalH = computeDesignHash(res.testP, res.testMP[targetMode.id]);
+          const finalSt = computeStructuralSimilarityHash(res.testP, res.testMP[targetMode.id]);
+          setUniqCount(registerDesignHash(finalH, finalSt));
+        } else if (targetMode.cat === "Typography") {
+          const salt = nextUniqueStructuralSalt();
+          const nextVar = ((prevTypoVar + 1 + salt) % 240) + 1;
+          const effPcs = String(
+            prevTypoPcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1"
+          );
+          const effOccasion = String(
+            keepCurrentMode && prevTypoOccasion
+              ? prevTypoOccasion
+              : targetMode.params.find((p) => p.k === "occasion")?.def || "birthday"
+          );
+          const typoRatio: CanvasRatio = getMicrostockTypographyRatio(effPcs);
+          const typoDims = getRatioDims(Math.max(5200, +res.testP.px || 5200), typoRatio);
+          res.testMP[targetMode.id] = {
+            ...res.testMP[targetMode.id],
+            variant: nextVar,
+            pcs: effPcs,
+            occasion: effOccasion,
+            phraseIdx: (nextVar + salt) % 12,
+          };
+          res.testP.bg = targetMode.look?.bg || "#ffffff";
+          res.testP.ink = targetMode.look?.ink || "#111111";
+          res.testP.transp = false;
+          res.testP.ratio = typoRatio;
+          res.testP.artW = typoDims.w;
+          res.testP.artH = typoDims.h;
           const finalH = computeDesignHash(res.testP, res.testMP[targetMode.id]);
           const finalSt = computeStructuralSimilarityHash(res.testP, res.testMP[targetMode.id]);
           setUniqCount(registerDesignHash(finalH, finalSt));
@@ -1192,6 +1803,8 @@ export default function App() {
       curMode.cat === "Texture" ||
       curMode.cat === "Brush" ||
       curMode.cat === "Poster" ||
+      curMode.cat === "Calendar" ||
+      curMode.cat === "Typography" ||
       curMode.cat === "Lighting"
     )
       return 1;
@@ -1251,7 +1864,7 @@ export default function App() {
             )
           : "";
       const isBrushOrTransp =
-        mObj.cat === "Poster"
+        mObj.cat === "Poster" || mObj.cat === "Calendar" || mObj.cat === "Typography"
           ? false
           : mObj.cat === "Lighting"
           ? lightBgMode !== "black"
@@ -1268,6 +1881,8 @@ export default function App() {
         mObj.cat === "Texture" ||
         mObj.cat === "Brush" ||
         mObj.cat === "Poster" ||
+        mObj.cat === "Calendar" ||
+        mObj.cat === "Typography" ||
         mObj.cat === "Lighting";
       const rep = isUnified
         ? 1
@@ -1391,21 +2006,32 @@ export default function App() {
   // Adobe Illustrator Editable Vector SVG Export (Locks design into Zero-Duplicate Ledger on download!)
   const exportSVG = useCallback(() => {
     const rep = expRep();
-    const isPoster = curMode.cat === "Poster";
+    const isPoster = curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography";
     const isLighting = curMode.cat === "Lighting";
     const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
     const exportP = isPoster
-      ? { ...P, bg: P.bg || "#000000", transp: false }
+      ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
       : { ...P, transp: omitBg };
     const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
     const vectorSvg = buildIllustratorSVG(cleanTileSvg, exportP, rep, outDims.w, outDims.h);
     const blob = new Blob([vectorSvg], { type: "image/svg+xml;charset=utf-8" });
-    const ratioTag = (P.ratio || "1:1").replace(":", "x");
-    const structTag =
-      P.svgStructure === "unified" || curMode.cat === "Brush" || isPoster || isLighting
-        ? "unified-plain"
-        : "separable";
-    const fname = `illustrator-${structTag}-${outDims.w}x${outDims.h}-${P.mode}-${ratioTag}-${P.seed}.svg`;
+    const seoMeta = buildMicrostockSeoIdentity({
+      modeId: curMode.id,
+      modeName: curMode.name,
+      cat: curMode.cat,
+      seed: P.seed,
+      ratio: P.ratio || "1:1",
+      bgGrad: P.bgGrad,
+      bd: P.bd,
+      w: outDims.w,
+      h: outDims.h,
+      pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+      bgHex: exportP.bg,
+      c0Hex: exportP.c0,
+      style: exportP.style,
+      idx: 0,
+    });
+    const fname = `${seoMeta.title}.svg`;
     downloadBlob(blob, fname);
     inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
     const h = computeDesignHash(P, MP[P.mode] || {});
@@ -1427,11 +2053,11 @@ export default function App() {
   // Direct Adobe Illustrator EPS 10 (.eps) Vector Export for Instant Microstock Upload (Adobe Stock, Shutterstock, Freepik, Vecteezy)
   const exportEPS10 = useCallback(() => {
     const rep = expRep();
-    const isPoster = curMode.cat === "Poster";
+    const isPoster = curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography";
     const isLighting = curMode.cat === "Lighting";
     const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
     const exportP = isPoster
-      ? { ...P, bg: P.bg || "#000000", transp: false }
+      ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
       : { ...P, transp: omitBg };
     const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
     const eps10Content = buildIllustratorEPS10(
@@ -1442,12 +2068,23 @@ export default function App() {
       outDims.h
     );
     const blob = new Blob([eps10Content], { type: "application/postscript;charset=utf-8" });
-    const ratioTag = (P.ratio || "1:1").replace(":", "x");
-    const structTag =
-      P.svgStructure === "unified" || curMode.cat === "Brush" || isPoster || isLighting
-        ? "unified-plain"
-        : "separable";
-    const fname = `microstock-eps10-${structTag}-${outDims.w}x${outDims.h}-${P.mode}-${ratioTag}-${P.seed}.eps`;
+    const seoMeta = buildMicrostockSeoIdentity({
+      modeId: curMode.id,
+      modeName: curMode.name,
+      cat: curMode.cat,
+      seed: P.seed,
+      ratio: P.ratio || "1:1",
+      bgGrad: P.bgGrad,
+      bd: P.bd,
+      w: outDims.w,
+      h: outDims.h,
+      pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+      bgHex: exportP.bg,
+      c0Hex: exportP.c0,
+      style: exportP.style,
+      idx: 0,
+    });
+    const fname = `${seoMeta.title}.eps`;
     downloadBlob(blob, fname);
     inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
     const h = computeDesignHash(P, MP[P.mode] || {});
@@ -1479,10 +2116,23 @@ export default function App() {
       try {
         const { blob: finalBlob, w: W, h: H } = await renderHighResRasterBlob(P, MP, fmt);
         const mb = (finalBlob.size / (1024 * 1024)).toFixed(2);
-        const ratioTag = (P.ratio || "1:1").replace(":", "x");
-        const fname = `microstock-pattern-${P.mode}-${ratioTag}-${W}x${H}px-${P.seed}.${
-          fmt === "jpeg" ? "jpg" : "png"
-        }`;
+        const seoMeta = buildMicrostockSeoIdentity({
+          modeId: curMode.id,
+          modeName: curMode.name,
+          cat: curMode.cat,
+          seed: P.seed,
+          ratio: P.ratio || "1:1",
+          bgGrad: P.bgGrad,
+          bd: P.bd,
+          w: W,
+          h: H,
+          pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+          bgHex: P.bg,
+          c0Hex: P.c0,
+          style: P.style,
+          idx: 0,
+        });
+        const fname = `${seoMeta.title}.${fmt === "jpeg" ? "jpg" : "png"}`;
         downloadBlob(finalBlob, fname);
         const verified = await inspectMicrostockFileBinary(finalBlob, fname);
         setLastVerifiedFile(verified);
@@ -1498,7 +2148,7 @@ export default function App() {
         busyRef.current = false;
       }
     },
-    [P, MP, renderHighResRasterBlob]
+    [P, MP, curMode, renderHighResRasterBlob]
   );
 
   // 1-Click Microstock ZIP Pack (JPG + EPS 10 inside .ZIP so ChatGPT / Freepik NEVER downscales the JPG to 2048x1152!)
@@ -1509,24 +2159,73 @@ export default function App() {
     try {
       const { blob: jpgBlob, w: W, h: H } = await renderHighResRasterBlob(P, MP, "jpeg");
       const rep = expRep();
-      const isPoster = curMode.cat === "Poster";
+      const isPoster = curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography";
       const isLighting = curMode.cat === "Lighting";
       const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
       const exportP = isPoster
-        ? { ...P, bg: P.bg || "#000000", transp: false }
+        ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
         : { ...P, transp: omitBg };
       const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
       const eps10Content = buildIllustratorEPS10(cleanTileSvg, exportP, rep, W, H);
       const epsBlob = new Blob([eps10Content], { type: "application/postscript;charset=utf-8" });
-      const ratioTag = (P.ratio || "1:1").replace(":", "x");
-      const baseName = `microstock-${P.mode}-${ratioTag}-${W}x${H}px-${P.seed}`;
+      const seoMeta = buildMicrostockSeoIdentity({
+        modeId: curMode.id,
+        modeName: curMode.name,
+        cat: curMode.cat,
+        seed: P.seed,
+        ratio: P.ratio || "1:1",
+        bgGrad: P.bgGrad,
+        bd: P.bd,
+        w: W,
+        h: H,
+        pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+        bgHex: exportP.bg,
+        c0Hex: exportP.c0,
+        style: exportP.style,
+        idx: 0,
+      });
+      const baseName = seoMeta.title;
       const jpgName = `${baseName}.jpg`;
       const epsName = `${baseName}.eps`;
+      const csvSingle = buildMicrostockCSV([
+        {
+          filename: epsName,
+          title: seoMeta.title,
+          keywords: seoMeta.keywords,
+          modeId: curMode.id,
+          modeName: curMode.name,
+          cat: curMode.cat,
+          seed: P.seed,
+          ratio: P.ratio || "1:1",
+          bgGrad: P.bgGrad,
+          bd: P.bd,
+          w: W,
+          h: H,
+          idx: 0,
+        },
+        {
+          filename: jpgName,
+          title: seoMeta.title,
+          keywords: seoMeta.keywords,
+          modeId: curMode.id,
+          modeName: curMode.name,
+          cat: curMode.cat,
+          seed: P.seed,
+          ratio: P.ratio || "1:1",
+          bgGrad: P.bgGrad,
+          bd: P.bd,
+          w: W,
+          h: H,
+          idx: 0,
+        },
+      ]);
+      const csvBlob = new Blob([csvSingle], { type: "text/csv;charset=utf-8" });
       const zipBlob = await createZipArchiveBlob([
         { path: jpgName, blob: jpgBlob },
         { path: epsName, blob: epsBlob },
+        { path: "MICROSTOCK_UPLOAD_METADATA.csv", blob: csvBlob },
       ]);
-      downloadBlob(zipBlob, `${baseName}-MICROSTOCK-PACK.zip`);
+      downloadBlob(zipBlob, `${baseName}.zip`);
       const verified = await inspectMicrostockFileBinary(jpgBlob, jpgName);
       setLastVerifiedFile(verified);
       const h = computeDesignHash(P, MP[P.mode] || {});
@@ -1582,17 +2281,16 @@ export default function App() {
       }
 
       try {
+        // Strictly respect batchScope: when "current" (default), ONLY generate variations of the active canvas design (curMode)!
         const rawPool: PatternMode[] =
-          batchScope === "all"
-            ? modes.slice()
+          batchScope === "current"
+            ? [curMode]
             : batchScope === "category"
             ? modes.filter((m) => m.cat === curMode.cat)
             : batchScope === "favs" && favs.size > 0
             ? modes.filter((m) => favs.has(m.id))
-            : curMode.cat === "Brush"
-            ? modes.filter((m) => m.cat === "Brush")
-            : curMode.cat === "Lighting"
-            ? modes.filter((m) => m.cat === "Lighting")
+            : batchScope === "all"
+            ? modes.slice()
             : [curMode];
 
         // Build a Category-Interleaved, Fisher-Yates Shuffled sequence so NO two consecutive designs share a category or style!
@@ -1662,12 +2360,18 @@ export default function App() {
 
         const zipEntries: ZipEntryInput[] = [];
         const csvRows: MicrostockMetaRow[] = [];
-        // Keep clean immutable anchor state so Lighting/Brush/Poster flags NEVER leak into regular Pattern modes!
+        // Keep clean immutable anchor state so Lighting/Brush/Poster/Calendar flags NEVER leak into regular Pattern modes!
         const anchorP: PatternState = { ...P, safeEdge: false };
         const userLightBgMode = curMode.cat === "Lighting" ? MP[curMode.id]?.bgMode : undefined;
         const userLightPcs = curMode.cat === "Lighting" ? MP[curMode.id]?.pcs : undefined;
         const userPosterPcs = curMode.cat === "Poster" ? MP[curMode.id]?.pcs : undefined;
         const userPosterShowText = curMode.cat === "Poster" ? MP[curMode.id]?.showText : undefined;
+        const userCalYear = curMode.cat === "Calendar" ? MP[curMode.id]?.year : undefined;
+        const userCalViewMode = curMode.cat === "Calendar" ? MP[curMode.id]?.viewMode : undefined;
+        const userCalMonth = curMode.cat === "Calendar" ? MP[curMode.id]?.month : undefined;
+        const userCalWeekStart = curMode.cat === "Calendar" ? MP[curMode.id]?.weekStart : undefined;
+        const userTypoPcs = curMode.cat === "Typography" ? MP[curMode.id]?.pcs : undefined;
+        const userTypoOccasion = curMode.cat === "Typography" ? MP[curMode.id]?.occasion : undefined;
 
         let workingMP = { ...MP };
         let lastBatchP: PatternState = anchorP;
@@ -1772,7 +2476,7 @@ export default function App() {
           // Yield a real animation frame so browser UI stays 60fps responsive and Cancel button works instantaneously
           await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
 
-          // Preserve user's explicit Lighting bgMode/pcs or Poster pcs/showText if batching inside that category
+          // Preserve user's explicit Lighting bgMode/pcs, Poster pcs/showText, Calendar year/viewMode/month/weekStart, or Typography pcs/occasion if batching inside that category
           if (targetMode.cat === "Lighting" && (userLightBgMode !== undefined || userLightPcs !== undefined)) {
             workingMP = {
               ...workingMP,
@@ -1789,6 +2493,26 @@ export default function App() {
                 ...(workingMP[targetMode.id] || {}),
                 ...(userPosterPcs !== undefined ? { pcs: userPosterPcs } : {}),
                 ...(userPosterShowText !== undefined ? { showText: userPosterShowText } : {}),
+              },
+            };
+          } else if (targetMode.cat === "Calendar") {
+            workingMP = {
+              ...workingMP,
+              [targetMode.id]: {
+                ...(workingMP[targetMode.id] || {}),
+                ...(userCalYear !== undefined ? { year: userCalYear } : {}),
+                ...(userCalViewMode !== undefined ? { viewMode: userCalViewMode } : {}),
+                ...(userCalMonth !== undefined ? { month: userCalMonth } : {}),
+                ...(userCalWeekStart !== undefined ? { weekStart: userCalWeekStart } : {}),
+              },
+            };
+          } else if (targetMode.cat === "Typography") {
+            workingMP = {
+              ...workingMP,
+              [targetMode.id]: {
+                ...(workingMP[targetMode.id] || {}),
+                ...(userTypoPcs !== undefined ? { pcs: userTypoPcs } : {}),
+                ...(userTypoOccasion !== undefined ? { occasion: userTypoOccasion } : {}),
               },
             };
           }
@@ -1815,10 +2539,11 @@ export default function App() {
             setUniqCount(lastLockedTotal);
           }
 
-          const numStr = String(idx + 1).padStart(3, "0");
-          const ratioTag = (workingP.ratio || "1:1").replace(":", "x");
           const isBrush = targetMode.cat === "Brush";
-          const isPoster = targetMode.cat === "Poster";
+          const isPoster =
+            targetMode.cat === "Poster" ||
+            targetMode.cat === "Calendar" ||
+            targetMode.cat === "Typography";
           const isLighting = targetMode.cat === "Lighting";
           const isFullBgCat =
             targetMode.cat === "Plain BG" ||
@@ -1846,6 +2571,27 @@ export default function App() {
             workingP.artH
           );
 
+          // Build 100% unique SEO Title & Keywords for this design, and make the File Name identical to the Title!
+          const curQForMeta = workingMP[targetMode.id] || {};
+          const seoMeta = buildMicrostockSeoIdentity({
+            modeId: targetMode.id,
+            modeName: targetMode.name,
+            cat: targetMode.cat,
+            seed: workingP.seed,
+            ratio: workingP.ratio || "1:1",
+            bgGrad: workingP.bgGrad,
+            bd: workingP.bd,
+            w: dims.w,
+            h: dims.h,
+            pcs: String(curQForMeta.viewMode || curQForMeta.pcs || ""),
+            bgHex: workingP.bg,
+            c0Hex: workingP.c0,
+            style: workingP.style,
+            idx,
+          });
+          // Identical Title and File Name (file name base matches title exactly)
+          const identicalBaseName = seoMeta.title;
+
           const cleanTileForVec =
             needSvg || needEps ? buildSVGFor(workingP, workingMP, omitBg, false) : "";
           // Build flattened Illustrator SVG ONCE and share it with both SVG and EPS10 outputs!
@@ -1870,7 +2616,7 @@ export default function App() {
               sharedFlatSvg
             );
             const epsBlob = new Blob([fullEps], { type: "application/postscript;charset=utf-8" });
-            const epsFilename = `${numStr}_${targetMode.id}_${ratioTag}_${dims.w}x${dims.h}_${workingP.seed}.eps`;
+            const epsFilename = `${identicalBaseName}.eps`;
 
             if (dirHandle) {
               const fh = await dirHandle.getFileHandle(epsFilename, { create: true });
@@ -1889,6 +2635,9 @@ export default function App() {
 
             csvRows.push({
               filename: epsFilename,
+              title: seoMeta.title,
+              keywords: seoMeta.keywords,
+              modeId: targetMode.id,
               modeName: targetMode.name,
               cat: targetMode.cat,
               seed: workingP.seed,
@@ -1897,12 +2646,17 @@ export default function App() {
               bd: workingP.bd,
               w: dims.w,
               h: dims.h,
+              pcs: String(curQForMeta.pcs || ""),
+              bgHex: workingP.bg,
+              c0Hex: workingP.c0,
+              style: workingP.style,
+              idx,
             });
           }
 
           if (needSvg) {
             const svgBlob = new Blob([sharedFlatSvg], { type: "image/svg+xml;charset=utf-8" });
-            const svgFilename = `${numStr}_${targetMode.id}_${ratioTag}_${dims.w}x${dims.h}_${workingP.seed}.svg`;
+            const svgFilename = `${identicalBaseName}.svg`;
 
             if (dirHandle) {
               const fh = await dirHandle.getFileHandle(svgFilename, { create: true });
@@ -1921,6 +2675,9 @@ export default function App() {
 
             csvRows.push({
               filename: svgFilename,
+              title: seoMeta.title,
+              keywords: seoMeta.keywords,
+              modeId: targetMode.id,
               modeName: targetMode.name,
               cat: targetMode.cat,
               seed: workingP.seed,
@@ -1929,6 +2686,11 @@ export default function App() {
               bd: workingP.bd,
               w: dims.w,
               h: dims.h,
+              pcs: String(curQForMeta.pcs || ""),
+              bgHex: workingP.bg,
+              c0Hex: workingP.c0,
+              style: workingP.style,
+              idx,
             });
           }
 
@@ -1939,7 +2701,7 @@ export default function App() {
               "jpeg",
               true
             );
-            const jpgFilename = `${numStr}_${targetMode.id}_${ratioTag}_${jW}x${jH}_${workingP.seed}.jpg`;
+            const jpgFilename = `${identicalBaseName}.jpg`;
 
             if (dirHandle) {
               const fh = await dirHandle.getFileHandle(jpgFilename, { create: true });
@@ -1958,6 +2720,9 @@ export default function App() {
 
             csvRows.push({
               filename: jpgFilename,
+              title: seoMeta.title,
+              keywords: seoMeta.keywords,
+              modeId: targetMode.id,
               modeName: targetMode.name,
               cat: targetMode.cat,
               seed: workingP.seed,
@@ -1966,6 +2731,11 @@ export default function App() {
               bd: workingP.bd,
               w: jW,
               h: jH,
+              pcs: String(curQForMeta.pcs || ""),
+              bgHex: workingP.bg,
+              c0Hex: workingP.c0,
+              style: workingP.style,
+              idx,
             });
           }
 
@@ -2133,10 +2903,10 @@ export default function App() {
     });
   };
 
-  // Categories (Prioritize Lighting, Poster & Brush at the front of the category bar)
+  // Categories (Prioritize Typography, Calendar, Lighting, Poster & Brush at the front of the category bar)
   const categories = useMemo(() => {
     const rawCats = [...new Set(modes.map((m) => m.cat))];
-    const priority = ["Lighting", "Poster", "Brush", "Fabric", "Plain BG", "Background"];
+    const priority = ["Typography", "Calendar", "Poster", "Lighting", "Brush", "Fabric", "Plain BG", "Background"];
     const first = priority.filter((c) => rawCats.includes(c));
     const rest = rawCats.filter((c) => !priority.includes(c));
     return ["All", "★ Favourites", ...first, ...rest];
@@ -2172,7 +2942,7 @@ export default function App() {
     const wPx = Math.round(boxW);
     const hPx = Math.round(boxH);
     const isBrush = curMode.cat === "Brush";
-    const isPoster = curMode.cat === "Poster";
+    const isPoster = curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography";
     const isLighting = curMode.cat === "Lighting";
     const lightBgMode = isLighting
       ? String(
@@ -2460,7 +3230,10 @@ export default function App() {
             onClick={() => {
               const nextS = nextUniqueSeed();
               const nextVar =
-                curMode.cat === "Poster" || curMode.cat === "Lighting"
+                curMode.cat === "Poster" ||
+                curMode.cat === "Lighting" ||
+                curMode.cat === "Calendar" ||
+                curMode.cat === "Typography"
                   ? ((Math.round(+(MP[curMode.id]?.variant ?? 0)) + nextUniqueStructuralSalt()) % 24) + 1
                   : undefined;
               const nextP = { ...P, seed: nextS };
@@ -3120,6 +3893,590 @@ export default function App() {
                     </div>
                   )}
 
+                  {curMode.cat === "Calendar" && (
+                    <div
+                      style={{
+                        background: "var(--p2)",
+                        border: "1px solid #38bdf8",
+                        borderRadius: "8px",
+                        padding: "9px 10px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "8px",
+                          gap: "6px",
+                        }}
+                      >
+                        <span className="st" style={{ fontSize: "10px", color: "#38bdf8" }}>
+                          📅 {MASTER_CALENDAR_MODES.length} MICROSTOCK CALENDAR SETS
+                        </span>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{
+                            fontSize: "9px",
+                            padding: "2px 6px",
+                            height: "22px",
+                            borderColor: "#38bdf8",
+                            color: "#38bdf8",
+                          }}
+                          onClick={() => selectCalendarSet(curMode.id)}
+                          title="RESET CALENDAR TO ORIGINAL PRESET"
+                        >
+                          ↺ RESET CAL
+                        </button>
+                      </div>
+
+                      {/* 60 CALENDAR DESIGNS DROPDOWN + PREV/NEXT */}
+                      <div style={{ display: "flex", gap: "4px", marginBottom: "7px" }}>
+                        <select
+                          value={curMode.id}
+                          onChange={(e) => selectCalendarSet(e.target.value)}
+                          style={{
+                            flex: 1,
+                            height: "26px",
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            borderRadius: "6px",
+                            border: "1px solid #38bdf8",
+                            background: "var(--p)",
+                            color: "var(--tx)",
+                          }}
+                        >
+                          {MASTER_CALENDAR_MODES.map((cm) => (
+                            <option key={cm.id} value={cm.id}>
+                              {cm.name.toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
+                          title="PREVIOUS CALENDAR DESIGN"
+                          onClick={() => {
+                            const idx = MASTER_CALENDAR_MODES.findIndex((x) => x.id === curMode.id);
+                            const prevIdx =
+                              (idx - 1 + MASTER_CALENDAR_MODES.length) %
+                              MASTER_CALENDAR_MODES.length;
+                            selectCalendarSet(MASTER_CALENDAR_MODES[prevIdx].id);
+                          }}
+                        >
+                          ◀
+                        </button>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
+                          title="NEXT CALENDAR DESIGN"
+                          onClick={() => {
+                            const idx = MASTER_CALENDAR_MODES.findIndex((x) => x.id === curMode.id);
+                            const nextIdx = (idx + 1) % MASTER_CALENDAR_MODES.length;
+                            selectCalendarSet(MASTER_CALENDAR_MODES[nextIdx].id);
+                          }}
+                        >
+                          ▶
+                        </button>
+                      </div>
+
+                      {/* CALENDAR YEAR SELECTOR (2025 - 2032) */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        SELECT YEAR (2025–2032 REAL GREGORIAN DATES):
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(4, 1fr)",
+                          gap: "3px",
+                          marginBottom: "7px",
+                        }}
+                      >
+                        {["2025", "2026", "2027", "2028", "2029", "2030", "2031", "2032"].map(
+                          (yr) => (
+                            <button
+                              key={yr}
+                              type="button"
+                              className={String(curParams.year || "2026") === yr ? "on" : ""}
+                              onClick={() => switchCalendarYear(yr)}
+                            >
+                              {yr}
+                            </button>
+                          )
+                        )}
+                      </div>
+
+                      {/* CALENDAR LAYOUT MODE (12 MONTHS / 1 MONTH / 3M / 4M / 6M / WEEKLY PLANNER) */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        CALENDAR LAYOUT (12 MONTHS / MONTHLY / WEEKLY PLANNER):
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: "3px",
+                          marginBottom: "7px",
+                        }}
+                      >
+                        {[
+                          { k: "12m", l: "12M YEAR (4×3)" },
+                          { k: "12m_3x4", l: "12M WALL (3×4)" },
+                          { k: "1m", l: "1 MONTH PAGE" },
+                          { k: "3m", l: "3M QUARTER" },
+                          { k: "4m", l: "4M SEASON" },
+                          { k: "6m", l: "6M HALF-YR" },
+                          { k: "week", l: "7-DAY WEEK" },
+                        ].map((vm) => (
+                          <button
+                            key={vm.k}
+                            type="button"
+                            className={String(curParams.viewMode || "12m") === vm.k ? "on" : ""}
+                            onClick={() => switchCalendarViewMode(vm.k)}
+                          >
+                            {vm.l}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* ACTIVE / STARTING MONTH (JAN - DEC) */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        SELECT MONTH (JAN–DEC FOR 1M / 3M / 6M / WEEK):
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(6, 1fr)",
+                          gap: "3px",
+                          marginBottom: "7px",
+                        }}
+                      >
+                        {[
+                          ["1", "JAN"],
+                          ["2", "FEB"],
+                          ["3", "MAR"],
+                          ["4", "APR"],
+                          ["5", "MAY"],
+                          ["6", "JUN"],
+                          ["7", "JUL"],
+                          ["8", "AUG"],
+                          ["9", "SEP"],
+                          ["10", "OCT"],
+                          ["11", "NOV"],
+                          ["12", "DEC"],
+                        ].map(([mVal, mLab]) => (
+                          <button
+                            key={mVal}
+                            type="button"
+                            className={String(curParams.month || "1") === mVal ? "on" : ""}
+                            onClick={() => switchCalendarMonth(mVal)}
+                          >
+                            {mLab}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* WEEK STARTS ON (SUNDAY / MONDAY / SATURDAY) */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        WEEK STARTS ON (SUN / MON / SAT):
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: "3px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {[
+                          { k: "sun", l: "SUNDAY FIRST" },
+                          { k: "mon", l: "MONDAY FIRST" },
+                          { k: "sat", l: "SATURDAY FIRST" },
+                        ].map((ws) => (
+                          <button
+                            key={ws.k}
+                            type="button"
+                            className={String(curParams.weekStart || "sun") === ws.k ? "on" : ""}
+                            onClick={() =>
+                              switchCalendarWeekStart(ws.k as "sun" | "mon" | "sat")
+                            }
+                          >
+                            {ws.l}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px" }}>
+                        <button
+                          type="button"
+                          className="btn pri"
+                          style={{ minHeight: "27px", fontSize: "9.5px", padding: "4px 6px" }}
+                          onClick={() => smartRandom(true, "current", true)}
+                          title="CHANGE THIS CALENDAR'S ARTWORK & COLOUR HARMONY ON EVERY CLICK"
+                        >
+                          ✦ NEW VARIATION (THIS CAL)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{
+                            minHeight: "27px",
+                            fontSize: "9.5px",
+                            padding: "4px 6px",
+                            borderColor: "#38bdf8",
+                            color: "#38bdf8",
+                          }}
+                          onClick={() => smartRandom(true, "current", false)}
+                          title="SWITCH TO NEXT UNIQUE CALENDAR TEMPLATE & GENERATE NEW DESIGN"
+                        >
+                          🎲 NEXT CALENDAR STYLE ▶
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {curMode.cat === "Typography" && (
+                    <div
+                      style={{
+                        background: "var(--p2)",
+                        border: "1px solid #f43f5e",
+                        borderRadius: "8px",
+                        padding: "9px 10px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "8px",
+                          gap: "6px",
+                        }}
+                      >
+                        <span className="st" style={{ fontSize: "10px", color: "#fb7185" }}>
+                          ✒️ {MASTER_TYPOGRAPHY_MODES.length} CALLIGRAPHY &amp; TYPOGRAPHY SETS
+                        </span>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{
+                            fontSize: "9px",
+                            padding: "2px 6px",
+                            height: "22px",
+                            borderColor: "#f43f5e",
+                            color: "#fb7185",
+                          }}
+                          onClick={() => selectTypographySet(curMode.id)}
+                          title="RESET TYPOGRAPHY TO ORIGINAL HABUHU PRESET"
+                        >
+                          ↺ HABUHU REF
+                        </button>
+                      </div>
+
+                      {/* 60 TYPOGRAPHY DESIGNS DROPDOWN + PREV/NEXT */}
+                      <div style={{ display: "flex", gap: "4px", marginBottom: "7px" }}>
+                        <select
+                          value={curMode.id}
+                          onChange={(e) => selectTypographySet(e.target.value)}
+                          style={{
+                            flex: 1,
+                            height: "26px",
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            borderRadius: "6px",
+                            border: "1px solid #f43f5e",
+                            background: "var(--p)",
+                            color: "var(--tx)",
+                          }}
+                        >
+                          {MASTER_TYPOGRAPHY_MODES.map((tm) => (
+                            <option key={tm.id} value={tm.id}>
+                              {tm.name.toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
+                          title="PREVIOUS TYPOGRAPHY DESIGN"
+                          onClick={() => {
+                            const idx = MASTER_TYPOGRAPHY_MODES.findIndex((x) => x.id === curMode.id);
+                            const prevIdx =
+                              (idx - 1 + MASTER_TYPOGRAPHY_MODES.length) %
+                              MASTER_TYPOGRAPHY_MODES.length;
+                            selectTypographySet(MASTER_TYPOGRAPHY_MODES[prevIdx].id);
+                          }}
+                        >
+                          ◀
+                        </button>
+                        <button
+                          type="button"
+                          className="ib"
+                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
+                          title="NEXT TYPOGRAPHY DESIGN"
+                          onClick={() => {
+                            const idx = MASTER_TYPOGRAPHY_MODES.findIndex((x) => x.id === curMode.id);
+                            const nextIdx = (idx + 1) % MASTER_TYPOGRAPHY_MODES.length;
+                            selectTypographySet(MASTER_TYPOGRAPHY_MODES[nextIdx].id);
+                          }}
+                        >
+                          ▶
+                        </button>
+                      </div>
+
+                      {/* 1 PC HERO OR MULTI-PIECE SET SELECTOR (1 PC, 2 PCS, 4 PCS, 6 PCS, 9 PCS, 12 PCS) */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        1 PC HERO OR MULTI-PIECE COLLECTION SET (1–12 PCS):
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: "3px",
+                          marginBottom: "7px",
+                        }}
+                      >
+                        {[
+                          { k: "1", l: "1 PC HERO" },
+                          { k: "2", l: "2 PCS DUO" },
+                          { k: "4", l: "4 PCS (2×2)" },
+                          { k: "6", l: "6 PCS (3×2)" },
+                          { k: "9", l: "9 PCS (3×3)" },
+                          { k: "12", l: "12 PCS (4×3)" },
+                        ].map((item) => (
+                          <button
+                            key={item.k}
+                            type="button"
+                            className={String(curParams.pcs || "1") === item.k ? "on" : ""}
+                            onClick={() => switchTypographyPcs(item.k)}
+                          >
+                            {item.l}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* 12 COMMERCIAL MICROSTOCK TOPICS / OCCASIONS */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        SELECT TOPIC / OCCASION (12 COMMERCIAL PACKS):
+                      </div>
+                      <div
+                        className="seg"
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: "3px",
+                          marginBottom: "7px",
+                        }}
+                      >
+                        {[
+                          { k: "birthday", l: "🎂 BIRTHDAY" },
+                          { k: "wedding", l: "💍 WEDDING" },
+                          { k: "congrats", l: "🏆 CONGRATS" },
+                          { k: "thankyou", l: "🙏 THANK YOU" },
+                          { k: "holiday", l: "🎄 HOLIDAY" },
+                          { k: "motivational", l: "⚡ QUOTES" },
+                          { k: "coffee", l: "☕ COFFEE" },
+                          { k: "family", l: "🏡 FAMILY" },
+                          { k: "summer", l: "🌴 SUMMER" },
+                          { k: "sale", l: "🏷️ VIP SALE" },
+                          { k: "islamic", l: "🌙FESTIVAL" },
+                          { k: "welcome", l: "✨ WELCOME" },
+                        ].map((oc) => (
+                          <button
+                            key={oc.k}
+                            type="button"
+                            className={
+                              String(curParams.occasion || "birthday") === oc.k ? "on" : ""
+                            }
+                            onClick={() => switchTypographyOccasion(oc.k)}
+                          >
+                            {oc.l}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* 16 CALLIGRAPHY FLOURISH & ORNAMENT ARCHITECTURES (SAMPLE 1 SWASH, SAMPLE 2 VICTORIAN SCROLLS, ETC.) */}
+                      <div
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 800,
+                          color: "var(--mu)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        FLOURISH, SWASH &amp; ORNAMENT ARCHITECTURE (16 STYLES):
+                      </div>
+                      <select
+                        value={String(curParams.flourishStyle ?? "0")}
+                        onChange={(e) => switchTypographyFlourishStyle(e.target.value)}
+                        style={{
+                          width: "100%",
+                          height: "26px",
+                          fontSize: "10px",
+                          fontWeight: 800,
+                          borderRadius: "6px",
+                          border: "1px solid var(--bd)",
+                          background: "var(--p)",
+                          color: "var(--tx)",
+                          marginBottom: "7px",
+                        }}
+                      >
+                        <option value="0">01 · SWEEPING TAPERED BRUSH SWASH TAIL (SAMPLE 1 HABUHU)</option>
+                        <option value="1">02 · ORNATE VICTORIAN SCROLLS &amp; 5-PETAL SUNBURST (SAMPLE 2 HABUHU)</option>
+                        <option value="2">03 · ROYAL CROWN CREST &amp; SYMMETRICAL WING FLOURISH</option>
+                        <option value="3">04 · BOTANICAL LAUREL LEAF SPRIGS &amp; CURLED RIBBON</option>
+                        <option value="4">05 · ROMANTIC HEART-LOOP INFINITY SWASH &amp; SPARKLES</option>
+                        <option value="5">06 · VINTAGE APOTHECARY OVAL SCROLL FRAME &amp; FILIGREE</option>
+                        <option value="6">07 · CELESTIAL 9-RAY SUNBURST HALO &amp; CRESCENT WAVE</option>
+                        <option value="7">08 · OPEN BOTANICAL WREATH &amp; EUCALYPTUS LEAF ARCH</option>
+                        <option value="8">09 · RETRO VARSITY PENNANT TAIL &amp; 3D EXTRUDED SHADOW</option>
+                        <option value="9">10 · ART-DECO GEOMETRIC SUNBURST &amp; STEPPED DIAMOND</option>
+                        <option value="10">11 · FESTIVE CONFETTI STREAMERS, STARS &amp; PARTY SWIRL</option>
+                        <option value="11">12 · CALLIGRAPHY QUILL PLUME &amp; DOUBLE-WAVE UNDERLINE</option>
+                        <option value="12">13 · SCALLOPED WAX-SEAL BADGE RING &amp; RIBBON TAILS</option>
+                        <option value="13">14 · FOUR-CORNER BAROQUE SCROLLWORK &amp; ARABESQUES</option>
+                        <option value="14">15 · MINIMALIST LUXURY SIGNATURE LOOP &amp; DIAMOND DOT</option>
+                        <option value="15">16 · GRAND SYMMETRICAL BAROQUE LYRE &amp; VOLUTE SCROLL</option>
+                      </select>
+
+                      {/* 4 SCRIPT FONT STYLES + 10 INK PALETTES */}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "5px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <select
+                          value={String(curParams.fontStyle || "script_brush")}
+                          onChange={(e) => switchTypographyFontStyle(e.target.value)}
+                          style={{
+                            height: "25px",
+                            fontSize: "9.5px",
+                            fontWeight: 800,
+                            borderRadius: "6px",
+                            border: "1px solid var(--bd)",
+                            background: "var(--p)",
+                            color: "var(--tx)",
+                          }}
+                          title="SELECT HAND-LETTERED CALLIGRAPHY NIB STYLE"
+                        >
+                          <option value="script_brush">BRUSH SCRIPT (SAMPLE 1 &amp; 2)</option>
+                          <option value="vintage_serif">CAPITALS + BRUSH SCRIPT</option>
+                          <option value="luxury_monoline">MONOLINE SIGNATURE</option>
+                          <option value="ribbon_groovy">BOLD DISPLAY SCRIPT</option>
+                        </select>
+                        <select
+                          value={String(curParams.colorSet || "ink_white")}
+                          onChange={(e) => switchTypographyColorSet(e.target.value)}
+                          style={{
+                            height: "25px",
+                            fontSize: "9.5px",
+                            fontWeight: 800,
+                            borderRadius: "6px",
+                            border: "1px solid var(--bd)",
+                            background: "var(--p)",
+                            color: "var(--tx)",
+                          }}
+                          title="SELECT INK & ARTBOARD COLOUR PALETTE"
+                        >
+                          <option value="ink_white">CLASSIC BLACK ON WHITE</option>
+                          <option value="ink_accent_white">BLACK + ACCENT ORNAMENTS</option>
+                          <option value="white_black">CRISP WHITE ON BLACK</option>
+                          <option value="gold_noir">24K ROYAL GOLD ON BLACK</option>
+                          <option value="vintage_cream">VINTAGE ESPRESSO &amp; CREAM</option>
+                          <option value="palette">ACTIVE STUDIO PALETTE</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px" }}>
+                        <button
+                          type="button"
+                          className="btn pri"
+                          style={{ minHeight: "27px", fontSize: "9.5px", padding: "4px 6px" }}
+                          onClick={() => smartRandom(true, "current", true)}
+                          title="GENERATE NEXT UNIQUE PHRASE & FLOURISH VARIATION IN THIS TOPIC"
+                        >
+                          ✦ NEW PHRASE / SWASH
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{
+                            minHeight: "27px",
+                            fontSize: "9.5px",
+                            padding: "4px 6px",
+                            borderColor: "#f43f5e",
+                            color: "#fb7185",
+                          }}
+                          onClick={() => smartRandom(true, "current", false)}
+                          title="SWITCH TO NEXT CALLIGRAPHY TEMPLATE & GENERATE NEW DESIGN"
+                        >
+                          🎲 NEXT TYPO STYLE ▶
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {curMode.params.map((p) => {
                     const val = curParams[p.k] ?? p.def;
                     if (p.type === "check") {
@@ -3468,6 +4825,54 @@ export default function App() {
                         </div>
                       );
                     })}
+                  </div>
+
+                  <div style={{ marginTop: "10px" }}>
+                    <div
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        color: "var(--mu)",
+                        marginBottom: "6px",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      QUICK 1-CLICK BACKGROUND COLOUR (WHITE / BLACK / STUDIO)
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(4, 1fr)",
+                        gap: "5px",
+                      }}
+                    >
+                      {[
+                        { label: "⬛ BLACK", hex: "#000000" },
+                        { label: "⬜ WHITE", hex: "#FFFFFF" },
+                        { label: "◽ LIGHT", hex: "#E5E7EB" },
+                        { label: "◾ DARK", hex: "#1E293B" },
+                      ].map((preset) => (
+                        <button
+                          key={preset.hex}
+                          type="button"
+                          className={`btn ${P.bg.toLowerCase() === preset.hex.toLowerCase() ? "pri" : ""}`}
+                          style={{
+                            padding: "5px 4px",
+                            fontSize: "10px",
+                            justifyContent: "center",
+                          }}
+                          onClick={() =>
+                            setP((p) => ({
+                              ...p,
+                              bg: preset.hex,
+                              bg2: mixCol(preset.hex, p.c0 || "#8b5cf6", 0.35),
+                            }))
+                          }
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="r range-row" style={{ marginTop: "14px" }}>
@@ -3839,16 +5244,16 @@ export default function App() {
                       value={batchScope}
                       onChange={(e) => setBatchScope(e.target.value as any)}
                     >
-                      <option value="all">
-                        ALL {modes.length} VAULT STYLES (100% DIFFERENT · ZERO SIMILAR)
+                      <option value="current">
+                        ACTIVE CANVAS DESIGN VARIATIONS ONLY (#{pad2(curModeIdx + 1)} · {curMode.name})
                       </option>
                       <option value="category">
                         ALL {curMode.cat.toUpperCase()} CATEGORY STYLES (
                         {modes.filter((m) => m.cat === curMode.cat).length} UNIQUE STYLES)
                       </option>
                       <option value="favs">★ FAVOURITE STYLES ({favs.size || 1})</option>
-                      <option value="current">
-                        SINGLE STYLE EXTREME MUTATION (#{pad2(curModeIdx + 1)} · {curMode.name})
+                      <option value="all">
+                        ALL {modes.length} VAULT STYLES (100% DIFFERENT · ZERO SIMILAR)
                       </option>
                     </select>
                   </div>
@@ -4435,6 +5840,341 @@ export default function App() {
             </div>
           </div>
 
+          {/* ROW 4: 60 COMMERCIAL MICROSTOCK CALENDAR & WEEKLY PLANNER STUDIO QUICK-BAR (YEARS 2025-2030 | 12 MONTHS / 1 MONTH / WEEKLY PLANNER | JAN-DEC | SUN/MON/SAT) */}
+          <div
+            className="poster-quick-bar"
+            style={{ borderTop: "none", paddingTop: "3px", paddingBottom: "5px" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              <span className="st" style={{ flex: "none", color: "#38bdf8" }}>
+                📅 CALENDAR ({MASTER_CALENDAR_MODES.length}):
+              </span>
+              <select
+                value={curMode.cat === "Calendar" ? curMode.id : "cal_ms_1"}
+                onChange={(e) => selectCalendarSet(e.target.value)}
+                style={{
+                  height: "26px",
+                  maxWidth: "205px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "0 8px",
+                  borderRadius: "6px",
+                  border: "1px solid #38bdf8",
+                  background: "var(--p2)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT ANY OF THE 60 CURATED MICROSTOCK CALENDAR & WEEKLY PLANNER TEMPLATES"
+              >
+                {MASTER_CALENDAR_MODES.map((cm) => (
+                  <option key={cm.id} value={cm.id}>
+                    {cm.shortLabel}
+                  </option>
+                ))}
+              </select>
+
+              {/* YEAR SELECTOR: 2025, 2026, 2027, 2028, 2029, 2030 */}
+              <div className="seg" title="SELECT CALENDAR YEAR (PERPETUAL GREGORIAN ALGORITHM)">
+                {["2025", "2026", "2027", "2028", "2029", "2030"].map((yr) => {
+                  const activeYr =
+                    curMode.cat === "Calendar"
+                      ? String(
+                          curParams.year ||
+                            curMode.params.find((p) => p.k === "year")?.def ||
+                            "2026"
+                        )
+                      : "";
+                  return (
+                    <button
+                      key={yr}
+                      type="button"
+                      className={activeYr === yr ? "on" : ""}
+                      onClick={() => switchCalendarYear(yr)}
+                    >
+                      {yr}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* VIEW LAYOUT: 12M YEAR | 12M POSTER | 1 MONTH | 3M QTR | 6M HALF | 7-DAY WEEK */}
+              <div className="seg" title="SELECT 12 MONTHS FULL YEAR, SINGLE MONTH, QUARTERLY, OR WEEKLY PLANNER">
+                {[
+                  { k: "12m", l: "12 MONTHS" },
+                  { k: "12m_3x4", l: "12M POSTER" },
+                  { k: "1m", l: "1 MONTH" },
+                  { k: "3m", l: "3 MONTHS" },
+                  { k: "6m", l: "6 MONTHS" },
+                  { k: "week", l: "WEEKLY PLANNER" },
+                ].map((vm) => {
+                  const activeVm =
+                    curMode.cat === "Calendar"
+                      ? String(
+                          curParams.viewMode ||
+                            curMode.params.find((p) => p.k === "viewMode")?.def ||
+                            "12m"
+                        )
+                      : "";
+                  return (
+                    <button
+                      key={vm.k}
+                      type="button"
+                      className={activeVm === vm.k ? "on" : ""}
+                      onClick={() => switchCalendarViewMode(vm.k)}
+                    >
+                      {vm.l}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* MONTH SELECTOR DROPDOWN (JAN - DEC) */}
+              <select
+                value={
+                  curMode.cat === "Calendar"
+                    ? String(
+                        curParams.month ||
+                          curMode.params.find((p) => p.k === "month")?.def ||
+                          "1"
+                      )
+                    : "1"
+                }
+                onChange={(e) => switchCalendarMonth(e.target.value)}
+                style={{
+                  height: "26px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "0 6px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--bd)",
+                  background: "var(--p2)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT ACTIVE OR STARTING MONTH (JANUARY – DECEMBER)"
+              >
+                {[
+                  ["1", "JAN (01)"],
+                  ["2", "FEB (02)"],
+                  ["3", "MAR (03)"],
+                  ["4", "APR (04)"],
+                  ["5", "MAY (05)"],
+                  ["6", "JUN (06)"],
+                  ["7", "JUL (07)"],
+                  ["8", "AUG (08)"],
+                  ["9", "SEP (09)"],
+                  ["10", "OCT (10)"],
+                  ["11", "NOV (11)"],
+                  ["12", "DEC (12)"],
+                ].map(([mv, ml]) => (
+                  <option key={mv} value={mv}>
+                    {ml}
+                  </option>
+                ))}
+              </select>
+
+              {/* WEEK START SELECTOR: SUN / MON / SAT */}
+              <div className="seg" title="WEEK STARTS ON SUNDAY, MONDAY, OR SATURDAY">
+                {[
+                  { k: "sun", l: "SUN" },
+                  { k: "mon", l: "MON" },
+                  { k: "sat", l: "SAT" },
+                ].map((ws) => {
+                  const activeWs =
+                    curMode.cat === "Calendar"
+                      ? String(curParams.weekStart || "sun")
+                      : "";
+                  return (
+                    <button
+                      key={ws.k}
+                      type="button"
+                      className={activeWs === ws.k ? "on" : ""}
+                      onClick={() =>
+                        switchCalendarWeekStart(ws.k as "sun" | "mon" | "sat")
+                      }
+                    >
+                      {ws.l}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 1-CLICK NEW CALENDAR DESIGN BUTTON */}
+              <button
+                type="button"
+                className="btn pri"
+                style={{
+                  minHeight: "26px",
+                  padding: "3px 9px",
+                  fontSize: "10px",
+                  background: "linear-gradient(135deg, #0284c7, #38bdf8)",
+                  borderColor: "#38bdf8",
+                }}
+                onClick={() => {
+                  if (curMode.cat !== "Calendar") {
+                    selectCalendarSet("cal_ms_1");
+                  } else {
+                    smartRandom(true, "current", false);
+                  }
+                }}
+                title="EVERY CLICK CHANGES THE CALENDAR DESIGN, HEADER ART & COLOUR HARMONY"
+              >
+                🎲 NEW CALENDAR DESIGN
+              </button>
+            </div>
+          </div>
+
+          {/* ROW 5: 60 HAND-LETTERED CALLIGRAPHY & ORNATE TYPOGRAPHY STUDIO QUICK-BAR (1 PC HERO OR 2/4/6/9/12 PCS SETS | 12 TOPICS/OCCASIONS | 16 FLOURISHES) */}
+          <div
+            className="poster-quick-bar"
+            style={{ borderTop: "none", paddingTop: "3px", paddingBottom: "5px" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              <span className="st" style={{ flex: "none", color: "#fb7185" }}>
+                ✒️ TYPOGRAPHY ({MASTER_TYPOGRAPHY_MODES.length}):
+              </span>
+              <select
+                value={curMode.cat === "Typography" ? curMode.id : "typo_ms_1"}
+                onChange={(e) => selectTypographySet(e.target.value)}
+                style={{
+                  height: "26px",
+                  maxWidth: "210px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "0 8px",
+                  borderRadius: "6px",
+                  border: "1px solid #f43f5e",
+                  background: "var(--p2)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT ANY OF THE 60 HAND-LETTERED CALLIGRAPHY & ORNATE TYPOGRAPHY SETS"
+              >
+                {MASTER_TYPOGRAPHY_MODES.map((tm) => (
+                  <option key={tm.id} value={tm.id}>
+                    {tm.shortLabel}
+                  </option>
+                ))}
+              </select>
+
+              {/* 1 PC HERO OR MULTI-PIECE SET: 1 PC | 2 PCS | 4 PCS | 6 PCS | 9 PCS | 12 PCS */}
+              <div className="seg" title="GENERATE AS SINGLE 1-PC HERO CALLIGRAPHY OR MULTI-PIECE COLLECTION SET">
+                {[
+                  { k: "1", l: "1 PC HERO" },
+                  { k: "2", l: "2 PCS" },
+                  { k: "4", l: "4 PCS SET" },
+                  { k: "6", l: "6 PCS SET" },
+                  { k: "9", l: "9 PCS SET" },
+                  { k: "12", l: "12 PCS SET" },
+                ].map((item) => {
+                  const activePcs =
+                    curMode.cat === "Typography"
+                      ? String(
+                          curParams.pcs ||
+                            curMode.params.find((p) => p.k === "pcs")?.def ||
+                            "1"
+                        )
+                      : "";
+                  return (
+                    <button
+                      key={item.k}
+                      type="button"
+                      className={activePcs === item.k ? "on" : ""}
+                      onClick={() => switchTypographyPcs(item.k)}
+                    >
+                      {item.l}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* TOPIC / OCCASION SELECTOR DROPDOWN (12 COMMERCIAL PACKS) */}
+              <select
+                value={
+                  curMode.cat === "Typography"
+                    ? String(
+                        curParams.occasion ||
+                          curMode.params.find((p) => p.k === "occasion")?.def ||
+                          "birthday"
+                      )
+                    : "birthday"
+                }
+                onChange={(e) => switchTypographyOccasion(e.target.value)}
+                style={{
+                  height: "26px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  padding: "0 6px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--bd)",
+                  background: "var(--p2)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT CALLIGRAPHY TOPIC / OCCASION (12 COMMERCIAL MICROSTOCK PACKS)"
+              >
+                <option value="birthday">🎂 HAPPY BIRTHDAY PACK</option>
+                <option value="wedding">💍 WEDDING &amp; LOVE PACK</option>
+                <option value="congrats">🏆 CONGRATULATIONS PACK</option>
+                <option value="thankyou">🙏 THANK YOU &amp; GRATITUDE</option>
+                <option value="holiday">🎄 CHRISTMAS &amp; NEW YEAR</option>
+                <option value="motivational">⚡ MOTIVATIONAL QUOTES</option>
+                <option value="coffee">☕ COFFEE &amp; CAFE MENU</option>
+                <option value="family">🏡 HOME &amp; FAMILY BLESSINGS</option>
+                <option value="summer">🌴 SUMMER &amp; VACATION VIBES</option>
+                <option value="sale">🏷️ LUXURY SALE &amp; VIP OFFER</option>
+                <option value="islamic">🌙 RAMADAN &amp; EID FESTIVAL</option>
+                <option value="welcome">✨ WELCOME &amp; HOSPITALITY</option>
+              </select>
+
+              {/* QUICK FLOURISH PRESET BUTTONS (SAMPLE 1 SWASH | SAMPLE 2 VICTORIAN SCROLLS | CROWN | HEART | WREATH) */}
+              <div className="seg" title="SELECT CALLIGRAPHY SWASH OR VICTORIAN SCROLL ORNAMENT">
+                {[
+                  { k: "0", l: "SAMPLE 1 SWASH" },
+                  { k: "1", l: "SAMPLE 2 SCROLLS" },
+                  { k: "2", l: "CROWN" },
+                  { k: "4", l: "HEART SWASH" },
+                  { k: "7", l: "WREATH" },
+                  { k: "15", l: "BAROQUE" },
+                ].map((fl) => {
+                  const activeFl =
+                    curMode.cat === "Typography"
+                      ? String(curParams.flourishStyle ?? "0")
+                      : "";
+                  return (
+                    <button
+                      key={fl.k}
+                      type="button"
+                      className={activeFl === fl.k ? "on" : ""}
+                      onClick={() => switchTypographyFlourishStyle(fl.k)}
+                    >
+                      {fl.l}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 1-CLICK NEW TYPOGRAPHY DESIGN BUTTON */}
+              <button
+                type="button"
+                className="btn pri"
+                style={{
+                  minHeight: "26px",
+                  padding: "3px 9px",
+                  fontSize: "10px",
+                  background: "linear-gradient(135deg, #e11d48, #fb7185)",
+                  borderColor: "#fb7185",
+                }}
+                onClick={() => {
+                  if (curMode.cat !== "Typography") {
+                    selectTypographySet("typo_ms_1");
+                  } else {
+                    smartRandom(true, "current", false);
+                  }
+                }}
+                title="EVERY CLICK GENERATES A NEW UNIQUE CALLIGRAPHY PHRASE, SWASH & ORNAMENT DESIGN"
+              >
+                🎲 NEW TYPOGRAPHY DESIGN
+              </button>
+            </div>
+          </div>
+
           <div id="vp" ref={vpRef}>
             <div
               id="frame"
@@ -4697,16 +6437,16 @@ export default function App() {
                 disabled={batchRunning}
                 onChange={(e) => setBatchScope(e.target.value as any)}
               >
-                <option value="all">
-                  ALL {modes.length} VAULT STYLES (100% DIFFERENT · ZERO SIMILAR · RECOMMENDED)
+                <option value="current">
+                  ACTIVE CANVAS DESIGN VARIATIONS ONLY (#{pad2(curModeIdx + 1)} · {curMode.name} · RECOMMENDED)
                 </option>
                 <option value="category">
                   ALL {curMode.cat.toUpperCase()} CATEGORY STYLES (
                   {modes.filter((m) => m.cat === curMode.cat).length} UNIQUE STYLES)
                 </option>
                 <option value="favs">★ ALL FAVOURITE STYLES ({favs.size || 1})</option>
-                <option value="current">
-                  SINGLE STYLE EXTREME MUTATION (#{pad2(curModeIdx + 1)} · {curMode.name})
+                <option value="all">
+                  ALL {modes.length} VAULT STYLES (100% DIFFERENT · ZERO SIMILAR)
                 </option>
               </select>
             </div>
