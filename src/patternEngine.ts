@@ -38124,7 +38124,8 @@ export function buildMicrostockSeoIdentity(row: {
 }): { title: string; fileSlug: string; keywords: string; category: string } {
   const cleanModeName = row.modeName
     .replace(/\([^)]*\)/g, " ")
-    .replace(/[#/_-]+/g, " ")
+    .replace(/&/g, " and ")
+    .replace(/[:#/_<>?"*|\\-]+/g, " ")
     .replace(/\b(ref|set|pcs|habuhu|exact)\d*\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -38139,6 +38140,7 @@ export function buildMicrostockSeoIdentity(row: {
   const isPoster = cleanCat === "Poster" || (row.modeId && row.modeId.startsWith("poster_"));
   const isCalendar = cleanCat === "Calendar" || (row.modeId && row.modeId.startsWith("cal_"));
   const isTornPaper = cleanCat === "Torn Paper" || (row.modeId && row.modeId.startsWith("torn_"));
+  const isShadow = cleanCat === "Shadow" || (row.modeId && row.modeId.startsWith("shadow_"));
   const isTypography = cleanCat === "Typography" || (row.modeId && row.modeId.startsWith("typo_"));
   const isBrush = cleanCat === "Brush" || (row.modeId && row.modeId.startsWith("brush_"));
   const isLighting = cleanCat === "Lighting" || (row.modeId && row.modeId.startsWith("light_"));
@@ -38154,12 +38156,41 @@ export function buildMicrostockSeoIdentity(row: {
   let subjectPhrase = "";
   let catCoreKw: string[] = [];
 
-  if (isTornPaper) {
+  if (isShadow) {
+    const shDesc =
+      row.pcs === "1" || !row.pcs
+        ? "Soft Transparent Vector Drop Shadow and Floor Overlay"
+        : `${pcsNum}-Piece Realistic Transparent Vector Shadows Set`;
+    subjectPhrase = `${adj} ${cleanModeName} ${shDesc}`;
+    catCoreKw = [
+      "shadow",
+      "drop shadow",
+      "transparent shadow",
+      "realistic shadow",
+      "soft shadow",
+      "oval shadow",
+      "floor shadow",
+      "product shadow",
+      "gradient shadow",
+      "shadow overlay",
+      "cast shadow",
+      "floating shadow",
+      "curved shadow",
+      "isolated shadow",
+      "vector shadow",
+      "studio shadow",
+      "mockup shadow",
+      "banner shadow",
+      "card shadow",
+      "vignette overlay",
+      "transparent background",
+    ];
+  } else if (isTornPaper) {
     const tornDesc =
       row.pcs === "1"
-        ? "Realistic Torn Paper Scrap Banner & Fibrous Deckle Edge Template"
-        : `${pcsNum}-Piece Torn Paper Scraps, Ripped Notebook Sheets & Sticky Notes Set`;
-    subjectPhrase = `${adj} ${cleanModeName} ${tornDesc} with ${accentInfo.label} Paper & White Pulp Rim`;
+        ? "Realistic Torn Paper Scrap Banner and Fibrous Deckle Edge Template"
+        : `${pcsNum}-Piece Torn Paper Scraps Ripped Notebook Sheets Set`;
+    subjectPhrase = `${adj} ${cleanModeName} ${tornDesc} with ${accentInfo.label} Paper`;
     catCoreKw = [
       "torn paper",
       "ripped paper",
@@ -38191,15 +38222,15 @@ export function buildMicrostockSeoIdentity(row: {
         : row.pcs === "2"
         ? "Dual 2-Piece Hand-Lettered Calligraphy Brush Script Set"
         : row.pcs === "4"
-        ? "4-Piece Hand-Lettered Calligraphy & Ornate Swash Collection"
+        ? "4-Piece Hand-Lettered Calligraphy and Ornate Swash Collection"
         : row.pcs === "6"
-        ? "6-Piece Hand-Lettered Calligraphy & Flourish Bundle"
+        ? "6-Piece Hand-Lettered Calligraphy and Flourish Bundle"
         : row.pcs === "9"
-        ? "9-Piece Hand-Lettered Calligraphy & Greeting Phrases Pack"
+        ? "9-Piece Hand-Lettered Calligraphy and Greeting Phrases Pack"
         : row.pcs === "12"
-        ? "12-Piece Mega Hand-Lettered Calligraphy & Typography Sheet"
+        ? "12-Piece Mega Hand-Lettered Calligraphy and Typography Sheet"
         : "Hand-Lettered Calligraphy Brush Script Typography Design";
-    subjectPhrase = `${adj} ${cleanModeName} ${layoutDesc} with ${accentInfo.label} Ink & Ornate Swashes`;
+    subjectPhrase = `${adj} ${cleanModeName} ${layoutDesc} with ${accentInfo.label} Ink`;
     catCoreKw = [
       "calligraphy",
       "hand lettering",
@@ -38227,11 +38258,11 @@ export function buildMicrostockSeoIdentity(row: {
   } else if (isCalendar) {
     const viewDesc =
       row.pcs === "12m"
-        ? "12 Months Full Year Desk & Wall Calendar Template"
+        ? "12 Months Full Year Desk and Wall Calendar Template"
         : row.pcs === "12m_3x4"
         ? "12 Months Vertical Wall Calendar Poster Sheet"
         : row.pcs === "1m"
-        ? "Monthly Wall & Desk Calendar Page Planner"
+        ? "Monthly Wall and Desk Calendar Page Planner"
         : row.pcs === "3m"
         ? "Quarterly 3 Months Triptych Calendar Organizer"
         : row.pcs === "4m"
@@ -38239,8 +38270,8 @@ export function buildMicrostockSeoIdentity(row: {
         : row.pcs === "6m"
         ? "Half Year 6 Months Calendar Schedule Sheet"
         : row.pcs === "week"
-        ? "7 Day Weekly Planner & To Do Schedule Template"
-        : "12 Months Annual Wall & Desk Calendar Template";
+        ? "7 Day Weekly Planner and To Do Schedule Template"
+        : "12 Months Annual Wall and Desk Calendar Template";
     subjectPhrase = `${adj} ${cleanModeName} ${viewDesc} with ${accentInfo.label} Accents`;
     catCoreKw = [
       "calendar",
@@ -38302,7 +38333,7 @@ export function buildMicrostockSeoIdentity(row: {
       "vertical poster",
     ];
   } else if (isBrush) {
-    subjectPhrase = `${adj} ${cleanModeName} Vector Brush Stroke & ${accentInfo.label} Ink Grunge Stamp`;
+    subjectPhrase = `${adj} ${cleanModeName} Vector Brush Stroke and ${accentInfo.label} Ink Grunge Stamp`;
     catCoreKw = [
       "brush stroke",
       "paint stroke",
@@ -38324,7 +38355,7 @@ export function buildMicrostockSeoIdentity(row: {
       "badge",
     ];
   } else if (isLighting) {
-    subjectPhrase = `${adj} ${cleanModeName} Optical Lens Flare & ${accentInfo.label} Glowing Light Beam`;
+    subjectPhrase = `${adj} ${cleanModeName} Optical Lens Flare and ${accentInfo.label} Glowing Light Beam`;
     catCoreKw = [
       "lighting effect",
       "lens flare",
@@ -38346,7 +38377,7 @@ export function buildMicrostockSeoIdentity(row: {
       "luminous",
     ];
   } else if (isBgCat) {
-    subjectPhrase = `${adj} ${cleanModeName} ${accentInfo.label} Abstract Mesh & ${tone} Vector Background`;
+    subjectPhrase = `${adj} ${cleanModeName} ${accentInfo.label} Abstract Mesh and ${tone} Vector Background`;
     catCoreKw = [
       "abstract background",
       "gradient background",
@@ -38365,7 +38396,7 @@ export function buildMicrostockSeoIdentity(row: {
       "surface texture",
     ];
   } else {
-    subjectPhrase = `${adj} ${cleanModeName} Seamless Vector Pattern with ${accentInfo.label} & ${bgInfo.label} Motif`;
+    subjectPhrase = `${adj} ${cleanModeName} Seamless Vector Pattern with ${accentInfo.label} and ${bgInfo.label} Motif`;
     catCoreKw = [
       "seamless pattern",
       "repeating pattern",
@@ -38386,15 +38417,21 @@ export function buildMicrostockSeoIdentity(row: {
     ];
   }
 
-  // Exact Title (human-readable, 100% unique per design, and matches filename word-for-word!)
+  // Rich SEO Title (for MICROSTOCK_UPLOAD_METADATA.csv — clean ASCII, zero illegal chars)
   const title = `${subjectPhrase} ${tone} ${comp} ${serialCode}`
+    .replace(/&/g, "and")
+    .replace(/[:<>?"*|\\/]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
-  // Exact File Name slug derived directly from Title so Title and File Name are 100% identical!
-  const fileSlug = title
+  // Windows & Adobe Illustrator MAX_PATH-Safe File Name (strictly <= 58 chars incl. serialCode, pure [A-Za-z0-9_-])
+  // Prevents Windows 260-char MAX_PATH overflow ("File not found." error in Adobe Illustrator!)
+  const shortCore = `${cleanModeName} ${accentInfo.label}`
     .replace(/[^a-zA-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 44)
+    .replace(/_+$/g, "");
+  const fileSlug = `${shortCore || "Vector_Design"}_${serialCode}`;
 
   const modeWords = cleanModeName
     .toLowerCase()

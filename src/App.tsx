@@ -2541,7 +2541,7 @@ export default function App() {
       style: exportP.style,
       idx: 0,
     });
-    const fname = `${seoMeta.title}.svg`;
+    const fname = `${seoMeta.fileSlug}.svg`;
     downloadBlob(blob, fname);
     inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
     const h = computeDesignHash(P, MP[P.mode] || {});
@@ -2605,7 +2605,7 @@ export default function App() {
       style: exportP.style,
       idx: 0,
     });
-    const fname = `${seoMeta.title}.eps`;
+    const fname = `${seoMeta.fileSlug}.eps`;
     downloadBlob(blob, fname);
     inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
     const h = computeDesignHash(P, MP[P.mode] || {});
@@ -2653,7 +2653,7 @@ export default function App() {
           style: P.style,
           idx: 0,
         });
-        const fname = `${seoMeta.title}.${fmt === "jpeg" ? "jpg" : "png"}`;
+        const fname = `${seoMeta.fileSlug}.${fmt === "jpeg" ? "jpg" : "png"}`;
         downloadBlob(finalBlob, fname);
         const verified = await inspectMicrostockFileBinary(finalBlob, fname);
         setLastVerifiedFile(verified);
@@ -2686,7 +2686,14 @@ export default function App() {
         curMode.cat === "Typography" ||
         curMode.cat === "Torn Paper";
       const isLighting = curMode.cat === "Lighting";
-      const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+      const isShadow = curMode.cat === "Shadow";
+      const shadowTransp =
+        isShadow && String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
+      const omitBg = isPoster
+        ? false
+        : isShadow
+        ? shadowTransp
+        : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
       const exportP = isPoster
         ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
         : { ...P, transp: omitBg };
@@ -2709,7 +2716,7 @@ export default function App() {
         style: exportP.style,
         idx: 0,
       });
-      const baseName = seoMeta.title;
+      const baseName = seoMeta.fileSlug;
       const jpgName = `${baseName}.jpg`;
       const epsName = `${baseName}.eps`;
       const csvSingle = buildMicrostockCSV([
@@ -2791,9 +2798,11 @@ export default function App() {
 
       // Optional File System Access API Directory Handle if requested & supported
       let dirHandle: any = null;
-      const folderName = `MICROSTOCK_BATCH_${curMode.id.toUpperCase()}_${total}X_${Date.now()
-        .toString()
-        .slice(-6)}`;
+      const shortModeTag = curMode.id
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase()
+        .slice(0, 10);
+      const folderName = `PV_${shortModeTag}_${total}X_${Date.now().toString().slice(-4)}`;
 
       if (useDirectFolderPicker && typeof (window as any).showDirectoryPicker === "function") {
         try {
@@ -2941,13 +2950,13 @@ export default function App() {
           const licMeta = await computeBlobCrc32AndSize(licBlob);
 
           zipEntries.push({
-            path: `${folderName}/MICROSTOCK_UPLOAD_METADATA.csv`,
+            path: "MICROSTOCK_UPLOAD_METADATA.csv",
             blob: csvBlob,
             crc: csvMeta.crc,
             size: csvMeta.size,
           });
           zipEntries.push({
-            path: `${folderName}/COMMERCIAL_LICENSE_CERTIFICATE.txt`,
+            path: "COMMERCIAL_LICENSE_CERTIFICATE.txt",
             blob: licBlob,
             crc: licMeta.crc,
             size: licMeta.size,
@@ -3068,20 +3077,29 @@ export default function App() {
           const isPoster =
             targetMode.cat === "Poster" ||
             targetMode.cat === "Calendar" ||
-            targetMode.cat === "Typography";
+            targetMode.cat === "Typography" ||
+            targetMode.cat === "Torn Paper";
           const isLighting = targetMode.cat === "Lighting";
+          const isShadow = targetMode.cat === "Shadow";
+          const shadowTransp =
+            isShadow && String(workingMP[targetMode.id]?.bgMode ?? "transparent") === "transparent";
           const isFullBgCat =
             targetMode.cat === "Plain BG" ||
             targetMode.cat === "Background" ||
             targetMode.cat === "Gradient" ||
             targetMode.cat === "Texture";
           const omitBg =
-            isPoster || isFullBgCat ? false : Boolean(workingP.transp || isBrush || isLighting);
+            isPoster || isFullBgCat
+              ? false
+              : isShadow
+              ? shadowTransp
+              : Boolean(workingP.transp || isBrush || isLighting);
           const rep =
             workingP.svgStructure === "unified" ||
             isBrush ||
             isPoster ||
             isLighting ||
+            isShadow ||
             isFullBgCat
               ? 1
               : workingP.exRep === "auto"
@@ -3096,7 +3114,7 @@ export default function App() {
             workingP.artH
           );
 
-          // Build 100% unique SEO Title & Keywords for this design, and make the File Name identical to the Title!
+          // Build 100% unique SEO Title & Keywords + Windows/Adobe Illustrator MAX_PATH-safe short filename!
           const curQForMeta = workingMP[targetMode.id] || {};
           const seoMeta = buildMicrostockSeoIdentity({
             modeId: targetMode.id,
@@ -3114,8 +3132,8 @@ export default function App() {
             style: workingP.style,
             idx,
           });
-          // Identical Title and File Name (file name base matches title exactly)
-          const identicalBaseName = seoMeta.title;
+          // Strictly <= 58 chars ASCII filename (prevents Windows 260-char MAX_PATH "File not found." in Adobe Illustrator)
+          const identicalBaseName = seoMeta.fileSlug;
 
           const cleanTileForVec =
             needSvg || needEps ? buildSVGFor(workingP, workingMP, omitBg, false) : "";
@@ -3151,7 +3169,7 @@ export default function App() {
             } else {
               const meta = await computeBlobCrc32AndSize(epsBlob);
               zipEntries.push({
-                path: `${folderName}/${epsFilename}`,
+                path: epsFilename,
                 blob: epsBlob,
                 crc: meta.crc,
                 size: meta.size,
@@ -3191,7 +3209,7 @@ export default function App() {
             } else {
               const meta = await computeBlobCrc32AndSize(svgBlob);
               zipEntries.push({
-                path: `${folderName}/${svgFilename}`,
+                path: svgFilename,
                 blob: svgBlob,
                 crc: meta.crc,
                 size: meta.size,
@@ -3236,7 +3254,7 @@ export default function App() {
             } else {
               const meta = await computeBlobCrc32AndSize(jpgBlob);
               zipEntries.push({
-                path: `${folderName}/${jpgFilename}`,
+                path: jpgFilename,
                 blob: jpgBlob,
                 crc: meta.crc,
                 size: meta.size,
