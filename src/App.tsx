@@ -59,6 +59,8 @@ import {
   MASTER_POSTER_MODES,
   MASTER_LIGHTING_MODES,
   MASTER_CALENDAR_MODES,
+  MASTER_TORN_PAPER_MODES,
+  MASTER_SHADOW_MODES,
   MASTER_TYPOGRAPHY_MODES,
   traceFabricImageToPatternCode,
 } from "./patternEngine";
@@ -337,9 +339,17 @@ export default function App() {
       renderH: number = T
     ) => {
       const mObj = modes.find((x) => x.id === stateP.mode) || modes[0];
+      const shadowTransp =
+        mObj.cat === "Shadow" &&
+        String(stateMP[mObj.id]?.bgMode ?? "transparent") === "transparent";
       const effectiveTransp =
-        mObj.cat === "Poster" || mObj.cat === "Calendar" || mObj.cat === "Typography"
+        mObj.cat === "Poster" ||
+        mObj.cat === "Calendar" ||
+        mObj.cat === "Typography" ||
+        mObj.cat === "Torn Paper"
           ? false
+          : mObj.cat === "Shadow"
+          ? shadowTransp
           : Boolean(transp || mObj.cat === "Brush" || mObj.cat === "Lighting");
       const C = {
         ...stateP,
@@ -427,12 +437,20 @@ export default function App() {
   );
 
   const curSVG = useMemo(() => {
+    const shadowTransp =
+      curMode.cat === "Shadow" &&
+      String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
     const omitBg =
-      curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography"
+      curMode.cat === "Poster" ||
+      curMode.cat === "Calendar" ||
+      curMode.cat === "Typography" ||
+      curMode.cat === "Torn Paper"
         ? false
+        : curMode.cat === "Shadow"
+        ? shadowTransp
         : Boolean(P.transp || curMode.cat === "Brush" || curMode.cat === "Lighting");
     return buildSVGFor(P, MP, omitBg, P.grid);
-  }, [P, MP, curMode.cat, buildSVGFor]);
+  }, [P, MP, curMode.cat, curMode.id, buildSVGFor]);
 
   // Use lightweight 50-byte Blob URL instead of megabyte encodeURIComponent data URI for instant paint
   const curBlobUrl = useMemo(() => {
@@ -449,17 +467,18 @@ export default function App() {
   // Thumbnail cache
   const thumbs = useMemo(() => {
     const map: Record<string, string> = {};
-    modes.forEach((m) => {
+    modes.forEach((m, idx) => {
       try {
         const L = m.look || {};
         const cols = (L.cols || ["#10b981", "#06b6d4", "#f59e0b", "#ec4899", "#8b5cf6"]).slice();
         while (cols.length < 5) cols.push(cols[cols.length - 1]);
         const isBrushOrLight = m.cat === "Brush" || m.cat === "Lighting";
+        const isShadow = m.cat === "Shadow";
         const cState: PatternState = {
           ...DEF_STATE,
           mode: m.id,
-          seed: 11,
-          bg: L.bg || "#0c192c",
+          seed: 11 + idx * 97,
+          bg: isShadow ? "#ffffff" : L.bg || "#0c192c",
           bg2: mixCol(L.bg || "#0c192c", cols[0], 0.35),
           bgGrad: "solid",
           bgAngle: 135,
@@ -481,6 +500,9 @@ export default function App() {
         m.params.forEach((p) => {
           q[p.k] = p.def;
         });
+        if (isShadow) {
+          q.bgMode = "white";
+        }
         const svg = buildSVGFor(cState, { [m.id]: q }, isBrushOrLight, false);
         map[m.id] = svgData(svg);
       } catch {
@@ -504,17 +526,38 @@ export default function App() {
         const isLighting = m.cat === "Lighting";
         const isCalendar = m.cat === "Calendar";
         const isTypography = m.cat === "Typography";
+        const isTornPaper = m.cat === "Torn Paper";
+        const isShadow = m.cat === "Shadow";
         const prevModeObj = modes.find((x) => x.id === prev.mode);
-        const wasBrushOrLight = prevModeObj?.cat === "Brush" || prevModeObj?.cat === "Lighting";
+        const wasBrushOrLight =
+          prevModeObj?.cat === "Brush" ||
+          prevModeObj?.cat === "Lighting" ||
+          prevModeObj?.cat === "Shadow";
         const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || (isLighting || isTypography ? "1" : "4"));
         const defViewMode = String(m.params.find((p) => p.k === "viewMode")?.def || "12m");
         const defBgMode = String(m.params.find((p) => p.k === "bgMode")?.def || "split");
+        const defTornLayout = String(m.params.find((p) => p.k === "layoutType")?.def || "scrap_1pc");
+        const defShadowArch = String(m.params.find((p) => p.k === "archType")?.def || "oval_contact");
         const targetRatio: CanvasRatio = isPoster
           ? getMicrostockPosterRatio(defPcs)
           : isCalendar
           ? getMicrostockCalendarRatio(defViewMode)
           : isTypography
           ? getMicrostockTypographyRatio(defPcs)
+          : isTornPaper
+          ? defTornLayout === "canyon_v_rip" ||
+            defTornLayout === "half_divider" ||
+            defTornLayout === "center_strip" ||
+            defTornLayout === "curled_peel_canyon" ||
+            (defTornLayout === "scrap_1pc" && defPcs === "1")
+            ? "3:2"
+            : "4:3"
+          : isShadow
+          ? defShadowArch === "linear_fade_overlay" ||
+            defShadowArch === "circle_disc_base" ||
+            defShadowArch === "window_blind_gobo"
+            ? "1:1"
+            : "3:2"
           : isLighting
           ? defBgMode === "split" || defPcs === "8" || defPcs === "4" || defPcs === "6" || defPcs === "12"
             ? "2:1"
@@ -527,19 +570,45 @@ export default function App() {
           mx: "none",
           bd: isPlainBg ? prev.bd : "none",
           transp:
-            isBrush || isLighting
+            isBrush || isLighting || isShadow
               ? true
-              : wasBrushOrLight || isPoster || isCalendar || isTypography || isPlainBg
+              : wasBrushOrLight || isPoster || isCalendar || isTypography || isTornPaper || isPlainBg
               ? false
               : prev.transp,
           svgStructure:
-            isPlainBg || isBrush || isPoster || isLighting || isCalendar || isTypography
+            isPlainBg ||
+            isBrush ||
+            isPoster ||
+            isLighting ||
+            isCalendar ||
+            isTypography ||
+            isTornPaper ||
+            isShadow
               ? "unified"
               : prev.svgStructure || "separable",
-          view: isPlainBg || isBrush || isPoster || isLighting || isCalendar || isTypography ? 1 : prev.view,
-          ratio: isPoster || isLighting || isCalendar || isTypography ? targetRatio : prev.ratio,
-          artW: isPoster || isLighting || isCalendar || isTypography ? d.w : prev.artW,
-          artH: isPoster || isLighting || isCalendar || isTypography ? d.h : prev.artH,
+          view:
+            isPlainBg ||
+            isBrush ||
+            isPoster ||
+            isLighting ||
+            isCalendar ||
+            isTypography ||
+            isTornPaper ||
+            isShadow
+              ? 1
+              : prev.view,
+          ratio:
+            isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
+              ? targetRatio
+              : prev.ratio,
+          artW:
+            isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
+              ? d.w
+              : prev.artW,
+          artH:
+            isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
+              ? d.h
+              : prev.artH,
         };
         if (m.look) {
           const L = m.look;
@@ -962,6 +1031,321 @@ export default function App() {
     [curMode, modes, selectMode]
   );
 
+  const switchCalendarSideArt = useCallback(
+    (sideVal: string) => {
+      const targetCal =
+        curMode.cat === "Calendar"
+          ? curMode
+          : modes.find((m) => m.id === "cal_ms_1") || modes.find((m) => m.cat === "Calendar");
+      if (!targetCal) return;
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetCal.id]: {
+          ...(prevMP[targetCal.id] || {}),
+          sideArt: sideVal,
+        },
+      }));
+      if (curMode.cat !== "Calendar") {
+        selectMode(targetCal);
+        setCat("Calendar");
+      }
+    },
+    [curMode, modes, selectMode]
+  );
+
+  // Monotonic counter so EVERY single click on NEW TORN / UNIQUE GENERATE / Torn dropdowns advances to a fresh colour!
+  const tornColorSeqRef = useRef<number>(1);
+
+  // Quick 1-Click Procedural Fractal Torn Paper Studio Handlers (96 Modes · Crores of Non-Repeating Designs)
+  const selectTornPaperSet = useCallback(
+    (tornModeId: string) => {
+      const m = modes.find((x) => x.id === tornModeId);
+      if (!m) return;
+      const defLayout = String(m.params.find((p) => p.k === "layoutType")?.def || "scrap_1pc");
+      const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || "1");
+      const defSurface = String(m.params.find((p) => p.k === "paperSurface")?.def || "solid_matte");
+      const defBgMode = String(m.params.find((p) => p.k === "bgMode")?.def || "checker");
+      const defAddon = String(m.params.find((p) => p.k === "addonStyle")?.def || "auto");
+      const targetRatio: CanvasRatio =
+        defLayout === "canyon_v_rip" ||
+        defLayout === "half_divider" ||
+        defLayout === "center_strip" ||
+        defLayout === "curled_peel_canyon" ||
+        (defLayout === "scrap_1pc" && defPcs === "1")
+          ? "3:2"
+          : "4:3";
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      const freshSeed = nextUniqueSeed();
+      const nextVar = tornColorSeqRef.current++;
+      setMP((prevMP) => ({
+        ...prevMP,
+        [m.id]: {
+          ...(prevMP[m.id] || {}),
+          layoutType: defLayout,
+          pcs: defPcs,
+          paperSurface: defSurface,
+          bgMode: defBgMode,
+          addonStyle: defAddon,
+          variant: prevMP[m.id]?.variant !== undefined ? nextVar : 0,
+        },
+      }));
+      selectMode(m);
+      setP((prev) => ({
+        ...prev,
+        mode: m.id,
+        seed: freshSeed,
+        bg: m.look?.bg || "#e2e8f0",
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+        svgStructure: "unified",
+        view: 1,
+        transp: false,
+      }));
+      setCat("Torn Paper");
+      setRandNote(
+        `TORN PAPER STUDIO LOADED · ${m.name.toUpperCase()} · 100% UNIQUE 3-PLY FRACTAL DECKLE TEAR`
+      );
+    },
+    [modes, P.px, selectMode]
+  );
+
+  const switchTornPaperParam = useCallback(
+    (
+      paramKey: "layoutType" | "pcs" | "paperSurface" | "bgMode" | "addonStyle",
+      paramVal: string
+    ) => {
+      const targetTorn =
+        curMode.cat === "Torn Paper"
+          ? curMode
+          : modes.find((m) => m.id === "torn_ms_1") || modes.find((m) => m.cat === "Torn Paper");
+      if (!targetTorn) return;
+      const curQ = MP[targetTorn.id] || {};
+      const nextLayout =
+        paramKey === "layoutType"
+          ? paramVal
+          : String(
+              curQ.layoutType ||
+                targetTorn.params.find((p) => p.k === "layoutType")?.def ||
+                "scrap_1pc"
+            );
+      const nextPcs =
+        paramKey === "pcs"
+          ? paramVal
+          : paramKey === "layoutType" && paramVal === "horizontal_strips_pack"
+          ? "4"
+          : paramKey === "layoutType" && paramVal === "taped_memo_board"
+          ? "4"
+          : String(curQ.pcs || targetTorn.params.find((p) => p.k === "pcs")?.def || "1");
+      const nextSurface =
+        paramKey === "paperSurface"
+          ? paramVal
+          : paramKey === "layoutType" && paramVal === "notebook_grid"
+          ? "grid_notebook"
+          : paramKey === "layoutType" && paramVal === "notebook_lined"
+          ? "lined_notebook"
+          : paramKey === "layoutType" && paramVal === "kraft_cardboard_rip"
+          ? "kraft_fiber"
+          : String(
+              curQ.paperSurface ||
+                targetTorn.params.find((p) => p.k === "paperSurface")?.def ||
+                "solid_matte"
+            );
+      const nextBg =
+        paramKey === "bgMode"
+          ? paramVal
+          : paramKey === "layoutType" &&
+            (paramVal === "notebook_grid" ||
+              paramVal === "notebook_lined" ||
+              paramVal === "taped_memo_board")
+          ? "charcoal"
+          : String(curQ.bgMode || targetTorn.params.find((p) => p.k === "bgMode")?.def || "checker");
+      const nextAddon =
+        paramKey === "addonStyle"
+          ? paramVal
+          : paramKey === "layoutType" && paramVal === "taped_memo_board"
+          ? "tape_and_pin"
+          : paramKey === "layoutType" && paramVal === "kraft_cardboard_rip"
+          ? "scotch_tape"
+          : String(
+              curQ.addonStyle ||
+                targetTorn.params.find((p) => p.k === "addonStyle")?.def ||
+                "auto"
+            );
+
+      const targetRatio: CanvasRatio =
+        nextLayout === "canyon_v_rip" ||
+        nextLayout === "half_divider" ||
+        nextLayout === "center_strip" ||
+        nextLayout === "curled_peel_canyon" ||
+        (nextLayout === "scrap_1pc" && nextPcs === "1")
+          ? "3:2"
+          : "4:3";
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      const freshSeed = nextUniqueSeed();
+      const nextVar = tornColorSeqRef.current++;
+
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetTorn.id]: {
+          ...(prevMP[targetTorn.id] || {}),
+          layoutType: nextLayout,
+          pcs: nextPcs,
+          paperSurface: nextSurface,
+          bgMode: nextBg,
+          addonStyle: nextAddon,
+          variant: nextVar,
+        },
+      }));
+      setP((prev) => ({
+        ...prev,
+        mode: targetTorn.id,
+        seed: freshSeed,
+        transp: false,
+        bd: "none",
+        mx: "none",
+        svgStructure: "unified",
+        view: 1,
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+      }));
+      setCat("Torn Paper");
+    },
+    [curMode, modes, MP, P.px]
+  );
+
+  // Quick 1-Click Procedural Ultra-Smooth Transparent Vector Shadow Studio Handlers (72 Modes · Zero Banding · Zero Cracks)
+  const selectShadowSet = useCallback(
+    (shadowModeId: string) => {
+      const m = modes.find((x) => x.id === shadowModeId);
+      if (!m) return;
+      const defArch = String(m.params.find((p) => p.k === "archType")?.def || "oval_contact");
+      const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || "1");
+      const defTone = String(m.params.find((p) => p.k === "shadowTone")?.def || "pure_noir");
+      const defBgMode = String(m.params.find((p) => p.k === "bgMode")?.def || "transparent");
+      const targetRatio: CanvasRatio =
+        defArch === "linear_fade_overlay" ||
+        defArch === "circle_disc_base" ||
+        defArch === "window_blind_gobo"
+          ? "1:1"
+          : "3:2";
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      const freshSeed = nextUniqueSeed();
+      const nextVar = tornColorSeqRef.current++;
+      setMP((prevMP) => ({
+        ...prevMP,
+        [m.id]: {
+          ...(prevMP[m.id] || {}),
+          archType: defArch,
+          pcs: defPcs,
+          shadowTone: defTone,
+          bgMode: defBgMode,
+          variant: prevMP[m.id]?.variant !== undefined ? nextVar : 0,
+        },
+      }));
+      selectMode(m);
+      setP((prev) => ({
+        ...prev,
+        mode: m.id,
+        seed: freshSeed,
+        bg: "#ffffff",
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+        svgStructure: "unified",
+        view: 1,
+        transp: defBgMode === "transparent",
+      }));
+      setCat("Shadow");
+      setRandNote(
+        `ULTRA-SMOOTH TRANSPARENT SHADOW STUDIO LOADED · ${m.name.toUpperCase()} · ZERO BANDING · ZERO CRACKS`
+      );
+    },
+    [modes, P.px, selectMode]
+  );
+
+  const switchShadowParam = useCallback(
+    (
+      paramKey: "archType" | "pcs" | "shadowTone" | "bgMode",
+      paramVal: string
+    ) => {
+      const targetSh =
+        curMode.cat === "Shadow"
+          ? curMode
+          : modes.find((m) => m.id === "shadow_ms_1") || modes.find((m) => m.cat === "Shadow");
+      if (!targetSh) return;
+      const curQ = MP[targetSh.id] || {};
+      const nextArch =
+        paramKey === "archType"
+          ? paramVal
+          : String(
+              curQ.archType ||
+                targetSh.params.find((p) => p.k === "archType")?.def ||
+                "oval_contact"
+            );
+      const nextPcs =
+        paramKey === "pcs"
+          ? paramVal
+          : paramKey === "archType" && paramVal === "multi_shadow_kit"
+          ? "4"
+          : String(curQ.pcs || targetSh.params.find((p) => p.k === "pcs")?.def || "1");
+      const nextTone =
+        paramKey === "shadowTone"
+          ? paramVal
+          : String(
+              curQ.shadowTone ||
+                targetSh.params.find((p) => p.k === "shadowTone")?.def ||
+                "pure_noir"
+            );
+      const nextBg =
+        paramKey === "bgMode"
+          ? paramVal
+          : String(
+              curQ.bgMode ||
+                targetSh.params.find((p) => p.k === "bgMode")?.def ||
+                "transparent"
+            );
+      const targetRatio: CanvasRatio =
+        nextArch === "linear_fade_overlay" ||
+        nextArch === "circle_disc_base" ||
+        nextArch === "window_blind_gobo"
+          ? "1:1"
+          : "3:2";
+      const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
+      const freshSeed = nextUniqueSeed();
+      const nextVar = tornColorSeqRef.current++;
+
+      setMP((prevMP) => ({
+        ...prevMP,
+        [targetSh.id]: {
+          ...(prevMP[targetSh.id] || {}),
+          archType: nextArch,
+          pcs: nextPcs,
+          shadowTone: nextTone,
+          bgMode: nextBg,
+          variant: nextVar,
+        },
+      }));
+      setP((prev) => ({
+        ...prev,
+        mode: targetSh.id,
+        seed: freshSeed,
+        bg: "#ffffff",
+        transp: nextBg === "transparent",
+        bd: "none",
+        mx: "none",
+        svgStructure: "unified",
+        view: 1,
+        ratio: targetRatio,
+        artW: d.w,
+        artH: d.h,
+      }));
+      setCat("Shadow");
+    },
+    [curMode, modes, MP, P.px]
+  );
+
   // Quick 1-Click Hand-Lettered Calligraphy & Ornate Typography Studio Handlers (60 Commercial Microstock Typography Sets)
   const selectTypographySet = useCallback(
     (typoModeId: string) => {
@@ -1222,126 +1606,143 @@ export default function App() {
     ) => {
       const curQ = baseMP[targetMode.id] || {};
       const seenSession = sessionSeenRef.current;
-      const isBrush = targetMode.cat === "Brush";
-      const isPoster = targetMode.cat === "Poster";
-      const isLighting = targetMode.cat === "Lighting";
-      const isCalendar = targetMode.cat === "Calendar";
-      const isTypography = targetMode.cat === "Typography";
-      const isFullBgCat =
-        targetMode.cat === "Plain BG" ||
-        targetMode.cat === "Background" ||
-        targetMode.cat === "Gradient" ||
-        targetMode.cat === "Texture";
-      const maxAttempts = extremeDiverse ? 64 : 48;
+        const isBrush = targetMode.cat === "Brush";
+        const isPoster = targetMode.cat === "Poster";
+        const isLighting = targetMode.cat === "Lighting";
+        const isCalendar = targetMode.cat === "Calendar";
+        const isTypography = targetMode.cat === "Typography";
+        const isTornPaper = targetMode.cat === "Torn Paper";
+        const isShadow = targetMode.cat === "Shadow";
+        const isFullBgCat =
+          targetMode.cat === "Plain BG" ||
+          targetMode.cat === "Background" ||
+          targetMode.cat === "Gradient" ||
+          targetMode.cat === "Texture";
+        const maxAttempts = extremeDiverse ? 64 : 48;
 
-      const buildCandidateAt = (attempt: number) => {
-        const stepIdx = batchIdx >= 0 ? batchIdx + attempt * 13 : attempt * 7;
-        const cand = genCand(targetMode, curQ, baseP, withColours, extremeDiverse, stepIdx);
-        const structSalt = nextUniqueStructuralSalt();
-        if (isPoster || isLighting || isCalendar || isTypography) {
-          cand.q = {
-            ...cand.q,
-            variant: ((Math.round(+(curQ.variant ?? 0)) + structSalt + stepIdx) % 48) + 1,
-          };
-        }
-        let bgGrad: BgGradientMode =
-          isBrush || isPoster || isLighting || isCalendar || isTypography ? "solid" : baseP.bgGrad || "solid";
-        let bd: SurfaceTextureMode =
-          isBrush || isPoster || isLighting || isCalendar || isTypography ? "none" : baseP.bd || "none";
+        const buildCandidateAt = (attempt: number) => {
+          const stepIdx = batchIdx >= 0 ? batchIdx + attempt * 13 : attempt * 7;
+          const cand = genCand(targetMode, curQ, baseP, withColours, extremeDiverse, stepIdx);
+          const structSalt = nextUniqueStructuralSalt();
+          if (isPoster || isLighting || isCalendar || isTypography) {
+            cand.q = {
+              ...cand.q,
+              variant: ((Math.round(+(curQ.variant ?? 0)) + structSalt + stepIdx) % 48) + 1,
+            };
+          } else if (isTornPaper || isShadow) {
+            cand.q = {
+              ...cand.q,
+              variant: Math.max(1, Math.round(+(curQ.variant ?? 0)) + 1 + attempt),
+            };
+          }
+          let bgGrad: BgGradientMode =
+            isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
+              ? "solid"
+              : baseP.bgGrad || "solid";
+          let bd: SurfaceTextureMode =
+            isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
+              ? "none"
+              : baseP.bd || "none";
 
-        if (!isBrush && !isPoster && !isLighting && !isCalendar && !isTypography) {
-          if (bgPref === "gradient") {
-            bgGrad = cand.gradModes[(stepIdx + Math.floor(Math.random() * cand.gradModes.length)) % cand.gradModes.length];
-            bd = "none";
-          } else if (bgPref === "texture") {
-            bgGrad = "solid";
-            bd = cand.texModes[(stepIdx + Math.floor(Math.random() * cand.texModes.length)) % cand.texModes.length];
-          } else if (bgPref === "mix") {
-            const slot = extremeDiverse ? stepIdx % 10 : Math.floor(Math.random() * 10);
-            if (slot < 4) {
-              bgGrad = cand.gradModes[(stepIdx + attempt) % cand.gradModes.length];
+          if (!isBrush && !isPoster && !isLighting && !isCalendar && !isTypography && !isTornPaper && !isShadow) {
+            if (bgPref === "gradient") {
+              bgGrad = cand.gradModes[(stepIdx + Math.floor(Math.random() * cand.gradModes.length)) % cand.gradModes.length];
               bd = "none";
-            } else if (slot < 7) {
+            } else if (bgPref === "texture") {
               bgGrad = "solid";
-              bd = cand.texModes[(stepIdx + attempt) % cand.texModes.length];
-            } else {
-              bgGrad = "solid";
-              bd = "none";
+              bd = cand.texModes[(stepIdx + Math.floor(Math.random() * cand.texModes.length)) % cand.texModes.length];
+            } else if (bgPref === "mix") {
+              const slot = extremeDiverse ? stepIdx % 10 : Math.floor(Math.random() * 10);
+              if (slot < 4) {
+                bgGrad = cand.gradModes[(stepIdx + attempt) % cand.gradModes.length];
+                bd = "none";
+              } else if (slot < 7) {
+                bgGrad = "solid";
+                bd = cand.texModes[(stepIdx + attempt) % cand.texModes.length];
+              } else {
+                bgGrad = "solid";
+                bd = "none";
+              }
             }
           }
-        }
 
-        const posterPcsVal = isPoster
-          ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "4")
-          : "";
-        const calViewVal = isCalendar
-          ? String(cand.q.viewMode || curQ.viewMode || targetMode.params.find((p) => p.k === "viewMode")?.def || "12m")
-          : "";
-        const typoPcsVal = isTypography
-          ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1")
-          : "";
-        const posterRatio = isPoster
-          ? getMicrostockPosterRatio(posterPcsVal)
-          : isCalendar
-          ? getMicrostockCalendarRatio(calViewVal)
-          : isTypography
-          ? getMicrostockTypographyRatio(typoPcsVal)
-          : baseP.ratio;
-        const posterDims =
-          isPoster || isCalendar || isTypography
-            ? getRatioDims(Math.max(5200, +baseP.px || 5200), posterRatio)
-            : null;
-
-        const testP: PatternState = {
-          ...baseP,
-          mode: targetMode.id,
-          mx: isBrush || isPoster || isLighting || isCalendar || isTypography || isFullBgCat ? "none" : cand.mx,
-          seed: cand.seed,
-          bg: isPoster
-            ? baseP.bg || "#000000"
+          const posterPcsVal = isPoster
+            ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "4")
+            : "";
+          const calViewVal = isCalendar
+            ? String(cand.q.viewMode || curQ.viewMode || targetMode.params.find((p) => p.k === "viewMode")?.def || "12m")
+            : "";
+          const typoPcsVal = isTypography
+            ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1")
+            : "";
+          const posterRatio = isPoster
+            ? getMicrostockPosterRatio(posterPcsVal)
             : isCalendar
-            ? baseP.bg || cand.bg
+            ? getMicrostockCalendarRatio(calViewVal)
             : isTypography
-            ? baseP.bg || targetMode.look?.bg || "#ffffff"
-            : cand.bg,
-          bg2: isPoster ? baseP.bg || "#000000" : cand.bg2,
-          bgGrad,
-          bgAngle: cand.bgAngle,
-          ink: isTypography ? baseP.ink || targetMode.look?.ink || "#111111" : cand.ink,
-          c0: cand.cols[0],
-          c1: cand.cols[1],
-          c2: cand.cols[2],
-          c3: cand.cols[3],
-          c4: cand.cols[4],
-          ncol: cand.ncol,
-          style: cand.style,
-          sw: cand.sw,
-          bd,
-          bdc: cand.bdc,
-          bdn: cand.bdn,
-          bdo: cand.bdo,
-          transp:
-            isBrush || isLighting
-              ? true
-              : isPoster || isCalendar || isTypography || isFullBgCat
-              ? false
-              : baseP.transp,
-          svgStructure:
-            isBrush || isPoster || isLighting || isCalendar || isTypography || isFullBgCat
-              ? "unified"
-              : baseP.svgStructure,
-          view: isBrush || isPoster || isLighting || isCalendar || isTypography || isFullBgCat ? 1 : baseP.view,
-          ratio: isPoster || isCalendar || isTypography ? posterRatio : baseP.ratio,
-          artW: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.w : baseP.artW,
-          artH: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.h : baseP.artH,
-          safeEdge: baseP.safeEdge === true,
+            ? getMicrostockTypographyRatio(typoPcsVal)
+            : baseP.ratio;
+          const posterDims =
+            isPoster || isCalendar || isTypography
+              ? getRatioDims(Math.max(5200, +baseP.px || 5200), posterRatio)
+              : null;
+
+          const testP: PatternState = {
+            ...baseP,
+            mode: targetMode.id,
+            mx:
+              isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
+                ? "none"
+                : cand.mx,
+            seed: cand.seed,
+            bg: isPoster
+              ? baseP.bg || "#000000"
+              : isCalendar
+              ? baseP.bg || cand.bg
+              : isTypography || isShadow
+              ? baseP.bg || targetMode.look?.bg || "#ffffff"
+              : cand.bg,
+            bg2: isPoster ? baseP.bg || "#000000" : cand.bg2,
+            bgGrad,
+            bgAngle: cand.bgAngle,
+            ink: isTypography ? baseP.ink || targetMode.look?.ink || "#111111" : cand.ink,
+            c0: cand.cols[0],
+            c1: cand.cols[1],
+            c2: cand.cols[2],
+            c3: cand.cols[3],
+            c4: cand.cols[4],
+            ncol: cand.ncol,
+            style: cand.style,
+            sw: cand.sw,
+            bd,
+            bdc: cand.bdc,
+            bdn: cand.bdn,
+            bdo: cand.bdo,
+            transp:
+              isBrush || isLighting || isShadow
+                ? true
+                : isPoster || isCalendar || isTypography || isTornPaper || isFullBgCat
+                ? false
+                : baseP.transp,
+            svgStructure:
+              isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
+                ? "unified"
+                : baseP.svgStructure,
+            view:
+              isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
+                ? 1
+                : baseP.view,
+            ratio: isPoster || isCalendar || isTypography ? posterRatio : baseP.ratio,
+            artW: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.w : baseP.artW,
+            artH: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.h : baseP.artH,
+            safeEdge: baseP.safeEdge === true,
+          };
+          const designHash = computeDesignHash(testP, cand.q);
+          const structHash = computeStructuralSimilarityHash(testP, cand.q);
+          // Coarse per-batch anti-similarity signature (mode + dominant palette bucket + style + mx + variant + bg)
+          const coarseSig = `${targetMode.id}|${testP.bg.slice(0, 4)}|${testP.c0.slice(0, 4)}|${testP.style}|${testP.mx}|${testP.bgGrad}|${testP.bd}|${cand.q.variant ?? ""}|${cand.q.arch ?? ""}|${cand.q.viewMode ?? ""}|${cand.q.year ?? ""}|${cand.q.occasion ?? ""}|${cand.q.flourishStyle ?? ""}|${cand.q.phraseIdx ?? ""}`;
+          return { cand, testP, designHash, structHash, coarseSig };
         };
-        const designHash = computeDesignHash(testP, cand.q);
-        const structHash = computeStructuralSimilarityHash(testP, cand.q);
-        // Coarse per-batch anti-similarity signature (mode + dominant palette bucket + style + mx + variant + bg)
-        const coarseSig = `${targetMode.id}|${testP.bg.slice(0, 4)}|${testP.c0.slice(0, 4)}|${testP.style}|${testP.mx}|${testP.bgGrad}|${testP.bd}|${cand.q.variant ?? ""}|${cand.q.arch ?? ""}|${cand.q.viewMode ?? ""}|${cand.q.year ?? ""}|${cand.q.occasion ?? ""}|${cand.q.flourishStyle ?? ""}|${cand.q.phraseIdx ?? ""}`;
-        return { cand, testP, designHash, structHash, coarseSig };
-      };
 
       let lastBuilt: ReturnType<typeof buildCandidateAt> | null = null;
       for (let a = 0; a < maxAttempts; a++) {
@@ -1772,6 +2173,87 @@ export default function App() {
           const finalH = computeDesignHash(res.testP, res.testMP[targetMode.id]);
           const finalSt = computeStructuralSimilarityHash(res.testP, res.testMP[targetMode.id]);
           setUniqCount(registerDesignHash(finalH, finalSt));
+        } else if (targetMode.cat === "Torn Paper") {
+          const nextVar = tornColorSeqRef.current++;
+          const curQ = MP[targetMode.id] || {};
+          const effLayout = String(
+            curQ.layoutType || targetMode.params.find((p) => p.k === "layoutType")?.def || "scrap_1pc"
+          );
+          const effPcs = String(
+            curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1"
+          );
+          const effSurf = String(
+            curQ.paperSurface || targetMode.params.find((p) => p.k === "paperSurface")?.def || "solid_matte"
+          );
+          const effBgMode = String(
+            curQ.bgMode || targetMode.params.find((p) => p.k === "bgMode")?.def || "checker"
+          );
+          const effAddon = String(
+            curQ.addonStyle || targetMode.params.find((p) => p.k === "addonStyle")?.def || "auto"
+          );
+          const tornRatio: CanvasRatio =
+            effLayout === "canyon_v_rip" ||
+            effLayout === "half_divider" ||
+            effLayout === "center_strip" ||
+            effLayout === "curled_peel_canyon" ||
+            (effLayout === "scrap_1pc" && effPcs === "1")
+              ? "3:2"
+              : "4:3";
+          const tornDims = getRatioDims(Math.max(5200, +res.testP.px || 5200), tornRatio);
+          res.testMP[targetMode.id] = {
+            ...res.testMP[targetMode.id],
+            variant: nextVar,
+            layoutType: effLayout,
+            pcs: effPcs,
+            paperSurface: effSurf,
+            bgMode: effBgMode,
+            addonStyle: effAddon,
+          };
+          res.testP.transp = false;
+          res.testP.ratio = tornRatio;
+          res.testP.artW = tornDims.w;
+          res.testP.artH = tornDims.h;
+          const finalH = computeDesignHash(res.testP, res.testMP[targetMode.id]);
+          const finalSt = computeStructuralSimilarityHash(res.testP, res.testMP[targetMode.id]);
+          setUniqCount(registerDesignHash(finalH, finalSt));
+        } else if (targetMode.cat === "Shadow") {
+          const nextVar = tornColorSeqRef.current++;
+          const curQ = MP[targetMode.id] || {};
+          const effArch = String(
+            curQ.archType || targetMode.params.find((p) => p.k === "archType")?.def || "oval_contact"
+          );
+          const effPcs = String(
+            curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1"
+          );
+          const effTone = String(
+            curQ.shadowTone || targetMode.params.find((p) => p.k === "shadowTone")?.def || "pure_noir"
+          );
+          const effBgMode = String(
+            curQ.bgMode || targetMode.params.find((p) => p.k === "bgMode")?.def || "transparent"
+          );
+          const shRatio: CanvasRatio =
+            effArch === "linear_fade_overlay" ||
+            effArch === "circle_disc_base" ||
+            effArch === "window_blind_gobo"
+              ? "1:1"
+              : "3:2";
+          const shDims = getRatioDims(Math.max(5200, +res.testP.px || 5200), shRatio);
+          res.testMP[targetMode.id] = {
+            ...res.testMP[targetMode.id],
+            variant: nextVar,
+            archType: effArch,
+            pcs: effPcs,
+            shadowTone: effTone,
+            bgMode: effBgMode,
+          };
+          res.testP.bg = "#ffffff";
+          res.testP.transp = effBgMode === "transparent";
+          res.testP.ratio = shRatio;
+          res.testP.artW = shDims.w;
+          res.testP.artH = shDims.h;
+          const finalH = computeDesignHash(res.testP, res.testMP[targetMode.id]);
+          const finalSt = computeStructuralSimilarityHash(res.testP, res.testMP[targetMode.id]);
+          setUniqCount(registerDesignHash(finalH, finalSt));
         } else {
           const patDims = getRatioDims(
             Math.max(5200, +res.testP.px || 5200),
@@ -1805,6 +2287,8 @@ export default function App() {
       curMode.cat === "Poster" ||
       curMode.cat === "Calendar" ||
       curMode.cat === "Typography" ||
+      curMode.cat === "Torn Paper" ||
+      curMode.cat === "Shadow" ||
       curMode.cat === "Lighting"
     )
       return 1;
@@ -1863,9 +2347,22 @@ export default function App() {
                 "split"
             )
           : "";
+      const shadowBgMode =
+        mObj.cat === "Shadow"
+          ? String(
+              stateMP[mObj.id]?.bgMode ||
+                mObj.params.find((p) => p.k === "bgMode")?.def ||
+                "transparent"
+            )
+          : "";
       const isBrushOrTransp =
-        mObj.cat === "Poster" || mObj.cat === "Calendar" || mObj.cat === "Typography"
+        mObj.cat === "Poster" ||
+        mObj.cat === "Calendar" ||
+        mObj.cat === "Typography" ||
+        mObj.cat === "Torn Paper"
           ? false
+          : mObj.cat === "Shadow"
+          ? shadowBgMode === "transparent"
           : mObj.cat === "Lighting"
           ? lightBgMode !== "black"
           : Boolean(stateP.transp || mObj.cat === "Brush");
@@ -1883,6 +2380,8 @@ export default function App() {
         mObj.cat === "Poster" ||
         mObj.cat === "Calendar" ||
         mObj.cat === "Typography" ||
+        mObj.cat === "Torn Paper" ||
+        mObj.cat === "Shadow" ||
         mObj.cat === "Lighting";
       const rep = isUnified
         ? 1
@@ -2006,9 +2505,20 @@ export default function App() {
   // Adobe Illustrator Editable Vector SVG Export (Locks design into Zero-Duplicate Ledger on download!)
   const exportSVG = useCallback(() => {
     const rep = expRep();
-    const isPoster = curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography";
+    const isPoster =
+      curMode.cat === "Poster" ||
+      curMode.cat === "Calendar" ||
+      curMode.cat === "Typography" ||
+      curMode.cat === "Torn Paper";
     const isLighting = curMode.cat === "Lighting";
-    const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+    const isShadow = curMode.cat === "Shadow";
+    const shadowTransp =
+      isShadow && String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
+    const omitBg = isPoster
+      ? false
+      : isShadow
+      ? shadowTransp
+      : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
     const exportP = isPoster
       ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
       : { ...P, transp: omitBg };
@@ -2053,9 +2563,20 @@ export default function App() {
   // Direct Adobe Illustrator EPS 10 (.eps) Vector Export for Instant Microstock Upload (Adobe Stock, Shutterstock, Freepik, Vecteezy)
   const exportEPS10 = useCallback(() => {
     const rep = expRep();
-    const isPoster = curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography";
+    const isPoster =
+      curMode.cat === "Poster" ||
+      curMode.cat === "Calendar" ||
+      curMode.cat === "Typography" ||
+      curMode.cat === "Torn Paper";
     const isLighting = curMode.cat === "Lighting";
-    const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+    const isShadow = curMode.cat === "Shadow";
+    const shadowTransp =
+      isShadow && String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
+    const omitBg = isPoster
+      ? false
+      : isShadow
+      ? shadowTransp
+      : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
     const exportP = isPoster
       ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
       : { ...P, transp: omitBg };
@@ -2159,7 +2680,11 @@ export default function App() {
     try {
       const { blob: jpgBlob, w: W, h: H } = await renderHighResRasterBlob(P, MP, "jpeg");
       const rep = expRep();
-      const isPoster = curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography";
+      const isPoster =
+        curMode.cat === "Poster" ||
+        curMode.cat === "Calendar" ||
+        curMode.cat === "Typography" ||
+        curMode.cat === "Torn Paper";
       const isLighting = curMode.cat === "Lighting";
       const omitBg = isPoster ? false : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
       const exportP = isPoster
@@ -2903,10 +3428,10 @@ export default function App() {
     });
   };
 
-  // Categories (Prioritize Typography, Calendar, Lighting, Poster & Brush at the front of the category bar)
+  // Categories (Prioritize Torn Paper, Calendar, Lighting, Poster, Background & Brush at the front of the category bar)
   const categories = useMemo(() => {
     const rawCats = [...new Set(modes.map((m) => m.cat))];
-    const priority = ["Typography", "Calendar", "Poster", "Lighting", "Brush", "Fabric", "Plain BG", "Background"];
+    const priority = ["Torn Paper", "Calendar", "Poster", "Lighting", "Background", "Plain BG", "Brush", "Fabric"];
     const first = priority.filter((c) => rawCats.includes(c));
     const rest = rawCats.filter((c) => !priority.includes(c));
     return ["All", "★ Favourites", ...first, ...rest];
@@ -2928,21 +3453,25 @@ export default function App() {
 
   // Viewport frame dimensions respecting Artboard Aspect Ratio (outDims.w / outDims.h) with EXACT integer tile division (ZERO SIDE-CUT!)
   const frameStyle = useMemo(() => {
-    const maxW = Math.max(220, vpSize.w - 44);
-    const maxH = Math.max(220, vpSize.h - 64);
+    const maxW = Math.max(240, vpSize.w - 20);
+    const maxH = Math.max(240, vpSize.h - 16);
     const aspect = outDims.w / Math.max(1, outDims.h);
 
-    let boxW = Math.min(maxW, 640);
+    let boxW = Math.min(maxW, 1460);
     let boxH = boxW / aspect;
-    if (boxH > Math.min(maxH, 560)) {
-      boxH = Math.min(maxH, 560);
+    if (boxH > Math.min(maxH, 1240)) {
+      boxH = Math.min(maxH, 1240);
       boxW = boxH * aspect;
     }
 
     const wPx = Math.round(boxW);
     const hPx = Math.round(boxH);
     const isBrush = curMode.cat === "Brush";
-    const isPoster = curMode.cat === "Poster" || curMode.cat === "Calendar" || curMode.cat === "Typography";
+    const isPoster =
+      curMode.cat === "Poster" ||
+      curMode.cat === "Calendar" ||
+      curMode.cat === "Torn Paper" ||
+      curMode.cat === "Typography";
     const isLighting = curMode.cat === "Lighting";
     const lightBgMode = isLighting
       ? String(
@@ -4174,308 +4703,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {curMode.cat === "Typography" && (
-                    <div
-                      style={{
-                        background: "var(--p2)",
-                        border: "1px solid #f43f5e",
-                        borderRadius: "8px",
-                        padding: "9px 10px",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "8px",
-                          gap: "6px",
-                        }}
-                      >
-                        <span className="st" style={{ fontSize: "10px", color: "#fb7185" }}>
-                          ✒️ {MASTER_TYPOGRAPHY_MODES.length} CALLIGRAPHY &amp; TYPOGRAPHY SETS
-                        </span>
-                        <button
-                          type="button"
-                          className="ib"
-                          style={{
-                            fontSize: "9px",
-                            padding: "2px 6px",
-                            height: "22px",
-                            borderColor: "#f43f5e",
-                            color: "#fb7185",
-                          }}
-                          onClick={() => selectTypographySet(curMode.id)}
-                          title="RESET TYPOGRAPHY TO ORIGINAL HABUHU PRESET"
-                        >
-                          ↺ HABUHU REF
-                        </button>
-                      </div>
 
-                      {/* 60 TYPOGRAPHY DESIGNS DROPDOWN + PREV/NEXT */}
-                      <div style={{ display: "flex", gap: "4px", marginBottom: "7px" }}>
-                        <select
-                          value={curMode.id}
-                          onChange={(e) => selectTypographySet(e.target.value)}
-                          style={{
-                            flex: 1,
-                            height: "26px",
-                            fontSize: "10px",
-                            fontWeight: 800,
-                            borderRadius: "6px",
-                            border: "1px solid #f43f5e",
-                            background: "var(--p)",
-                            color: "var(--tx)",
-                          }}
-                        >
-                          {MASTER_TYPOGRAPHY_MODES.map((tm) => (
-                            <option key={tm.id} value={tm.id}>
-                              {tm.name.toUpperCase()}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="ib"
-                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
-                          title="PREVIOUS TYPOGRAPHY DESIGN"
-                          onClick={() => {
-                            const idx = MASTER_TYPOGRAPHY_MODES.findIndex((x) => x.id === curMode.id);
-                            const prevIdx =
-                              (idx - 1 + MASTER_TYPOGRAPHY_MODES.length) %
-                              MASTER_TYPOGRAPHY_MODES.length;
-                            selectTypographySet(MASTER_TYPOGRAPHY_MODES[prevIdx].id);
-                          }}
-                        >
-                          ◀
-                        </button>
-                        <button
-                          type="button"
-                          className="ib"
-                          style={{ height: "26px", padding: "0 7px", fontSize: "10px" }}
-                          title="NEXT TYPOGRAPHY DESIGN"
-                          onClick={() => {
-                            const idx = MASTER_TYPOGRAPHY_MODES.findIndex((x) => x.id === curMode.id);
-                            const nextIdx = (idx + 1) % MASTER_TYPOGRAPHY_MODES.length;
-                            selectTypographySet(MASTER_TYPOGRAPHY_MODES[nextIdx].id);
-                          }}
-                        >
-                          ▶
-                        </button>
-                      </div>
-
-                      {/* 1 PC HERO OR MULTI-PIECE SET SELECTOR (1 PC, 2 PCS, 4 PCS, 6 PCS, 9 PCS, 12 PCS) */}
-                      <div
-                        style={{
-                          fontSize: "9px",
-                          fontWeight: 800,
-                          color: "var(--mu)",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        1 PC HERO OR MULTI-PIECE COLLECTION SET (1–12 PCS):
-                      </div>
-                      <div
-                        className="seg"
-                        style={{
-                          width: "100%",
-                          display: "grid",
-                          gridTemplateColumns: "repeat(3, 1fr)",
-                          gap: "3px",
-                          marginBottom: "7px",
-                        }}
-                      >
-                        {[
-                          { k: "1", l: "1 PC HERO" },
-                          { k: "2", l: "2 PCS DUO" },
-                          { k: "4", l: "4 PCS (2×2)" },
-                          { k: "6", l: "6 PCS (3×2)" },
-                          { k: "9", l: "9 PCS (3×3)" },
-                          { k: "12", l: "12 PCS (4×3)" },
-                        ].map((item) => (
-                          <button
-                            key={item.k}
-                            type="button"
-                            className={String(curParams.pcs || "1") === item.k ? "on" : ""}
-                            onClick={() => switchTypographyPcs(item.k)}
-                          >
-                            {item.l}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* 12 COMMERCIAL MICROSTOCK TOPICS / OCCASIONS */}
-                      <div
-                        style={{
-                          fontSize: "9px",
-                          fontWeight: 800,
-                          color: "var(--mu)",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        SELECT TOPIC / OCCASION (12 COMMERCIAL PACKS):
-                      </div>
-                      <div
-                        className="seg"
-                        style={{
-                          width: "100%",
-                          display: "grid",
-                          gridTemplateColumns: "repeat(3, 1fr)",
-                          gap: "3px",
-                          marginBottom: "7px",
-                        }}
-                      >
-                        {[
-                          { k: "birthday", l: "🎂 BIRTHDAY" },
-                          { k: "wedding", l: "💍 WEDDING" },
-                          { k: "congrats", l: "🏆 CONGRATS" },
-                          { k: "thankyou", l: "🙏 THANK YOU" },
-                          { k: "holiday", l: "🎄 HOLIDAY" },
-                          { k: "motivational", l: "⚡ QUOTES" },
-                          { k: "coffee", l: "☕ COFFEE" },
-                          { k: "family", l: "🏡 FAMILY" },
-                          { k: "summer", l: "🌴 SUMMER" },
-                          { k: "sale", l: "🏷️ VIP SALE" },
-                          { k: "islamic", l: "🌙FESTIVAL" },
-                          { k: "welcome", l: "✨ WELCOME" },
-                        ].map((oc) => (
-                          <button
-                            key={oc.k}
-                            type="button"
-                            className={
-                              String(curParams.occasion || "birthday") === oc.k ? "on" : ""
-                            }
-                            onClick={() => switchTypographyOccasion(oc.k)}
-                          >
-                            {oc.l}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* 16 CALLIGRAPHY FLOURISH & ORNAMENT ARCHITECTURES (SAMPLE 1 SWASH, SAMPLE 2 VICTORIAN SCROLLS, ETC.) */}
-                      <div
-                        style={{
-                          fontSize: "9px",
-                          fontWeight: 800,
-                          color: "var(--mu)",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        FLOURISH, SWASH &amp; ORNAMENT ARCHITECTURE (16 STYLES):
-                      </div>
-                      <select
-                        value={String(curParams.flourishStyle ?? "0")}
-                        onChange={(e) => switchTypographyFlourishStyle(e.target.value)}
-                        style={{
-                          width: "100%",
-                          height: "26px",
-                          fontSize: "10px",
-                          fontWeight: 800,
-                          borderRadius: "6px",
-                          border: "1px solid var(--bd)",
-                          background: "var(--p)",
-                          color: "var(--tx)",
-                          marginBottom: "7px",
-                        }}
-                      >
-                        <option value="0">01 · SWEEPING TAPERED BRUSH SWASH TAIL (SAMPLE 1 HABUHU)</option>
-                        <option value="1">02 · ORNATE VICTORIAN SCROLLS &amp; 5-PETAL SUNBURST (SAMPLE 2 HABUHU)</option>
-                        <option value="2">03 · ROYAL CROWN CREST &amp; SYMMETRICAL WING FLOURISH</option>
-                        <option value="3">04 · BOTANICAL LAUREL LEAF SPRIGS &amp; CURLED RIBBON</option>
-                        <option value="4">05 · ROMANTIC HEART-LOOP INFINITY SWASH &amp; SPARKLES</option>
-                        <option value="5">06 · VINTAGE APOTHECARY OVAL SCROLL FRAME &amp; FILIGREE</option>
-                        <option value="6">07 · CELESTIAL 9-RAY SUNBURST HALO &amp; CRESCENT WAVE</option>
-                        <option value="7">08 · OPEN BOTANICAL WREATH &amp; EUCALYPTUS LEAF ARCH</option>
-                        <option value="8">09 · RETRO VARSITY PENNANT TAIL &amp; 3D EXTRUDED SHADOW</option>
-                        <option value="9">10 · ART-DECO GEOMETRIC SUNBURST &amp; STEPPED DIAMOND</option>
-                        <option value="10">11 · FESTIVE CONFETTI STREAMERS, STARS &amp; PARTY SWIRL</option>
-                        <option value="11">12 · CALLIGRAPHY QUILL PLUME &amp; DOUBLE-WAVE UNDERLINE</option>
-                        <option value="12">13 · SCALLOPED WAX-SEAL BADGE RING &amp; RIBBON TAILS</option>
-                        <option value="13">14 · FOUR-CORNER BAROQUE SCROLLWORK &amp; ARABESQUES</option>
-                        <option value="14">15 · MINIMALIST LUXURY SIGNATURE LOOP &amp; DIAMOND DOT</option>
-                        <option value="15">16 · GRAND SYMMETRICAL BAROQUE LYRE &amp; VOLUTE SCROLL</option>
-                      </select>
-
-                      {/* 4 SCRIPT FONT STYLES + 10 INK PALETTES */}
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: "5px",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <select
-                          value={String(curParams.fontStyle || "script_brush")}
-                          onChange={(e) => switchTypographyFontStyle(e.target.value)}
-                          style={{
-                            height: "25px",
-                            fontSize: "9.5px",
-                            fontWeight: 800,
-                            borderRadius: "6px",
-                            border: "1px solid var(--bd)",
-                            background: "var(--p)",
-                            color: "var(--tx)",
-                          }}
-                          title="SELECT HAND-LETTERED CALLIGRAPHY NIB STYLE"
-                        >
-                          <option value="script_brush">BRUSH SCRIPT (SAMPLE 1 &amp; 2)</option>
-                          <option value="vintage_serif">CAPITALS + BRUSH SCRIPT</option>
-                          <option value="luxury_monoline">MONOLINE SIGNATURE</option>
-                          <option value="ribbon_groovy">BOLD DISPLAY SCRIPT</option>
-                        </select>
-                        <select
-                          value={String(curParams.colorSet || "ink_white")}
-                          onChange={(e) => switchTypographyColorSet(e.target.value)}
-                          style={{
-                            height: "25px",
-                            fontSize: "9.5px",
-                            fontWeight: 800,
-                            borderRadius: "6px",
-                            border: "1px solid var(--bd)",
-                            background: "var(--p)",
-                            color: "var(--tx)",
-                          }}
-                          title="SELECT INK & ARTBOARD COLOUR PALETTE"
-                        >
-                          <option value="ink_white">CLASSIC BLACK ON WHITE</option>
-                          <option value="ink_accent_white">BLACK + ACCENT ORNAMENTS</option>
-                          <option value="white_black">CRISP WHITE ON BLACK</option>
-                          <option value="gold_noir">24K ROYAL GOLD ON BLACK</option>
-                          <option value="vintage_cream">VINTAGE ESPRESSO &amp; CREAM</option>
-                          <option value="palette">ACTIVE STUDIO PALETTE</option>
-                        </select>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px" }}>
-                        <button
-                          type="button"
-                          className="btn pri"
-                          style={{ minHeight: "27px", fontSize: "9.5px", padding: "4px 6px" }}
-                          onClick={() => smartRandom(true, "current", true)}
-                          title="GENERATE NEXT UNIQUE PHRASE & FLOURISH VARIATION IN THIS TOPIC"
-                        >
-                          ✦ NEW PHRASE / SWASH
-                        </button>
-                        <button
-                          type="button"
-                          className="btn"
-                          style={{
-                            minHeight: "27px",
-                            fontSize: "9.5px",
-                            padding: "4px 6px",
-                            borderColor: "#f43f5e",
-                            color: "#fb7185",
-                          }}
-                          onClick={() => smartRandom(true, "current", false)}
-                          title="SWITCH TO NEXT CALLIGRAPHY TEMPLATE & GENERATE NEW DESIGN"
-                        >
-                          🎲 NEXT TYPO STYLE ▶
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   {curMode.params.map((p) => {
                     const val = curParams[p.k] ?? p.def;
@@ -5581,27 +5809,31 @@ export default function App() {
             </div>
           </div>
 
-          {/* ROW 2: 12 EXACT REFERENCE POSTER SETS, SINGLE / 2-6 PCS SELECTOR, OUTLINED TEXT CHECKBOX & QUICK EXPORT */}
-          <div className="poster-quick-bar">
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-              <span className="st" style={{ flex: "none", color: "var(--ac)" }}>
-                🎨 POSTER ({MASTER_POSTER_MODES.length}):
+          {/* COMPACT SINGLE-ROW DROPDOWN BAR FOR POSTER, LIGHTING & CALENDAR + QUICK DOWNLOADS (MAXIMIZES CANVAS SIZE) */}
+          <div
+            className="poster-quick-bar"
+            style={{ padding: "4px 10px", gap: "6px" }}
+          >
+            {/* POSTER COMPACT DROPDOWNS */}
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+              <span className="st" style={{ flex: "none", color: "var(--ac)", fontSize: "9.5px" }}>
+                🎨 POSTER:
               </span>
               <select
                 value={curMode.cat === "Poster" ? curMode.id : "poster_ref1_coral_gold_5pcs"}
                 onChange={(e) => selectPosterReferenceSet(e.target.value)}
                 style={{
-                  height: "26px",
-                  maxWidth: "215px",
-                  fontSize: "10px",
+                  height: "24px",
+                  maxWidth: "160px",
+                  fontSize: "9.5px",
                   fontWeight: 800,
-                  padding: "0 8px",
-                  borderRadius: "6px",
+                  padding: "0 5px",
+                  borderRadius: "5px",
                   border: "1px solid var(--ac)",
                   background: "var(--p2)",
                   color: "var(--tx)",
                 }}
-                title="SELECT ANY OF THE 112 CURATED MICROSTOCK & REFERENCE POSTER SETS"
+                title="SELECT ANY OF THE 133 CURATED MICROSTOCK & REFERENCE POSTER SETS"
               >
                 {MASTER_POSTER_MODES.map((pm) => (
                   <option key={pm.id} value={pm.id}>
@@ -5609,37 +5841,36 @@ export default function App() {
                   </option>
                 ))}
               </select>
-
-              <div className="seg">
-                {[
-                  { k: "1", l: "1 PCS" },
-                  { k: "2", l: "2 PCS" },
-                  { k: "3", l: "3 PCS" },
-                  { k: "4", l: "4 PCS" },
-                  { k: "5", l: "5 PCS" },
-                  { k: "6", l: "6 PCS" },
-                  { k: "8", l: "8 PCS" },
-                  { k: "10", l: "10 PCS" },
-                  { k: "12", l: "12 PCS" },
-                  { k: "4grid", l: "2×2" },
-                ].map((item) => {
-                  const activePcs =
-                    curMode.cat === "Poster" ? String(curParams.pcs || "4") : "";
-                  return (
-                    <button
-                      key={item.k}
-                      type="button"
-                      className={activePcs === item.k ? "on" : ""}
-                      onClick={() => switchPosterSetPcs(item.k)}
-                      title={`SHOW ${item.l} OF CURRENT CANVAS POSTER ON PRESENTATION BOARD`}
-                    >
-                      {item.l}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* VISIBLE CHECKMARK CHECKBOX FOR POSTER TEXT (CREATE OUTLINES) ON/OFF */}
+              <select
+                value={
+                  curMode.cat === "Poster"
+                    ? String(curParams.pcs || "4")
+                    : String(MP["poster_ref1_coral_gold_5pcs"]?.pcs || "5")
+                }
+                onChange={(e) => switchPosterSetPcs(e.target.value)}
+                style={{
+                  height: "24px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT POSTER PIECES ON ARTBOARD (1 PCS TO 12 PCS)"
+              >
+                <option value="1">1 PCS</option>
+                <option value="2">2 PCS</option>
+                <option value="3">3 PCS</option>
+                <option value="4">4 PCS</option>
+                <option value="5">5 PCS</option>
+                <option value="6">6 PCS</option>
+                <option value="8">8 PCS</option>
+                <option value="10">10 PCS</option>
+                <option value="12">12 PCS</option>
+                <option value="4grid">2×2 GRID</option>
+              </select>
               {(() => {
                 const posterModeId =
                   curMode.cat === "Poster" ? curMode.id : "poster_ref1_coral_gold_5pcs";
@@ -5649,98 +5880,21 @@ export default function App() {
                   <button
                     type="button"
                     className={`chk-pill ${isTextOn ? "on" : ""}`}
+                    style={{ minHeight: "24px", padding: "2px 6px", fontSize: "9px" }}
                     onClick={togglePosterTextCheck}
                     title="CHECKMARK ON = SHOW CREATE-OUTLINES VECTOR POSTER TEXT · UNCHECKED = NO TEXT"
                   >
-                    <span className="chk-box">✓</span>
-                    <span>TEXT OUTLINES {isTextOn ? "(ON)" : "(OFF)"}</span>
+                    <span className="chk-box" style={{ width: "13px", height: "13px", fontSize: "9px" }}>✓</span>
+                    <span>TEXT {isTextOn ? "ON" : "OFF"}</span>
                   </button>
                 );
               })()}
-            </div>
 
-            {/* QUICK DIRECT DOWNLOAD BAR RIGHT ABOVE THE CANVAS */}
-            <div style={{ display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className="btn pri"
-                style={{
-                  minHeight: "27px",
-                  padding: "3px 9px",
-                  fontSize: "10px",
-                  background: "linear-gradient(135deg, #059669, #10b981)",
-                  borderColor: "#10b981",
-                }}
-                onClick={exportEPS10}
-                title="DIRECT DOWNLOAD ADOBE ILLUSTRATOR EPS 10 (.EPS) (E)"
-              >
-                ⬇ EPS 10 (.EPS)
-              </button>
-              <button
-                type="button"
-                className="btn pri"
-                style={{ minHeight: "27px", padding: "3px 9px", fontSize: "10px" }}
-                onClick={exportSVG}
-                title="DOWNLOAD ADOBE ILLUSTRATOR VECTOR SVG (S)"
-              >
-                ⬇ SVG
-              </button>
-              <button
-                type="button"
-                className="btn"
-                style={{
-                  minHeight: "27px",
-                  padding: "3px 9px",
-                  fontSize: "10px",
-                  borderColor: "#f59e0b",
-                  color: "#fbbf24",
-                }}
-                onClick={() => exportRaster("jpeg")}
-                title="DOWNLOAD MICROSTOCK 30+ MP (5.8–9.5MB · 300 DPI) JPG (J)"
-              >
-                ⬇ JPG 5–10MB
-              </button>
-              <button
-                type="button"
-                className="btn pri"
-                style={{
-                  minHeight: "27px",
-                  padding: "3px 9px",
-                  fontSize: "10px",
-                  background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-                  borderColor: "#38bdf8",
-                }}
-                onClick={exportSingleMicrostockZip}
-                title="DOWNLOAD .ZIP (JPG + EPS 10) — UPLOAD THIS .ZIP TO CHATGPT SO CHATGPT NEVER DOWNSCALES JPG TO 2048×1152!"
-              >
-                ⬇ ZIP (JPG+EPS)
-              </button>
-              <button
-                type="button"
-                className="btn"
-                style={{
-                  minHeight: "27px",
-                  padding: "3px 9px",
-                  fontSize: "10px",
-                  borderColor: "#10b981",
-                  color: "#10b981",
-                }}
-                onClick={() => verifyInputRef.current?.click()}
-                title="VERIFY TRUE BINARY SOF0/IHDR RESOLUTION OF ANY DOWNLOADED FILE"
-              >
-                🔍 CHECK FILE
-              </button>
-            </div>
-          </div>
+              <span style={{ color: "var(--bd2)", margin: "0 2px" }}>|</span>
 
-          {/* ROW 3: 108 ORIGINAL LIGHTING & LENS FLARE STUDIO QUICK-BAR (50/50 SPLIT BLACK+TRANSPARENT | ONLY TRANSPARENT | ONLY BLACK BG) */}
-          <div
-            className="poster-quick-bar"
-            style={{ borderTop: "none", paddingTop: "4px", paddingBottom: "5px" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-              <span className="st" style={{ flex: "none", color: "#fbbf24" }}>
-                ✨ LIGHTING ({MASTER_LIGHTING_MODES.length}):
+              {/* LIGHTING COMPACT DROPDOWNS */}
+              <span className="st" style={{ flex: "none", color: "#fbbf24", fontSize: "9.5px" }}>
+                ✨ LIGHT:
               </span>
               <select
                 value={
@@ -5750,12 +5904,12 @@ export default function App() {
                 }
                 onChange={(e) => selectLightingReferenceSet(e.target.value)}
                 style={{
-                  height: "26px",
-                  maxWidth: "225px",
-                  fontSize: "10px",
+                  height: "24px",
+                  maxWidth: "155px",
+                  fontSize: "9.5px",
                   fontWeight: 800,
-                  padding: "0 8px",
-                  borderRadius: "6px",
+                  padding: "0 5px",
+                  borderRadius: "5px",
                   border: "1px solid #f59e0b",
                   background: "var(--p2)",
                   color: "var(--tx)",
@@ -5768,97 +5922,74 @@ export default function App() {
                   </option>
                 ))}
               </select>
+              <select
+                value={
+                  curMode.cat === "Lighting"
+                    ? String(
+                        curParams.bgMode ||
+                          curMode.params.find((p) => p.k === "bgMode")?.def ||
+                          "split"
+                      )
+                    : "split"
+                }
+                onChange={(e) =>
+                  switchLightingBgMode(e.target.value as "split" | "transparent" | "black")
+                }
+                style={{
+                  height: "24px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT LIGHTING BACKGROUND MODE (50/50 SPLIT, TRANSPARENT, OR BLACK)"
+              >
+                <option value="split">◐ 50/50 SPLIT BG</option>
+                <option value="transparent">◌ TRANSPARENT BG</option>
+                <option value="black">◼ ONLY BLACK BG</option>
+              </select>
+              <select
+                value={curMode.cat === "Lighting" ? String(curParams.pcs || "1") : "1"}
+                onChange={(e) => switchLightingSetPcs(e.target.value)}
+                style={{
+                  height: "24px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT LIGHTING KIT PIECES ON ARTBOARD"
+              >
+                <option value="1">1/DUAL</option>
+                <option value="4">4 PCS</option>
+                <option value="6">6 PCS</option>
+                <option value="8">8 PCS KIT</option>
+                <option value="9">9 PCS</option>
+                <option value="12">12 PCS</option>
+              </select>
 
-              {/* 3 INSTANT BACKGROUND MODES: 50/50 SPLIT | ONLY TRANSPARENT | ONLY BLACK */}
-              <div className="seg">
-                {[
-                  {
-                    k: "split",
-                    l: "◐ 50/50 SPLIT (BLACK + TRANSP)",
-                    t: "LEFT HALF BLACK BACKGROUND + RIGHT HALF TRANSPARENT ON SAME ARTBOARD",
-                  },
-                  {
-                    k: "transparent",
-                    l: "◌ ONLY TRANSPARENT (NO BG)",
-                    t: "100% TRANSPARENT BACKGROUND (ZERO BACKGROUND IN SVG / EPS 10 / PNG)",
-                  },
-                  {
-                    k: "black",
-                    l: "◼ ONLY BLACK BG",
-                    t: "100% PITCH BLACK BACKGROUND (#000000)",
-                  },
-                ].map((bm) => {
-                  const activeBgMode =
-                    curMode.cat === "Lighting"
-                      ? String(
-                          curParams.bgMode ||
-                            curMode.params.find((p) => p.k === "bgMode")?.def ||
-                            "split"
-                        )
-                      : "";
-                  return (
-                    <button
-                      key={bm.k}
-                      type="button"
-                      className={activeBgMode === bm.k ? "on" : ""}
-                      onClick={() =>
-                        switchLightingBgMode(bm.k as "split" | "transparent" | "black")
-                      }
-                      title={bm.t}
-                    >
-                      {bm.l}
-                    </button>
-                  );
-                })}
-              </div>
+              <span style={{ color: "var(--bd2)", margin: "0 2px" }}>|</span>
 
-              {/* QUICK LIGHTING KIT PIECES: 1/DUAL, 4, 6, 8, 9, 12 PCS */}
-              <div className="seg">
-                {[
-                  { k: "1", l: "1/DUAL" },
-                  { k: "4", l: "4 PCS" },
-                  { k: "6", l: "6 PCS" },
-                  { k: "8", l: "8 PCS KIT" },
-                  { k: "9", l: "9 PCS" },
-                  { k: "12", l: "12 PCS" },
-                ].map((item) => {
-                  const activePcs =
-                    curMode.cat === "Lighting" ? String(curParams.pcs || "1") : "";
-                  return (
-                    <button
-                      key={item.k}
-                      type="button"
-                      className={activePcs === item.k ? "on" : ""}
-                      onClick={() => switchLightingSetPcs(item.k)}
-                      title={`SHOW ${item.l} LIGHTING FLARES ON ARTBOARD`}
-                    >
-                      {item.l}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* ROW 4: 60 COMMERCIAL MICROSTOCK CALENDAR & WEEKLY PLANNER STUDIO QUICK-BAR (YEARS 2025-2030 | 12 MONTHS / 1 MONTH / WEEKLY PLANNER | JAN-DEC | SUN/MON/SAT) */}
-          <div
-            className="poster-quick-bar"
-            style={{ borderTop: "none", paddingTop: "3px", paddingBottom: "5px" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-              <span className="st" style={{ flex: "none", color: "#38bdf8" }}>
-                📅 CALENDAR ({MASTER_CALENDAR_MODES.length}):
+              {/* CALENDAR COMPACT DROPDOWNS */}
+              <span className="st" style={{ flex: "none", color: "#38bdf8", fontSize: "9.5px" }}>
+                📅 CAL:
               </span>
               <select
                 value={curMode.cat === "Calendar" ? curMode.id : "cal_ms_1"}
                 onChange={(e) => selectCalendarSet(e.target.value)}
                 style={{
-                  height: "26px",
-                  maxWidth: "205px",
-                  fontSize: "10px",
+                  height: "24px",
+                  maxWidth: "155px",
+                  fontSize: "9.5px",
                   fontWeight: 800,
-                  padding: "0 8px",
-                  borderRadius: "6px",
+                  padding: "0 5px",
+                  borderRadius: "5px",
                   border: "1px solid #38bdf8",
                   background: "var(--p2)",
                   color: "var(--tx)",
@@ -5871,63 +6002,65 @@ export default function App() {
                   </option>
                 ))}
               </select>
-
-              {/* YEAR SELECTOR: 2025, 2026, 2027, 2028, 2029, 2030 */}
-              <div className="seg" title="SELECT CALENDAR YEAR (PERPETUAL GREGORIAN ALGORITHM)">
-                {["2025", "2026", "2027", "2028", "2029", "2030"].map((yr) => {
-                  const activeYr =
-                    curMode.cat === "Calendar"
-                      ? String(
-                          curParams.year ||
-                            curMode.params.find((p) => p.k === "year")?.def ||
-                            "2026"
-                        )
-                      : "";
-                  return (
-                    <button
-                      key={yr}
-                      type="button"
-                      className={activeYr === yr ? "on" : ""}
-                      onClick={() => switchCalendarYear(yr)}
-                    >
-                      {yr}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* VIEW LAYOUT: 12M YEAR | 12M POSTER | 1 MONTH | 3M QTR | 6M HALF | 7-DAY WEEK */}
-              <div className="seg" title="SELECT 12 MONTHS FULL YEAR, SINGLE MONTH, QUARTERLY, OR WEEKLY PLANNER">
-                {[
-                  { k: "12m", l: "12 MONTHS" },
-                  { k: "12m_3x4", l: "12M POSTER" },
-                  { k: "1m", l: "1 MONTH" },
-                  { k: "3m", l: "3 MONTHS" },
-                  { k: "6m", l: "6 MONTHS" },
-                  { k: "week", l: "WEEKLY PLANNER" },
-                ].map((vm) => {
-                  const activeVm =
-                    curMode.cat === "Calendar"
-                      ? String(
-                          curParams.viewMode ||
-                            curMode.params.find((p) => p.k === "viewMode")?.def ||
-                            "12m"
-                        )
-                      : "";
-                  return (
-                    <button
-                      key={vm.k}
-                      type="button"
-                      className={activeVm === vm.k ? "on" : ""}
-                      onClick={() => switchCalendarViewMode(vm.k)}
-                    >
-                      {vm.l}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* MONTH SELECTOR DROPDOWN (JAN - DEC) */}
+              <select
+                value={
+                  curMode.cat === "Calendar"
+                    ? String(
+                        curParams.year ||
+                          curMode.params.find((p) => p.k === "year")?.def ||
+                          "2026"
+                      )
+                    : "2026"
+                }
+                onChange={(e) => switchCalendarYear(e.target.value)}
+                style={{
+                  height: "24px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT CALENDAR YEAR (2025 – 2030)"
+              >
+                {["2025", "2026", "2027", "2028", "2029", "2030"].map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={
+                  curMode.cat === "Calendar"
+                    ? String(
+                        curParams.viewMode ||
+                          curMode.params.find((p) => p.k === "viewMode")?.def ||
+                          "12m"
+                      )
+                    : "12m"
+                }
+                onChange={(e) => switchCalendarViewMode(e.target.value)}
+                style={{
+                  height: "24px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="SELECT 12 MONTHS FULL YEAR, SINGLE MONTH, QUARTERLY, OR WEEKLY PLANNER"
+              >
+                <option value="12m">12 MONTHS</option>
+                <option value="12m_3x4">12M POSTER</option>
+                <option value="1m">1 MONTH</option>
+                <option value="3m">3 MONTHS</option>
+                <option value="6m">6 MONTHS</option>
+                <option value="week">WEEKLY PLANNER</option>
+              </select>
               <select
                 value={
                   curMode.cat === "Calendar"
@@ -5940,13 +6073,13 @@ export default function App() {
                 }
                 onChange={(e) => switchCalendarMonth(e.target.value)}
                 style={{
-                  height: "26px",
-                  fontSize: "10px",
+                  height: "24px",
+                  fontSize: "9.5px",
                   fontWeight: 800,
-                  padding: "0 6px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--bd)",
-                  background: "var(--p2)",
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
                   color: "var(--tx)",
                 }}
                 title="SELECT ACTIVE OR STARTING MONTH (JANUARY – DECEMBER)"
@@ -5970,41 +6103,73 @@ export default function App() {
                   </option>
                 ))}
               </select>
-
-              {/* WEEK START SELECTOR: SUN / MON / SAT */}
-              <div className="seg" title="WEEK STARTS ON SUNDAY, MONDAY, OR SATURDAY">
-                {[
-                  { k: "sun", l: "SUN" },
-                  { k: "mon", l: "MON" },
-                  { k: "sat", l: "SAT" },
-                ].map((ws) => {
-                  const activeWs =
-                    curMode.cat === "Calendar"
-                      ? String(curParams.weekStart || "sun")
-                      : "";
-                  return (
-                    <button
-                      key={ws.k}
-                      type="button"
-                      className={activeWs === ws.k ? "on" : ""}
-                      onClick={() =>
-                        switchCalendarWeekStart(ws.k as "sun" | "mon" | "sat")
-                      }
-                    >
-                      {ws.l}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* 1-CLICK NEW CALENDAR DESIGN BUTTON */}
+              <select
+                value={
+                  curMode.cat === "Calendar"
+                    ? String(curParams.weekStart || "sun")
+                    : "sun"
+                }
+                onChange={(e) =>
+                  switchCalendarWeekStart(e.target.value as "sun" | "mon" | "sat")
+                }
+                style={{
+                  height: "24px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="WEEK STARTS ON SUNDAY, MONDAY, OR SATURDAY"
+              >
+                <option value="sun">SUN</option>
+                <option value="mon">MON</option>
+                <option value="sat">SAT</option>
+              </select>
+              <select
+                value={
+                  curMode.cat === "Calendar"
+                    ? String(curParams.sideArt || "auto")
+                    : "auto"
+                }
+                onChange={(e) => switchCalendarSideArt(e.target.value)}
+                style={{
+                  height: "24px",
+                  maxWidth: "128px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="CALENDAR SIDE, BORDER & CORNER DECORATIVE ART (100% INSIDE ARTBOARD)"
+              >
+                <option value="auto">SIDE: AUTO (12)</option>
+                <option value="side_waves">SIDE: WAVE RIBBONS</option>
+                <option value="bauhaus_left">SIDE: LEFT BAUHAUS</option>
+                <option value="mountain_right">SIDE: RIGHT MOUNTAIN</option>
+                <option value="gold_pillars">SIDE: GOLD PILLARS</option>
+                <option value="origami_wings">SIDE: ORIGAMI WINGS</option>
+                <option value="botanical_vines">SIDE: LEAF VINES</option>
+                <option value="retro_stripes">SIDE: 70S STRIPES</option>
+                <option value="cyber_rails">SIDE: CYBER RAILS</option>
+                <option value="crimson_swoosh">SIDE: 3D SWOOSH</option>
+                <option value="torn_deckle">SIDE: TORN DECKLE</option>
+                <option value="corner_ribbons">SIDE: 4-CORNER WAVES</option>
+                <option value="clean_frame">SIDE: DOUBLE FRAME</option>
+                <option value="none">SIDE: CLEAN NONE</option>
+              </select>
               <button
                 type="button"
                 className="btn pri"
                 style={{
-                  minHeight: "26px",
-                  padding: "3px 9px",
-                  fontSize: "10px",
+                  minHeight: "24px",
+                  padding: "2px 7px",
+                  fontSize: "9.5px",
                   background: "linear-gradient(135deg, #0284c7, #38bdf8)",
                   borderColor: "#38bdf8",
                 }}
@@ -6015,162 +6180,409 @@ export default function App() {
                     smartRandom(true, "current", false);
                   }
                 }}
-                title="EVERY CLICK CHANGES THE CALENDAR DESIGN, HEADER ART & COLOUR HARMONY"
+                title="EVERY CLICK CHANGES THE CALENDAR DESIGN, SIDE ART, HEADER ART & COLOUR HARMONY"
               >
-                🎲 NEW CALENDAR DESIGN
+                🎲 NEW CAL
               </button>
-            </div>
-          </div>
 
-          {/* ROW 5: 60 HAND-LETTERED CALLIGRAPHY & ORNATE TYPOGRAPHY STUDIO QUICK-BAR (1 PC HERO OR 2/4/6/9/12 PCS SETS | 12 TOPICS/OCCASIONS | 16 FLOURISHES) */}
-          <div
-            className="poster-quick-bar"
-            style={{ borderTop: "none", paddingTop: "3px", paddingBottom: "5px" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-              <span className="st" style={{ flex: "none", color: "#fb7185" }}>
-                ✒️ TYPOGRAPHY ({MASTER_TYPOGRAPHY_MODES.length}):
+              <span style={{ color: "var(--bd2)", margin: "0 2px" }}>|</span>
+
+              {/* TORN PAPER COMPACT DROPDOWNS (96 MODES · CRORES OF UNIQUE 3-PLY FRACTAL TEAR DESIGNS) */}
+              <span className="st" style={{ flex: "none", color: "#10b981", fontSize: "9.5px" }}>
+                🧻 TORN:
               </span>
               <select
-                value={curMode.cat === "Typography" ? curMode.id : "typo_ms_1"}
-                onChange={(e) => selectTypographySet(e.target.value)}
+                value={curMode.cat === "Torn Paper" ? curMode.id : "torn_ms_1"}
+                onChange={(e) => selectTornPaperSet(e.target.value)}
                 style={{
-                  height: "26px",
-                  maxWidth: "210px",
-                  fontSize: "10px",
+                  height: "24px",
+                  maxWidth: "145px",
+                  fontSize: "9.5px",
                   fontWeight: 800,
-                  padding: "0 8px",
-                  borderRadius: "6px",
-                  border: "1px solid #f43f5e",
+                  padding: "0 5px",
+                  borderRadius: "5px",
+                  border: "1px solid #10b981",
                   background: "var(--p2)",
                   color: "var(--tx)",
                 }}
-                title="SELECT ANY OF THE 60 HAND-LETTERED CALLIGRAPHY & ORNATE TYPOGRAPHY SETS"
+                title="SELECT ANY OF THE 96 PROCEDURAL 3-PLY FRACTAL TORN PAPER & STATIONERY SETS"
               >
-                {MASTER_TYPOGRAPHY_MODES.map((tm) => (
+                {MASTER_TORN_PAPER_MODES.map((tm, idx) => (
                   <option key={tm.id} value={tm.id}>
-                    {tm.shortLabel}
+                    {`#${idx + 1} · ${tm.name.replace(/^TORN PAPER \d+:\s*/, "")}`}
                   </option>
                 ))}
               </select>
-
-              {/* 1 PC HERO OR MULTI-PIECE SET: 1 PC | 2 PCS | 4 PCS | 6 PCS | 9 PCS | 12 PCS */}
-              <div className="seg" title="GENERATE AS SINGLE 1-PC HERO CALLIGRAPHY OR MULTI-PIECE COLLECTION SET">
-                {[
-                  { k: "1", l: "1 PC HERO" },
-                  { k: "2", l: "2 PCS" },
-                  { k: "4", l: "4 PCS SET" },
-                  { k: "6", l: "6 PCS SET" },
-                  { k: "9", l: "9 PCS SET" },
-                  { k: "12", l: "12 PCS SET" },
-                ].map((item) => {
-                  const activePcs =
-                    curMode.cat === "Typography"
-                      ? String(
-                          curParams.pcs ||
-                            curMode.params.find((p) => p.k === "pcs")?.def ||
-                            "1"
-                        )
-                      : "";
-                  return (
-                    <button
-                      key={item.k}
-                      type="button"
-                      className={activePcs === item.k ? "on" : ""}
-                      onClick={() => switchTypographyPcs(item.k)}
-                    >
-                      {item.l}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* TOPIC / OCCASION SELECTOR DROPDOWN (12 COMMERCIAL PACKS) */}
               <select
                 value={
-                  curMode.cat === "Typography"
+                  curMode.cat === "Torn Paper"
                     ? String(
-                        curParams.occasion ||
-                          curMode.params.find((p) => p.k === "occasion")?.def ||
-                          "birthday"
+                        curParams.layoutType ||
+                          curMode.params.find((p) => p.k === "layoutType")?.def ||
+                          "scrap_1pc"
                       )
-                    : "birthday"
+                    : "scrap_1pc"
                 }
-                onChange={(e) => switchTypographyOccasion(e.target.value)}
+                onChange={(e) => switchTornPaperParam("layoutType", e.target.value)}
                 style={{
-                  height: "26px",
-                  fontSize: "10px",
+                  height: "24px",
+                  maxWidth: "132px",
+                  fontSize: "9.5px",
                   fontWeight: 800,
-                  padding: "0 6px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--bd)",
-                  background: "var(--p2)",
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
                   color: "var(--tx)",
                 }}
-                title="SELECT CALLIGRAPHY TOPIC / OCCASION (12 COMMERCIAL MICROSTOCK PACKS)"
+                title="TORN PAPER ARCHITECTURE (16 COMMERCIAL MICROSTOCK STYLES)"
               >
-                <option value="birthday">🎂 HAPPY BIRTHDAY PACK</option>
-                <option value="wedding">💍 WEDDING &amp; LOVE PACK</option>
-                <option value="congrats">🏆 CONGRATULATIONS PACK</option>
-                <option value="thankyou">🙏 THANK YOU &amp; GRATITUDE</option>
-                <option value="holiday">🎄 CHRISTMAS &amp; NEW YEAR</option>
-                <option value="motivational">⚡ MOTIVATIONAL QUOTES</option>
-                <option value="coffee">☕ COFFEE &amp; CAFE MENU</option>
-                <option value="family">🏡 HOME &amp; FAMILY BLESSINGS</option>
-                <option value="summer">🌴 SUMMER &amp; VACATION VIBES</option>
-                <option value="sale">🏷️ LUXURY SALE &amp; VIP OFFER</option>
-                <option value="islamic">🌙 RAMADAN &amp; EID FESTIVAL</option>
-                <option value="welcome">✨ WELCOME &amp; HOSPITALITY</option>
+                <option value="scrap_1pc">ISOLATED SCRAP (REF 1/3)</option>
+                <option value="canyon_v_rip">V-RIP CANYON (REF 2)</option>
+                <option value="notebook_grid">MATH GRID NOTEBOOK (REF 4)</option>
+                <option value="half_divider">HALF PAGE DIVIDER (REF 5A)</option>
+                <option value="diagonal_canyon">DIAGONAL CANYON (REF 5B)</option>
+                <option value="center_strip">CENTER STRIP BANNER (REF 5C)</option>
+                <option value="notebook_lined">LINED NOTEBOOK (REF 5D)</option>
+                <option value="multi_scraps">MULTI SCRAP BUNDLE</option>
+                <option value="layered_waves">3D TORN WAVES</option>
+                <option value="ripped_hole">3D RIPPED HOLE</option>
+                <option value="curled_peel_canyon">3D CURLED PAPER PEEL</option>
+                <option value="horizontal_strips_pack">HORIZONTAL STRIPS PACK</option>
+                <option value="taped_memo_board">TAPED & PINNED MEMOS</option>
+                <option value="kraft_cardboard_rip">ECO KRAFT & CARDBOARD</option>
+                <option value="circle_badge_rip">3D CIRCLE RIPPED HOLE</option>
+                <option value="collage_scrapbook_kit">SCRAPBOOK COLLAGE KIT</option>
               </select>
-
-              {/* QUICK FLOURISH PRESET BUTTONS (SAMPLE 1 SWASH | SAMPLE 2 VICTORIAN SCROLLS | CROWN | HEART | WREATH) */}
-              <div className="seg" title="SELECT CALLIGRAPHY SWASH OR VICTORIAN SCROLL ORNAMENT">
-                {[
-                  { k: "0", l: "SAMPLE 1 SWASH" },
-                  { k: "1", l: "SAMPLE 2 SCROLLS" },
-                  { k: "2", l: "CROWN" },
-                  { k: "4", l: "HEART SWASH" },
-                  { k: "7", l: "WREATH" },
-                  { k: "15", l: "BAROQUE" },
-                ].map((fl) => {
-                  const activeFl =
-                    curMode.cat === "Typography"
-                      ? String(curParams.flourishStyle ?? "0")
-                      : "";
-                  return (
-                    <button
-                      key={fl.k}
-                      type="button"
-                      className={activeFl === fl.k ? "on" : ""}
-                      onClick={() => switchTypographyFlourishStyle(fl.k)}
-                    >
-                      {fl.l}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* 1-CLICK NEW TYPOGRAPHY DESIGN BUTTON */}
+              <select
+                value={
+                  curMode.cat === "Torn Paper"
+                    ? String(
+                        curParams.pcs ||
+                          curMode.params.find((p) => p.k === "pcs")?.def ||
+                          "1"
+                      )
+                    : "1"
+                }
+                onChange={(e) => switchTornPaperParam("pcs", e.target.value)}
+                style={{
+                  height: "24px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="NUMBER OF TORN PAPER PIECES (1 PC TO 12 PCS)"
+              >
+                <option value="1">1 PC</option>
+                <option value="2">2 PCS</option>
+                <option value="3">3 PCS</option>
+                <option value="4">4 PCS</option>
+                <option value="6">6 PCS</option>
+                <option value="8">8 PCS</option>
+                <option value="9">9 PCS</option>
+                <option value="12">12 PCS</option>
+              </select>
+              <select
+                value={
+                  curMode.cat === "Torn Paper"
+                    ? String(
+                        curParams.paperSurface ||
+                          curMode.params.find((p) => p.k === "paperSurface")?.def ||
+                          "solid_matte"
+                      )
+                    : "solid_matte"
+                }
+                onChange={(e) => switchTornPaperParam("paperSurface", e.target.value)}
+                style={{
+                  height: "24px",
+                  maxWidth: "112px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="PAPER SURFACE (7 COMMERCIAL PAPER & CARDBOARD TEXTURES)"
+              >
+                <option value="solid_matte">SOLID PAPER</option>
+                <option value="grid_notebook">MATH GRID + MARGIN</option>
+                <option value="lined_notebook">LINED + MARGIN</option>
+                <option value="dot_bullet_grid">BULLET DOT GRID</option>
+                <option value="textured_fiber">FIBER GRAIN</option>
+                <option value="kraft_fiber">ECO BROWN KRAFT</option>
+                <option value="corrugated_rib">CORRUGATED RIB</option>
+              </select>
+              <select
+                value={
+                  curMode.cat === "Torn Paper"
+                    ? String(
+                        curParams.addonStyle ||
+                          curMode.params.find((p) => p.k === "addonStyle")?.def ||
+                          "auto"
+                      )
+                    : "auto"
+                }
+                onChange={(e) => switchTornPaperParam("addonStyle", e.target.value)}
+                style={{
+                  height: "24px",
+                  maxWidth: "110px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="COMMERCIAL STATIONERY ADD-ONS (SCOTCH TAPE, 3D PUSH-PIN, PAPERCLIP, SPIRAL BINDER, CURLED CORNER)"
+              >
+                <option value="auto">ADDON: AUTO</option>
+                <option value="scotch_tape">SCOTCH TAPE</option>
+                <option value="push_pin">3D PUSH-PIN</option>
+                <option value="paper_clip">3D PAPERCLIP</option>
+                <option value="spiral_binder">SPIRAL BINDER</option>
+                <option value="curled_corner">CURLED CORNER</option>
+                <option value="tape_and_pin">TAPE + PIN + CLIP</option>
+                <option value="none">CLEAN (NO ADDON)</option>
+              </select>
+              <select
+                value={
+                  curMode.cat === "Torn Paper"
+                    ? String(
+                        curParams.bgMode ||
+                          curMode.params.find((p) => p.k === "bgMode")?.def ||
+                          "checker"
+                      )
+                    : "checker"
+                }
+                onChange={(e) => switchTornPaperParam("bgMode", e.target.value)}
+                style={{
+                  height: "24px",
+                  maxWidth: "100px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="TORN PAPER BACKDROP (CHECKERBOARD, WHITE, CHARCOAL GRAY, COLOR SHEET)"
+              >
+                <option value="checker">CHECKER BG</option>
+                <option value="white">WHITE BG</option>
+                <option value="charcoal">CHARCOAL BG</option>
+                <option value="color_sheet">COLOR SHEET</option>
+                <option value="dark">DARK NOIR</option>
+              </select>
               <button
                 type="button"
                 className="btn pri"
                 style={{
-                  minHeight: "26px",
-                  padding: "3px 9px",
-                  fontSize: "10px",
-                  background: "linear-gradient(135deg, #e11d48, #fb7185)",
-                  borderColor: "#fb7185",
+                  minHeight: "24px",
+                  padding: "2px 7px",
+                  fontSize: "9.5px",
+                  background: "linear-gradient(135deg, #059669, #10b981)",
+                  borderColor: "#10b981",
                 }}
                 onClick={() => {
-                  if (curMode.cat !== "Typography") {
-                    selectTypographySet("typo_ms_1");
+                  if (curMode.cat !== "Torn Paper") {
+                    selectTornPaperSet("torn_ms_1");
                   } else {
-                    smartRandom(true, "current", false);
+                    smartRandom(true, "current", true);
                   }
                 }}
-                title="EVERY CLICK GENERATES A NEW UNIQUE CALLIGRAPHY PHRASE, SWASH & ORNAMENT DESIGN"
+                title="EVERY CLICK GENERATES A 100% UNIQUE NON-REPEATING 3-PLY FRACTAL TORN PAPER DESIGN + NEW PAPER COLOUR"
               >
-                🎲 NEW TYPOGRAPHY DESIGN
+                🎲 NEW TORN
+              </button>
+              <span
+                style={{
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  color: "#64748b",
+                  fontFamily: "var(--mono)",
+                  letterSpacing: ".03em",
+                  marginLeft: "4px",
+                }}
+              >
+                🌑 SHADOW:
+              </span>
+              <select
+                value={curMode.cat === "Shadow" ? curMode.id : "shadow_ms_1"}
+                onChange={(e) => selectShadowSet(e.target.value)}
+                style={{
+                  height: "24px",
+                  maxWidth: "152px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border:
+                    curMode.cat === "Shadow" ? "1px solid #64748b" : "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: curMode.cat === "Shadow" ? "var(--tx)" : "var(--tx)",
+                }}
+                title="72 ULTRA-SMOOTH TRANSPARENT VECTOR SHADOW SETS (ZERO BANDING · ZERO CRACKS)"
+              >
+                {MASTER_SHADOW_MODES.map((sm, idx) => (
+                  <option key={sm.id} value={sm.id}>
+                    SH {idx + 1}: {sm.name.replace(/^Shadow \d+:\s*/i, "").toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={
+                  curMode.cat === "Shadow"
+                    ? String(
+                        curParams.archType ||
+                          curMode.params.find((p) => p.k === "archType")?.def ||
+                          "oval_contact"
+                      )
+                    : "oval_contact"
+                }
+                onChange={(e) => switchShadowParam("archType", e.target.value)}
+                style={{
+                  height: "24px",
+                  maxWidth: "136px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="SHADOW ARCHITECTURE (12 COMMERCIAL MICROSTOCK TRANSPARENT SHADOW STYLES)"
+              >
+                <option value="oval_contact">OVAL CONTACT (REF 1)</option>
+                <option value="linear_fade_overlay">LINEAR FADE (REF 2)</option>
+                <option value="angled_perspective_cast">ANGLED CAST (REF 3)</option>
+                <option value="floating_wide_bar">FLOATING BAR (REF 4)</option>
+                <option value="curved_paper_arch">CURVED PAPER LIFT</option>
+                <option value="dual_core_ambient">DUAL CORE PEDESTAL</option>
+                <option value="circle_disc_base">ROUND DISC BASE</option>
+                <option value="pinched_center_bow">PINCHED CENTER BOW</option>
+                <option value="card_bottom_lip">FLOATING CARD LIP</option>
+                <option value="soft_stage_horizon">STAGE FLOOR HORIZON</option>
+                <option value="window_blind_gobo">WINDOW BLIND GOBO</option>
+                <option value="multi_shadow_kit">MULTI SHADOW KIT</option>
+              </select>
+              <select
+                value={
+                  curMode.cat === "Shadow"
+                    ? String(
+                        curParams.pcs ||
+                          curMode.params.find((p) => p.k === "pcs")?.def ||
+                          "1"
+                      )
+                    : "1"
+                }
+                onChange={(e) => switchShadowParam("pcs", e.target.value)}
+                style={{
+                  height: "24px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="NUMBER OF SHADOW ELEMENTS (1 PC TO 8 PCS BUNDLE)"
+              >
+                <option value="1">1 PC</option>
+                <option value="2">2 PCS</option>
+                <option value="3">3 PCS</option>
+                <option value="4">4 PCS</option>
+                <option value="6">6 PCS</option>
+                <option value="8">8 PCS</option>
+              </select>
+              <select
+                value={
+                  curMode.cat === "Shadow"
+                    ? String(
+                        curParams.shadowTone ||
+                          curMode.params.find((p) => p.k === "shadowTone")?.def ||
+                          "pure_noir"
+                      )
+                    : "pure_noir"
+                }
+                onChange={(e) => switchShadowParam("shadowTone", e.target.value)}
+                style={{
+                  height: "24px",
+                  maxWidth: "104px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="SHADOW TONE (PURE NOIR BLACK, COOL SLATE, WARM UMBER, DEEP INDIGO, CHARCOAL)"
+              >
+                <option value="pure_noir">PURE BLACK</option>
+                <option value="cool_slate">COOL SLATE</option>
+                <option value="warm_umber">WARM UMBER</option>
+                <option value="deep_indigo">DEEP INDIGO</option>
+                <option value="neutral_charcoal">CHARCOAL</option>
+              </select>
+              <select
+                value={
+                  curMode.cat === "Shadow"
+                    ? String(
+                        curParams.bgMode ||
+                          curMode.params.find((p) => p.k === "bgMode")?.def ||
+                          "transparent"
+                      )
+                    : "transparent"
+                }
+                onChange={(e) => switchShadowParam("bgMode", e.target.value)}
+                style={{
+                  height: "24px",
+                  maxWidth: "118px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  padding: "0 4px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--bd2)",
+                  background: "var(--pn)",
+                  color: "var(--tx)",
+                }}
+                title="SHADOW BACKDROP (100% TRANSPARENT NO-BG, WHITE STUDIO BG, CHECKERBOARD, SOFT GRAY)"
+              >
+                <option value="transparent">TRANSPARENT (NO BG)</option>
+                <option value="white">WHITE BG</option>
+                <option value="checker">CHECKER BG</option>
+                <option value="soft_gray">SOFT GRAY</option>
+              </select>
+              <button
+                type="button"
+                className="btn pri"
+                style={{
+                  minHeight: "24px",
+                  padding: "2px 7px",
+                  fontSize: "9.5px",
+                  background: "linear-gradient(135deg, #334155, #475569)",
+                  borderColor: "#64748b",
+                }}
+                onClick={() => {
+                  if (curMode.cat !== "Shadow") {
+                    selectShadowSet("shadow_ms_1");
+                  } else {
+                    smartRandom(true, "current", true);
+                  }
+                }}
+                title="EVERY CLICK GENERATES A 100% UNIQUE ULTRA-SMOOTH TRANSPARENT VECTOR SHADOW (ZERO BANDING · ZERO CRACKS)"
+              >
+                🎲 NEW SHADOW
               </button>
             </div>
           </div>
@@ -6179,7 +6591,11 @@ export default function App() {
             <div
               id="frame"
               className={
-                P.transp || curMode.cat === "Brush" || curMode.cat === "Lighting"
+                P.transp ||
+                curMode.cat === "Brush" ||
+                curMode.cat === "Lighting" ||
+                (curMode.cat === "Shadow" &&
+                  String(curParams.bgMode ?? "transparent") === "transparent")
                   ? "checker"
                   : ""
               }
@@ -6190,67 +6606,6 @@ export default function App() {
                 exportRaster("jpeg");
               }}
             />
-            <div className="vinfo-bar">
-              <div className="vinfo-cluster">
-                {lastVerifiedFile ? (
-                  <>
-                    <span
-                      className="vinfo"
-                      style={{
-                        borderColor: "#10b981",
-                        color: "#10b981",
-                        fontWeight: 800,
-                      }}
-                    >
-                      ✔ VERIFIED REAL BINARY ({lastVerifiedFile.format}): {lastVerifiedFile.realW}×{lastVerifiedFile.realH} PX ({lastVerifiedFile.megapixels} MP) · {lastVerifiedFile.sizeMb} MB · {lastVerifiedFile.dpi} DPI
-                    </span>
-                    <span
-                      className="vinfo"
-                      style={{
-                        borderColor: "#10b981",
-                        color: "#10b981",
-                        fontWeight: 800,
-                      }}
-                    >
-                      ✔ ADOBE STOCK: PASS · SHUTTERSTOCK: PASS · FREEPIK: PASS
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span
-                      className="vinfo"
-                      style={{
-                        borderColor: "#10b981",
-                        color: "#10b981",
-                        fontWeight: 800,
-                      }}
-                    >
-                      ✔ ADOBE STOCK &amp; SHUTTERSTOCK: {((outDims.w * outDims.h) / 1000000).toFixed(1)} MP (MIN 4MP PASS)
-                    </span>
-                    <span
-                      className="vinfo"
-                      style={{
-                        borderColor: "#10b981",
-                        color: "#10b981",
-                        fontWeight: 800,
-                      }}
-                    >
-                      ✔ FREEPIK: {outDims.w}×{outDims.h} PX (≥4000PX) · 5.8–9.4 MB (&gt;0.5MB) · 300 DPI PASS
-                    </span>
-                  </>
-                )}
-              </div>
-              <div className="vinfo-cluster">
-                {exportStatus && (
-                  <span className="vinfo" style={{ borderColor: "var(--ac)", color: "var(--ac)" }}>
-                    {exportStatus}
-                  </span>
-                )}
-                <span className="vinfo">
-                  <b>#{pad2(curModeIdx + 1)}</b> · {curMode.name} · {outDims.w}×{outDims.h} PX
-                </span>
-              </div>
-            </div>
           </div>
         </main>
 

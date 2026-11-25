@@ -6802,841 +6802,485 @@ registerMode({
   },
 });
 
-/* =====================================================================
-   20 MICROSTOCK LUXURY BACKGROUND & SURFACE TEXTURE GENERATORS
-   (Separable & Recolorable Adobe Illustrator Vector Paths)
+/* /* =====================================================================
+   20 SINGLE-COLOR (MONOCHROMATIC TONAL) SMOOTH STUDIO GRADIENT BACKGROUNDS
+   (100% Smooth One-Color Tonal Gradients · Zero Specks/Blobs · EPS10 + 300 DPI Ready)
    ===================================================================== */
-registerMode({
-  id: "krafthandsand",
-  name: "Golden Sand Kraft Parchment",
-  cat: "Background",
-  look: {
-    bg: "#dfc08e",
-    ink: "#5e4321",
-    cols: ["#cfa86e", "#e8cf9f", "#b88e52", "#f3deb5", "#9e7339"],
-    style: "flat",
+type SingleColorGradStyle =
+  | "radial_center"
+  | "radial_top"
+  | "radial_corner"
+  | "linear_diag"
+  | "linear_vert"
+  | "linear_horiz"
+  | "reflected_satin"
+  | "studio_floor"
+  | "soft_double_orb"
+  | "velvet_wave_grad";
+
+const SINGLE_COLOR_GRAD_STYLE_OPTS: [string, string][] = [
+  ["radial_center", "CENTER SPOTLIGHT RADIAL GRADIENT"],
+  ["radial_top", "TOP STUDIO DOWNLIGHT RADIAL GRADIENT"],
+  ["radial_corner", "CORNER SUNBEAM RADIAL GRADIENT"],
+  ["linear_diag", "DIAGONAL SILK TONAL GRADIENT"],
+  ["linear_vert", "VERTICAL HORIZON TONAL GRADIENT"],
+  ["linear_horiz", "HORIZONTAL PANORAMIC TONAL GRADIENT"],
+  ["reflected_satin", "3-STOP REFLECTED SATIN SHEEN GRADIENT"],
+  ["studio_floor", "3D STUDIO CYCLORAMA WALL & FLOOR GRADIENT"],
+  ["soft_double_orb", "DUAL AMBIENT MONOCHROME HALO GRADIENT"],
+  ["velvet_wave_grad", "SOFT LAYERED MONOCHROME SILK WAVE GRADIENT"],
+];
+
+interface SingleColorBgSpec {
+  id: string;
+  name: string;
+  baseHex: string;
+  inkHex: string;
+  tones: [string, string, string, string, string];
+  defStyle: SingleColorGradStyle;
+  defHighlight: number;
+  defDepth: number;
+  defAngle: number;
+}
+
+const SINGLE_COLOR_BG_SPECS: SingleColorBgSpec[] = [
+  {
+    id: "krafthandsand",
+    name: "Royal Sapphire Single-Color Radial Gradient",
+    baseHex: "#1d4ed8",
+    inkHex: "#eff6ff",
+    tones: ["#60a5fa", "#3b82f6", "#1d4ed8", "#1e3a8a", "#091538"],
+    defStyle: "radial_center",
+    defHighlight: 68,
+    defDepth: 64,
+    defAngle: 135,
   },
-  params: [
-    { k: "grain", l: "Sand Grain Density", min: 0, max: 260, def: 0 },
-    { k: "flecks", l: "Parchment Fibers", min: 0, max: 140, def: 45 },
-    { k: "soft", l: "Warm Glow Layers", min: 3, max: 10, def: 6 },
-  ],
-  draw(m: any, q: any) {
-    for (let i = 0; i < q.soft; i++) {
-      const cx = 80 + m.rnd() * 840;
-      const cy = 80 + m.rnd() * 840;
-      const rx = 140 + m.rnd() * 180;
-      const ry = 100 + m.rnd() * 140;
-      m.put(
-        cx,
-        cy,
-        m.rnd() * 180,
-        1,
-        `<ellipse rx="${f1(rx)}" ry="${f1(ry)}" fill="${m.col(i)}" opacity="0.24"/>`,
-        110
-      );
-    }
-    for (let i = 0; i < q.grain; i++) {
-      const gx = 10 + m.rnd() * 980;
-      const gy = 10 + m.rnd() * 980;
-      const r = 2.2 + m.rnd() * 6.5;
-      m.raw(
-        `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="${f1(r)}" fill="${m.col(i)}" opacity="${(
-          0.25 +
-          m.rnd() * 0.55
-        ).toFixed(2)}"/>`
-      );
-    }
-    for (let f = 0; f < q.flecks; f++) {
-      const fx = 15 + m.rnd() * 970;
-      const fy = 15 + m.rnd() * 970;
-      const ang = m.rnd() * Math.PI * 2;
-      const len = 12 + m.rnd() * 28;
-      const x2 = Math.max(5, Math.min(995, fx + Math.cos(ang) * len));
-      const y2 = Math.max(5, Math.min(995, fy + Math.sin(ang) * len));
-      m.raw(
-        `<path d="M ${f1(fx)} ${f1(fy)} L ${f1(x2)} ${f1(y2)}" stroke="${m.col(
-          f + 1
-        )}" stroke-width="${f1(1.4 + m.rnd() * 2.4)}" stroke-linecap="round" opacity="0.48"/>`
-      );
-    }
+  {
+    id: "matchafeltlinen",
+    name: "Emerald Mint Single-Color Spotlight Gradient",
+    baseHex: "#059669",
+    inkHex: "#ecfdf5",
+    tones: ["#6ee7b7", "#10b981", "#059669", "#065f46", "#03261b"],
+    defStyle: "radial_top",
+    defHighlight: 66,
+    defDepth: 62,
+    defAngle: 120,
   },
+  {
+    id: "walnuthardwood",
+    name: "Crimson Ruby Single-Color Vignette Gradient",
+    baseHex: "#dc2626",
+    inkHex: "#fff1f2",
+    tones: ["#fda4af", "#f43f5e", "#dc2626", "#991b1b", "#380505"],
+    defStyle: "radial_center",
+    defHighlight: 64,
+    defDepth: 68,
+    defAngle: 145,
+  },
+  {
+    id: "frostedplatinum",
+    name: "Pure Silver Platinum Monochromatic Studio Gradient",
+    baseHex: "#cbd5e1",
+    inkHex: "#1e293b",
+    tones: ["#ffffff", "#f1f5f9", "#cbd5e1", "#94a3b8", "#475569"],
+    defStyle: "studio_floor",
+    defHighlight: 78,
+    defDepth: 48,
+    defAngle: 90,
+  },
+  {
+    id: "blueagatemarble",
+    name: "Cyan Turquoise Single-Color Diagonal Silk Gradient",
+    baseHex: "#0891b2",
+    inkHex: "#ecfeff",
+    tones: ["#a5f3fc", "#22d3ee", "#0891b2", "#155e75", "#042430"],
+    defStyle: "linear_diag",
+    defHighlight: 70,
+    defDepth: 60,
+    defAngle: 135,
+  },
+  {
+    id: "rosegoldfoil",
+    name: "Rose Blush Pink Single-Color Satin Sheen Gradient",
+    baseHex: "#db2777",
+    inkHex: "#fdf2f8",
+    tones: ["#fbcfe8", "#f472b6", "#db2777", "#9d174d", "#3d0520"],
+    defStyle: "reflected_satin",
+    defHighlight: 68,
+    defDepth: 60,
+    defAngle: 125,
+  },
+  {
+    id: "emeraldmalachite",
+    name: "Deep Peacock Teal Monochromatic Corner Glow Gradient",
+    baseHex: "#0d9488",
+    inkHex: "#f0fdfa",
+    tones: ["#99f6e4", "#2dd4bf", "#0d9488", "#115e59", "#032624"],
+    defStyle: "radial_corner",
+    defHighlight: 68,
+    defDepth: 65,
+    defAngle: 45,
+  },
+  {
+    id: "charcoalslate",
+    name: "Obsidian Charcoal Monochromatic Dark Studio Gradient",
+    baseHex: "#1e293b",
+    inkHex: "#f8fafc",
+    tones: ["#64748b", "#334155", "#1e293b", "#0f172a", "#04070d"],
+    defStyle: "radial_center",
+    defHighlight: 54,
+    defDepth: 75,
+    defAngle: 135,
+  },
+  {
+    id: "ivorydecklepaper",
+    name: "Warm Ivory Cream Monochromatic Soft Glow Gradient",
+    baseHex: "#ecd9b9",
+    inkHex: "#451a03",
+    tones: ["#ffffff", "#fbf5e8", "#ecd9b9", "#d4b587", "#a68453"],
+    defStyle: "radial_center",
+    defHighlight: 80,
+    defDepth: 42,
+    defAngle: 135,
+  },
+  {
+    id: "teakparquetherring",
+    name: "24K Champagne Amber Single-Color Luxury Gradient",
+    baseHex: "#d97706",
+    inkHex: "#fffbeb",
+    tones: ["#fef08a", "#fbbf24", "#d97706", "#92400e", "#361302"],
+    defStyle: "reflected_satin",
+    defHighlight: 72,
+    defDepth: 64,
+    defAngle: 135,
+  },
+  {
+    id: "obsidianlava",
+    name: "Royal Amethyst Violet Single-Color Halo Gradient",
+    baseHex: "#7c3aed",
+    inkHex: "#f5f3ff",
+    tones: ["#ddd6fe", "#a78bfa", "#7c3aed", "#4c1d95", "#170636"],
+    defStyle: "soft_double_orb",
+    defHighlight: 68,
+    defDepth: 66,
+    defAngle: 135,
+  },
+  {
+    id: "velvetcarmine",
+    name: "Burgundy Wine Monochromatic Velvet Wave Gradient",
+    baseHex: "#9f1239",
+    inkHex: "#ffe4e6",
+    tones: ["#fda4af", "#e11d48", "#9f1239", "#690822", "#26020b"],
+    defStyle: "velvet_wave_grad",
+    defHighlight: 62,
+    defDepth: 70,
+    defAngle: 150,
+  },
+  {
+    id: "sapphiregeode",
+    name: "Electric Cobalt Blue Single-Color Cyclorama Gradient",
+    baseHex: "#2563eb",
+    inkHex: "#eff6ff",
+    tones: ["#93c5fd", "#3b82f6", "#2563eb", "#1e40af", "#081238"],
+    defStyle: "studio_floor",
+    defHighlight: 70,
+    defDepth: 64,
+    defAngle: 90,
+  },
+  {
+    id: "terracottastucco",
+    name: "Sunset Coral Orange Single-Color Horizon Gradient",
+    baseHex: "#ea580c",
+    inkHex: "#fff7ed",
+    tones: ["#fed7aa", "#fb923c", "#ea580c", "#9a3412", "#3b1003"],
+    defStyle: "linear_vert",
+    defHighlight: 68,
+    defDepth: 60,
+    defAngle: 90,
+  },
+  {
+    id: "titaniumcarbon",
+    name: "Deep Midnight Indigo Monochromatic Downlight Gradient",
+    baseHex: "#3730a3",
+    inkHex: "#eef2ff",
+    tones: ["#a5b4fc", "#6366f1", "#3730a3", "#1e1b4b", "#08061a"],
+    defStyle: "radial_top",
+    defHighlight: 65,
+    defDepth: 72,
+    defAngle: 90,
+  },
+  {
+    id: "sandstonedune",
+    name: "Golden Honey Mustard Single-Color Panoramic Gradient",
+    baseHex: "#eab308",
+    inkHex: "#422006",
+    tones: ["#fef9c3", "#fde047", "#eab308", "#a16207", "#452303"],
+    defStyle: "linear_horiz",
+    defHighlight: 74,
+    defDepth: 56,
+    defAngle: 0,
+  },
+  {
+    id: "jadeitecloud",
+    name: "Pastel Mint Pistachio Single-Color Soft Studio Gradient",
+    baseHex: "#34d399",
+    inkHex: "#064e3b",
+    tones: ["#ecfdf5", "#a7f3d0", "#34d399", "#059669", "#064e3b"],
+    defStyle: "radial_corner",
+    defHighlight: 78,
+    defDepth: 48,
+    defAngle: 45,
+  },
+  {
+    id: "burlapjuteweave",
+    name: "Espresso Mocha Brown Single-Color Satin Gradient",
+    baseHex: "#78350f",
+    inkHex: "#fef3c7",
+    tones: ["#fcd34d", "#b45309", "#78350f", "#451a03", "#1a0801"],
+    defStyle: "linear_diag",
+    defHighlight: 60,
+    defDepth: 72,
+    defAngle: 135,
+  },
+  {
+    id: "alcoholinkgold",
+    name: "Magenta Orchid Single-Color Dual Glow Gradient",
+    baseHex: "#c026d3",
+    inkHex: "#fdf4ff",
+    tones: ["#f5d0fe", "#e879f9", "#c026d3", "#86198f", "#2e0533"],
+    defStyle: "soft_double_orb",
+    defHighlight: 68,
+    defDepth: 64,
+    defAngle: 135,
+  },
+  {
+    id: "concreteindustrial",
+    name: "Arctic Ice Sky Blue Monochromatic Clean Gradient",
+    baseHex: "#38bdf8",
+    inkHex: "#0c4a6e",
+    tones: ["#f0f9ff", "#bae6fd", "#38bdf8", "#0284c7", "#073452"],
+    defStyle: "velvet_wave_grad",
+    defHighlight: 76,
+    defDepth: 54,
+    defAngle: 135,
+  },
+];
+
+function renderSingleColorStudioGradient(
+  m: any,
+  q: Record<string, any>,
+  spec: SingleColorBgSpec,
+  idx: number
+) {
+  const style = (String(q.gradStyle || spec.defStyle) as SingleColorGradStyle);
+  const hiPct = Math.max(10, Math.min(95, +(q.highlight ?? spec.defHighlight))) / 100;
+  const dpPct = Math.max(10, Math.min(95, +(q.depth ?? spec.defDepth))) / 100;
+  const angDeg = +(q.angle ?? spec.defAngle) || 0;
+
+  // Derive ALL gradient stops from ONE primary color so it is 100% Single-Color (Monochromatic)!
+  const rawBase = normalizeIllustratorColor(m.bg || spec.baseHex, spec.baseHex);
+  // If rawBase is near pure black or pure white, blend slightly with m.col(0) so the monochromatic hue stays rich
+  const baseLum = lumH(rawBase);
+  const hueAnchor =
+    baseLum < 14 || baseLum > 244
+      ? mixCol(rawBase, normalizeIllustratorColor(m.col(0) || spec.baseHex, spec.baseHex), 0.55)
+      : rawBase;
+
+  const cPeak = mixCol(hueAnchor, "#ffffff", Math.min(0.92, hiPct * 0.88));
+  const cLight = mixCol(hueAnchor, "#ffffff", Math.min(0.72, hiPct * 0.52));
+  const cMid = hueAnchor;
+  const cDeep = mixCol(hueAnchor, "#000000", Math.min(0.76, dpPct * 0.58));
+  const cUltraDeep = mixCol(hueAnchor, "#000000", Math.min(0.9, dpPct * 0.84));
+
+  const rad = (angDeg * Math.PI) / 180;
+  const x1 = Math.round(50 - Math.cos(rad) * 50);
+  const y1 = Math.round(50 - Math.sin(rad) * 50);
+  const x2 = Math.round(50 + Math.cos(rad) * 50);
+  const y2 = Math.round(50 + Math.sin(rad) * 50);
+
+  const gidBase = `PLAIN_UNIFIED_MONO_${idx}`;
+
+  if (style === "radial_center") {
+    m.def(
+      `<radialGradient id="${gidBase}" gradientUnits="userSpaceOnUse" cx="50%" cy="50%" r="76%">` +
+        `<stop offset="0%" stop-color="${cPeak}"/>` +
+        `<stop offset="32%" stop-color="${cLight}"/>` +
+        `<stop offset="68%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</radialGradient>`
+    );
+    m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gidBase})"/>`);
+  } else if (style === "radial_top") {
+    m.def(
+      `<radialGradient id="${gidBase}" gradientUnits="userSpaceOnUse" cx="50%" cy="22%" r="86%">` +
+        `<stop offset="0%" stop-color="${cPeak}"/>` +
+        `<stop offset="35%" stop-color="${cLight}"/>` +
+        `<stop offset="72%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</radialGradient>`
+    );
+    m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gidBase})"/>`);
+  } else if (style === "radial_corner") {
+    m.def(
+      `<radialGradient id="${gidBase}" gradientUnits="userSpaceOnUse" cx="18%" cy="18%" r="96%">` +
+        `<stop offset="0%" stop-color="${cPeak}"/>` +
+        `<stop offset="34%" stop-color="${cLight}"/>` +
+        `<stop offset="70%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</radialGradient>`
+    );
+    m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gidBase})"/>`);
+  } else if (style === "linear_diag" || style === "linear_vert" || style === "linear_horiz") {
+    const lx1 = style === "linear_vert" ? 50 : style === "linear_horiz" ? 0 : x1;
+    const ly1 = style === "linear_vert" ? 0 : style === "linear_horiz" ? 50 : y1;
+    const lx2 = style === "linear_vert" ? 50 : style === "linear_horiz" ? 100 : x2;
+    const ly2 = style === "linear_vert" ? 100 : style === "linear_horiz" ? 50 : y2;
+    m.def(
+      `<linearGradient id="${gidBase}" gradientUnits="userSpaceOnUse" x1="${lx1}%" y1="${ly1}%" x2="${lx2}%" y2="${ly2}%">` +
+        `<stop offset="0%" stop-color="${cPeak}"/>` +
+        `<stop offset="36%" stop-color="${cLight}"/>` +
+        `<stop offset="70%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</linearGradient>`
+    );
+    m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gidBase})"/>`);
+  } else if (style === "reflected_satin") {
+    m.def(
+      `<linearGradient id="${gidBase}" gradientUnits="userSpaceOnUse" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">` +
+        `<stop offset="0%" stop-color="${cUltraDeep}"/>` +
+        `<stop offset="26%" stop-color="${cMid}"/>` +
+        `<stop offset="50%" stop-color="${cPeak}"/>` +
+        `<stop offset="74%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</linearGradient>`
+    );
+    m.raw(`<rect x="0" y="0" width="1000" height="1000" fill="url(#${gidBase})"/>`);
+  } else if (style === "studio_floor") {
+    // 3D Studio Cyclorama Backdrop (Wall + Floor Horizon + Soft Center Spotlight, all in 1 color!)
+    const gidWall = `${gidBase}_WALL`;
+    const gidFloor = `${gidBase}_FLOOR`;
+    const gidSpot = `${gidBase}_SPOT`;
+    m.def(
+      `<linearGradient id="${gidWall}" gradientUnits="userSpaceOnUse" x1="50%" y1="0%" x2="50%" y2="72%">` +
+        `<stop offset="0%" stop-color="${cDeep}"/>` +
+        `<stop offset="75%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</linearGradient>` +
+        `<linearGradient id="${gidFloor}" gradientUnits="userSpaceOnUse" x1="50%" y1="70%" x2="50%" y2="100%">` +
+        `<stop offset="0%" stop-color="${cUltraDeep}"/>` +
+        `<stop offset="28%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cLight}"/>` +
+        `</linearGradient>` +
+        `<radialGradient id="${gidSpot}" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%">` +
+        `<stop offset="0%" stop-color="${cPeak}" stop-opacity="0.72"/>` +
+        `<stop offset="55%" stop-color="${cLight}" stop-opacity="0.28"/>` +
+        `<stop offset="100%" stop-color="${cMid}" stop-opacity="0"/>` +
+        `</radialGradient>`
+    );
+    m.raw(
+      `<rect x="0" y="0" width="1000" height="715" fill="url(#${gidWall})"/>` +
+        `<rect x="0" y="710" width="1000" height="290" fill="url(#${gidFloor})"/>` +
+        `<circle cx="500" cy="430" r="460" fill="url(#${gidSpot})"/>`
+    );
+  } else if (style === "soft_double_orb") {
+    const gidOrb1 = `${gidBase}_O1`;
+    const gidOrb2 = `${gidBase}_O2`;
+    m.def(
+      `<linearGradient id="${gidBase}" gradientUnits="userSpaceOnUse" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">` +
+        `<stop offset="0%" stop-color="${cDeep}"/>` +
+        `<stop offset="50%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</linearGradient>` +
+        `<radialGradient id="${gidOrb1}" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%">` +
+        `<stop offset="0%" stop-color="${cPeak}" stop-opacity="0.82"/>` +
+        `<stop offset="55%" stop-color="${cLight}" stop-opacity="0.34"/>` +
+        `<stop offset="100%" stop-color="${cMid}" stop-opacity="0"/>` +
+        `</radialGradient>` +
+        `<radialGradient id="${gidOrb2}" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%">` +
+        `<stop offset="0%" stop-color="${cLight}" stop-opacity="0.65"/>` +
+        `<stop offset="100%" stop-color="${cMid}" stop-opacity="0"/>` +
+        `</radialGradient>`
+    );
+    m.raw(
+      `<rect x="0" y="0" width="1000" height="1000" fill="url(#${gidBase})"/>` +
+        `<circle cx="320" cy="340" r="480" fill="url(#${gidOrb1})"/>` +
+        `<circle cx="720" cy="680" r="440" fill="url(#${gidOrb2})"/>`
+    );
+  } else {
+    // velvet_wave_grad: Soft Layered Monochrome Silk Wave Gradient (100% single-color family)
+    const gidW1 = `${gidBase}_W1`;
+    const gidW2 = `${gidBase}_W2`;
+    m.def(
+      `<linearGradient id="${gidBase}" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="100%" y2="100%">` +
+        `<stop offset="0%" stop-color="${cPeak}"/>` +
+        `<stop offset="52%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</linearGradient>` +
+        `<linearGradient id="${gidW1}" gradientUnits="userSpaceOnUse" x1="0%" y1="25%" x2="100%" y2="85%">` +
+        `<stop offset="0%" stop-color="${cLight}"/>` +
+        `<stop offset="100%" stop-color="${cDeep}"/>` +
+        `</linearGradient>` +
+        `<linearGradient id="${gidW2}" gradientUnits="userSpaceOnUse" x1="100%" y1="45%" x2="0%" y2="100%">` +
+        `<stop offset="0%" stop-color="${cMid}"/>` +
+        `<stop offset="100%" stop-color="${cUltraDeep}"/>` +
+        `</linearGradient>`
+    );
+    m.raw(
+      `<rect x="0" y="0" width="1000" height="1000" fill="url(#${gidBase})"/>` +
+        `<path d="M 0 320 C 320 210, 680 450, 1000 310 L 1000 1000 L 0 1000 Z" fill="url(#${gidW1})" opacity="0.72"/>` +
+        `<path d="M 0 590 C 350 710, 660 480, 1000 610 L 1000 1000 L 0 1000 Z" fill="url(#${gidW2})" opacity="0.78"/>`
+    );
+  }
+}
+
+SINGLE_COLOR_BG_SPECS.forEach((spec, idx) => {
+  registerMode({
+    id: spec.id,
+    name: spec.name,
+    cat: "Background",
+    look: {
+      bg: spec.baseHex,
+      ink: spec.inkHex,
+      cols: spec.tones,
+      style: "flat",
+    },
+    params: [
+      {
+        k: "gradStyle",
+        l: "SINGLE-COLOR GRADIENT STYLE",
+        type: "select",
+        opts: SINGLE_COLOR_GRAD_STYLE_OPTS,
+        def: spec.defStyle,
+      },
+      {
+        k: "highlight",
+        l: "LIGHT TINT BRIGHTNESS %",
+        min: 15,
+        max: 95,
+        def: spec.defHighlight,
+      },
+      {
+        k: "depth",
+        l: "DEEP SHADE VIGNETTE %",
+        min: 15,
+        max: 95,
+        def: spec.defDepth,
+      },
+      {
+        k: "angle",
+        l: "GRADIENT FLOW ANGLE °",
+        min: 0,
+        max: 360,
+        step: 15,
+        def: spec.defAngle,
+      },
+    ],
+    draw(m: any, q: any) {
+      renderSingleColorStudioGradient(m, q, spec, idx);
+    },
+  });
 });
 
-registerMode({
-  id: "matchafeltlinen",
-  name: "Olive Matcha Felt & Flannel Paper",
-  cat: "Background",
-  look: {
-    bg: "#a5af46",
-    ink: "#363c11",
-    cols: ["#929c38", "#b9c25a", "#7f882b", "#cbd46e", "#697120"],
-    style: "flat",
-  },
-  params: [
-    { k: "tufts", l: "Felt Wool Tufts", min: 50, max: 220, def: 130 },
-    { k: "mottle", l: "Flannel Patches", min: 10, max: 40, def: 22 },
-    { k: "scale", l: "Fiber Scale %", min: 50, max: 150, def: 95 },
-  ],
-  draw(m: any, q: any) {
-    m.scatter(q.mottle, 65, (x: number, y: number, k: number) => {
-      const s = (q.scale / 100) * (0.85 + m.rnd() * 0.75);
-      m.put(
-        x,
-        y,
-        m.rnd() * 360,
-        s,
-        `<path d="${blobPath(m.rnd, 8, 0.35)}" fill="${m.col(k)}" opacity="0.32"/>`,
-        58
-      );
-    });
-    for (let i = 0; i < q.tufts; i++) {
-      const x = 15 + m.rnd() * 970;
-      const y = 15 + m.rnd() * 970;
-      const a = m.rnd() * Math.PI * 2;
-      const L = (14 + m.rnd() * 32) * (q.scale / 100);
-      const x2 = Math.max(5, Math.min(995, x + Math.cos(a) * L));
-      const y2 = Math.max(5, Math.min(995, y + Math.sin(a) * L));
-      const cx = (x + x2) / 2 + (m.rnd() - 0.5) * 16;
-      const cy = (y + y2) / 2 + (m.rnd() - 0.5) * 16;
-      m.raw(
-        `<path d="M ${f1(x)} ${f1(y)} Q ${f1(cx)} ${f1(cy)} ${f1(x2)} ${f1(
-          y2
-        )}" fill="none" stroke="${m.col(i)}" stroke-width="${f1(
-          1.6 + m.rnd() * 2.8
-        )}" stroke-linecap="round" opacity="${(0.32 + m.rnd() * 0.5).toFixed(2)}"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "walnuthardwood",
-  name: "Dark Walnut Hardwood Plank Grain",
-  cat: "Background",
-  look: {
-    bg: "#4a2c15",
-    ink: "#1c0e05",
-    cols: ["#361e0c", "#613b1e", "#784b28", "#271407", "#8c5a33"],
-    style: "flat",
-  },
-  params: [
-    { k: "planks", l: "Timber Bands", min: 10, max: 36, def: 22 },
-    { k: "knots", l: "Burl Knots", min: 2, max: 12, def: 5 },
-    { k: "pores", l: "Wood Pores", min: 40, max: 160, def: 90 },
-  ],
-  draw(m: any, q: any) {
-    const N = q.planks;
-    for (let i = 0; i < N; i++) {
-      const y0 = (i / N) * 1000;
-      const h = (1000 / N) * (0.7 + m.rnd() * 0.65);
-      const w1 = (m.rnd() - 0.5) * 42;
-      const w2 = (m.rnd() - 0.5) * 42;
-      m.raw(
-        `<path d="M 0 ${f1(y0)} C 340 ${f1(y0 + w1)}, 660 ${f1(
-          y0 + w2
-        )}, 1000 ${f1(y0)} L 1000 ${f1(Math.min(1000, y0 + h))} C 660 ${f1(
-          Math.min(1000, y0 + h + w2)
-        )}, 340 ${f1(Math.min(1000, y0 + h + w1))}, 0 ${f1(
-          Math.min(1000, y0 + h)
-        )} Z" fill="${m.col(i)}" opacity="${(0.45 + m.rnd() * 0.45).toFixed(2)}"/>`
-      );
-    }
-    m.scatter(q.knots, 140, (x: number, y: number, k: number) => {
-      for (let r = 3; r >= 1; r--) {
-        m.put(
-          x,
-          y,
-          (m.rnd() - 0.5) * 12,
-          1,
-          `<ellipse rx="${f1(r * 28)}" ry="${f1(r * 11)}" fill="none" stroke="${m.col(
-            k + r
-          )}" stroke-width="${f1(2.2 + r)}" opacity="0.62"/>`,
-          90
-        );
-      }
-    });
-    for (let p = 0; p < q.pores; p++) {
-      const px = 10 + m.rnd() * 960;
-      const py = 10 + m.rnd() * 980;
-      const plen = 18 + m.rnd() * 55;
-      m.raw(
-        `<line x1="${f1(px)}" y1="${f1(py)}" x2="${f1(
-          Math.min(1000, px + plen)
-        )}" y2="${f1(py)}" stroke="${m.col(3)}" stroke-width="${f1(
-          1.2 + m.rnd() * 2.2
-        )}" stroke-linecap="round" opacity="0.58"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "frostedplatinum",
-  name: "Frosted Platinum Brushed Silver",
-  cat: "Background",
-  look: {
-    bg: "#d5d9df",
-    ink: "#475569",
-    cols: ["#eef1f5", "#b8bec8", "#ffffff", "#9fa6b2", "#cbd0d8"],
-    style: "flat",
-  },
-  params: [
-    { k: "sheen", l: "Studio Light Orbs", min: 3, max: 10, def: 5 },
-    { k: "grain", l: "Anodized Micro-Dots", min: 0, max: 260, def: 0 },
-    { k: "brush", l: "Brushed Lines", min: 30, max: 120, def: 65 },
-  ],
-  draw(m: any, q: any) {
-    for (let i = 0; i < q.sheen; i++) {
-      const gid = `plat_sh_${i}`;
-      const cx = +(180 + m.rnd() * 640).toFixed(1);
-      const cy = +(180 + m.rnd() * 640).toFixed(1);
-      m.def(
-        `<radialGradient id="${gid}" gradientUnits="objectBoundingBox" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${m.col(
-          i % 2 === 0 ? 2 : 0
-        )}" stop-opacity="0.72"/><stop offset="100%" stop-color="${m.bg}" stop-opacity="0"/></radialGradient>`
-      );
-      m.raw(`<circle cx="${cx}" cy="${cy}" r="550" fill="url(#${gid})"/>`);
-    }
-    for (let b = 0; b < q.brush; b++) {
-      const y = (b / Math.max(1, q.brush - 1)) * 1000;
-      const x1 = m.rnd() * 100;
-      const x2 = 1000 - m.rnd() * 100;
-      m.raw(
-        `<line x1="${f1(x1)}" y1="${f1(y)}" x2="${f1(x2)}" y2="${f1(
-          y
-        )}" stroke="${m.col(b)}" stroke-width="${f1(
-          1 + m.rnd() * 2.2
-        )}" stroke-linecap="round" opacity="0.45"/>`
-      );
-    }
-    for (let g = 0; g < q.grain; g++) {
-      const gx = 10 + m.rnd() * 980;
-      const gy = 10 + m.rnd() * 980;
-      m.raw(
-        `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="${f1(
-          1.6 + m.rnd() * 3.8
-        )}" fill="${m.col(g)}" opacity="0.48"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "blueagatemarble",
-  name: "Blue Agate Liquid Marble Swirl",
-  cat: "Background",
-  look: {
-    bg: "#98aab9",
-    ink: "#1e293b",
-    cols: ["#4a7ba6", "#566370", "#d8e2ec", "#2e3842", "#7593af"],
-    style: "flat",
-  },
-  params: [
-    { k: "ribbons", l: "Fluid Marble Bands", min: 8, max: 26, def: 16 },
-    { k: "swirl", l: "Swirl Amplitude", min: 40, max: 180, def: 115 },
-    { k: "pools", l: "Agate Mineral Pools", min: 4, max: 16, def: 8 },
-  ],
-  draw(m: any, q: any) {
-    for (let i = 0; i < q.ribbons; i++) {
-      const yBase = 30 + (i / Math.max(1, q.ribbons - 1)) * 940;
-      const a1 = (m.rnd() - 0.5) * q.swirl * 1.8;
-      const a2 = (m.rnd() - 0.5) * q.swirl * 1.8;
-      const a3 = (m.rnd() - 0.5) * q.swirl * 1.8;
-      const y1 = Math.max(15, Math.min(985, yBase + a1));
-      const y2 = Math.max(15, Math.min(985, yBase + a2));
-      const y3 = Math.max(15, Math.min(985, yBase + a3));
-      const sw = 12 + m.rnd() * 38;
-      m.raw(
-        `<path d="M 0 ${f1(yBase)} C 280 ${f1(y1)}, 520 ${f1(y2)}, 740 ${f1(
-          y3
-        )} S 890 ${f1(y1)}, 1000 ${f1(yBase)}" fill="none" stroke="${m.col(
-          i
-        )}" stroke-width="${f1(sw)}" stroke-linecap="butt" opacity="${(
-          0.55 +
-          m.rnd() * 0.4
-        ).toFixed(2)}"/>`
-      );
-      m.raw(
-        `<path d="M 0 ${f1(yBase)} C 280 ${f1(y1)}, 520 ${f1(y2)}, 740 ${f1(
-          y3
-        )} S 890 ${f1(y1)}, 1000 ${f1(yBase)}" fill="none" stroke="${m.col(
-          i + 2
-        )}" stroke-width="${f1(sw * 0.28)}" stroke-linecap="butt" opacity="0.82"/>`
-      );
-    }
-    m.scatter(q.pools, 110, (x: number, y: number, k: number) => {
-      for (let ring = 3; ring >= 1; ring--) {
-        const s = (0.45 + ring * 0.28) * (0.8 + m.rnd() * 0.4);
-        m.put(
-          x,
-          y,
-          k * 45,
-          s,
-          `<path d="${blobPath(m.rnd, 8, 0.36)}" fill="${m.col(k + ring)}" opacity="0.58"/>`,
-          68
-        );
-      }
-    });
-  },
-});
-
-registerMode({
-  id: "rosegoldfoil",
-  name: "Rose Gold Brushed Metallic Sheen",
-  cat: "Background",
-  look: {
-    bg: "#3b1c22",
-    ink: "#fff1f2",
-    cols: ["#f43f5e", "#fda4af", "#fb7185", "#ffe4e6", "#e11d48"],
-    style: "flat",
-  },
-  params: [
-    { k: "bands", l: "Metallic Folds", min: 5, max: 16, def: 9 },
-    { k: "flecks", l: "Foil Shimmer", min: 30, max: 140, def: 75 },
-  ],
-  draw(m: any, q: any) {
-    for (let i = 0; i < q.bands; i++) {
-      const y = 30 + (i / Math.max(1, q.bands - 1)) * 940;
-      const amp = 45 + m.rnd() * 75;
-      m.raw(
-        `<path d="M 0 ${f1(y)} Q 320 ${f1(
-          Math.max(15, y - amp)
-        )} 500 ${f1(y)} T 1000 ${f1(y)}" fill="none" stroke="${m.col(
-          i
-        )}" stroke-width="${f1(420 / q.bands)}" stroke-linecap="butt" opacity="0.52"/>`
-      );
-    }
-    m.scatter(q.flecks, 45, (x: number, y: number, k: number) => {
-      const s = 0.25 + m.rnd() * 0.45;
-      m.put(x, y, m.rnd() * 360, s, `<polygon points="0,-24 18,0 0,24 -18,0" fill="${m.col(k)}" opacity="0.72"/>`, 35);
-    });
-  },
-});
-
-registerMode({
-  id: "emeraldmalachite",
-  name: "Emerald Malachite Banded Stone",
-  cat: "Background",
-  look: {
-    bg: "#042f2e",
-    ink: "#ecfdf5",
-    cols: ["#10b981", "#059669", "#34d399", "#047857", "#a7f3d0"],
-    style: "flat",
-  },
-  params: [
-    { k: "eyes", l: "Malachite Eyes", min: 3, max: 10, def: 6 },
-    { k: "rings", l: "Concentric Bands", min: 4, max: 10, def: 6 },
-  ],
-  draw(m: any, q: any) {
-    m.scatter(q.eyes, 140, (x: number, y: number, k: number) => {
-      for (let r = q.rings; r >= 1; r--) {
-        const s = (r / q.rings) * 1.45;
-        m.put(
-          x,
-          y,
-          k * 30,
-          s,
-          `<circle r="48" fill="${m.col(k + r)}" stroke="${m.col(k + r + 1)}" stroke-width="4"/>`,
-          75
-        );
-      }
-    });
-  },
-});
-
-registerMode({
-  id: "charcoalslate",
-  name: "Dark Charcoal Architectural Slate",
-  cat: "Background",
-  look: {
-    bg: "#1e242b",
-    ink: "#f8fafc",
-    cols: ["#2d3640", "#3e4a57", "#14181d", "#526070", "#64748b"],
-    style: "flat",
-  },
-  params: [
-    { k: "strata", l: "Slate Strata", min: 8, max: 24, def: 14 },
-    { k: "grit", l: "Mineral Grit", min: 0, max: 160, def: 0 },
-  ],
-  draw(m: any, q: any) {
-    for (let i = 0; i < q.strata; i++) {
-      const y = (i / q.strata) * 1000;
-      const h = 55 + m.rnd() * 75;
-      m.raw(
-        `<rect x="0" y="${f1(y)}" width="1000" height="${f1(
-          Math.min(1000 - y, h)
-        )}" fill="${m.col(i)}" opacity="0.48"/>`
-      );
-    }
-    for (let g = 0; g < q.grit; g++) {
-      const gx = 10 + m.rnd() * 980;
-      const gy = 10 + m.rnd() * 980;
-      m.raw(
-        `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="${f1(
-          2 + m.rnd() * 5.5
-        )}" fill="${m.col(g)}" opacity="0.52"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "ivorydecklepaper",
-  name: "Handmade Ivory Watercolor Paper",
-  cat: "Background",
-  look: {
-    bg: "#faf6ee",
-    ink: "#332b22",
-    cols: ["#efe7d6", "#e5d9c3", "#f5efe2", "#d8c8ad", "#cbb798"],
-    style: "flat",
-  },
-  params: [
-    { k: "dimples", l: "Cold-Press Dimples", min: 30, max: 120, def: 70 },
-    { k: "fibers", l: "Cotton Rag Fibers", min: 40, max: 150, def: 85 },
-  ],
-  draw(m: any, q: any) {
-    m.scatter(q.dimples, 55, (x: number, y: number, k: number) => {
-      const rx = 18 + m.rnd() * 24;
-      const ry = 12 + m.rnd() * 18;
-      m.put(
-        x,
-        y,
-        m.rnd() * 180,
-        1,
-        `<ellipse rx="${f1(rx)}" ry="${f1(ry)}" fill="${m.col(k)}" opacity="0.52"/>`,
-        45
-      );
-    });
-    for (let i = 0; i < q.fibers; i++) {
-      const fx = 15 + m.rnd() * 970;
-      const fy = 15 + m.rnd() * 970;
-      const a = m.rnd() * Math.PI * 2;
-      const len = 14 + m.rnd() * 26;
-      m.raw(
-        `<line x1="${f1(fx)}" y1="${f1(fy)}" x2="${f1(
-          Math.max(5, Math.min(995, fx + Math.cos(a) * len))
-        )}" y2="${f1(
-          Math.max(5, Math.min(995, fy + Math.sin(a) * len))
-        )}" stroke="${m.col(i)}" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "teakparquetherring",
-  name: "Luxury Teak Wood Parquet Grain",
-  cat: "Background",
-  look: {
-    bg: "#5c3419",
-    ink: "#1e0f05",
-    cols: ["#784724", "#8f5830", "#472610", "#a66a3e", "#693c1c"],
-    style: "both",
-    sw: 2,
-  },
-  params: [
-    { k: "n", l: "Parquet Columns", min: 4, max: 12, def: 6 },
-    { k: "grain", l: "Timber Grain Lines", min: 2, max: 8, def: 4 },
-  ],
-  draw(m: any, q: any) {
-    m.grid(q.n, "brick", (x: number, y: number, i: number, j: number, cell: number) => {
-      const w = cell * 0.88;
-      const h = cell * 0.44;
-      const c = m.col(i + j);
-      let gLines = "";
-      for (let g = 1; g <= q.grain; g++) {
-        const gy = -h / 2 + (g / (q.grain + 1)) * h;
-        gLines += `<line x1="${f1(-w * 0.42)}" y1="${f1(gy)}" x2="${f1(
-          w * 0.42
-        )}" y2="${f1(gy)}" stroke="${m.col(i + j + 2)}" stroke-width="1.8" opacity="0.55"/>`;
-      }
-      m.put(
-        x,
-        y,
-        (i + j) % 2 === 0 ? 0 : 90,
-        1,
-        `<rect x="${f1(-w / 2)}" y="${f1(-h / 2)}" width="${f1(w)}" height="${f1(
-          h
-        )}" rx="4" fill="${c}" stroke="${m.ink}" stroke-width="${m.sw}"/>${gLines}`,
-        cell * 0.5
-      );
-    });
-  },
-});
-
-registerMode({
-  id: "obsidianlava",
-  name: "Volcanic Basalt & Gold Vein Marble",
-  cat: "Background",
-  look: {
-    bg: "#0f1117",
-    ink: "#fef08a",
-    cols: ["#eab308", "#1e293b", "#ca8a04", "#334155", "#fde047"],
-    style: "flat",
-  },
-  params: [
-    { k: "veins", l: "Gilded Cracks", min: 8, max: 28, def: 15 },
-    { k: "plates", l: "Basalt Plates", min: 6, max: 22, def: 12 },
-  ],
-  draw(m: any, q: any) {
-    m.scatter(q.plates, 90, (x: number, y: number, k: number) => {
-      m.put(
-        x,
-        y,
-        m.rnd() * 360,
-        1.1,
-        `<path d="${blobPath(m.rnd, 6, 0.4)}" fill="${m.col(k % 2 ? 1 : 3)}" opacity="0.65"/>`,
-        65
-      );
-    });
-    for (let v = 0; v < q.veins; v++) {
-      let y = 30 + m.rnd() * 940;
-      let d = `M 0 ${f1(y)}`;
-      for (let s = 1; s <= 7; s++) {
-        const x = (s / 7) * 1000;
-        y = Math.max(15, Math.min(985, y + (m.rnd() - 0.5) * 140));
-        d += ` L ${f1(x)} ${f1(y)}`;
-      }
-      m.raw(
-        `<path d="${d}" fill="none" stroke="${m.col(
-          v % 2 === 0 ? 0 : 4
-        )}" stroke-width="${f1(1.5 + m.rnd() * 3.5)}" stroke-linejoin="round" stroke-linecap="round" opacity="0.88"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "velvetcarmine",
-  name: "Royal Crimson Crushed Velvet Backdrop",
-  cat: "Background",
-  look: {
-    bg: "#2b0712",
-    ink: "#ffe4e6",
-    cols: ["#9f1239", "#be123c", "#e11d48", "#881337", "#f43f5e"],
-    style: "flat",
-  },
-  params: [
-    { k: "drapes", l: "Velvet Drapes", min: 6, max: 18, def: 10 },
-    { k: "sheen", l: "Crush Highlights", min: 12, max: 45, def: 24 },
-  ],
-  draw(m: any, q: any) {
-    for (let i = 0; i < q.drapes; i++) {
-      const x = 35 + (i / Math.max(1, q.drapes - 1)) * 930;
-      const w = 45 + m.rnd() * 55;
-      m.raw(
-        `<path d="M ${f1(x)} 0 C ${f1(x - w)} 350, ${f1(
-          x + w
-        )} 650, ${f1(x)} 1000" fill="none" stroke="${m.col(
-          i
-        )}" stroke-width="${f1(w)}" stroke-linecap="butt" opacity="0.45"/>`
-      );
-    }
-    m.scatter(q.sheen, 75, (x: number, y: number, k: number) => {
-      m.put(
-        x,
-        y,
-        m.rnd() * 360,
-        0.9,
-        `<ellipse rx="46" ry="18" fill="${m.col(k)}" opacity="0.35"/>`,
-        55
-      );
-    });
-  },
-});
-
-registerMode({
-  id: "sapphiregeode",
-  name: "Sapphire Crystal Geode Agate",
-  cat: "Background",
-  look: {
-    bg: "#08142c",
-    ink: "#f0f9ff",
-    cols: ["#0284c7", "#38bdf8", "#eab308", "#1d4ed8", "#7dd3fc"],
-    style: "flat",
-  },
-  params: [
-    { k: "bands", l: "Geode Strata", min: 6, max: 16, def: 10 },
-    { k: "crystals", l: "Gold Quartz Specks", min: 20, max: 90, def: 48 },
-  ],
-  draw(m: any, q: any) {
-    for (let r = q.bands; r >= 1; r--) {
-      const rad = (r / q.bands) * 465;
-      const pts: [number, number][] = [];
-      for (let k = 0; k < 12; k++) {
-        const a = (k / 12) * Math.PI * 2;
-        const rr = rad * (0.86 + hr(r * 19, k, r) * 0.24);
-        pts.push([500 + Math.cos(a) * rr, 500 + Math.sin(a) * rr]);
-      }
-      m.raw(
-        `<path d="${smoothC(pts)}" fill="${m.col(r)}" stroke="${m.col(
-          r + 1
-        )}" stroke-width="3" opacity="0.85"/>`
-      );
-    }
-    m.scatter(q.crystals, 40, (x: number, y: number) => {
-      m.put(
-        x,
-        y,
-        m.rnd() * 360,
-        0.22 + m.rnd() * 0.25,
-        `<polygon points="0,-25 18,0 0,25 -18,0" fill="${m.col(2)}"/>`,
-        32
-      );
-    });
-  },
-});
-
-registerMode({
-  id: "terracottastucco",
-  name: "Mediterranean Terracotta Fresco Plaster",
-  cat: "Background",
-  look: {
-    bg: "#c86446",
-    ink: "#38180e",
-    cols: ["#b35236", "#d97b5e", "#e6957a", "#9c4127", "#f0b099"],
-    style: "flat",
-  },
-  params: [
-    { k: "trowel", l: "Trowel Sweeps", min: 14, max: 50, def: 28 },
-    { k: "grit", l: "Plaster Sand", min: 0, max: 180, def: 0 },
-  ],
-  draw(m: any, q: any) {
-    m.scatter(q.trowel, 65, (x: number, y: number, k: number) => {
-      const s = 0.8 + m.rnd() * 0.9;
-      m.put(
-        x,
-        y,
-        m.rnd() * 180,
-        s,
-        `<path d="M-48-12Q0-34 48-10Q32 24-42 18Z" fill="${m.col(k)}" opacity="0.45"/>`,
-        58
-      );
-    });
-    for (let i = 0; i < q.grit; i++) {
-      const gx = 10 + m.rnd() * 980;
-      const gy = 10 + m.rnd() * 980;
-      m.raw(
-        `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="${f1(
-          1.8 + m.rnd() * 4.2
-        )}" fill="${m.col(i)}" opacity="0.5"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "titaniumcarbon",
-  name: "Brushed Titanium Anodized Metal",
-  cat: "Background",
-  look: {
-    bg: "#181c24",
-    ink: "#e2e8f0",
-    cols: ["#272e3b", "#384152", "#4b5563", "#64748b", "#0f1319"],
-    style: "flat",
-  },
-  params: [
-    { k: "n", l: "Carbon Weave Grid", min: 8, max: 24, def: 14 },
-    { k: "brush", l: "Titanium Micro-Lines", min: 30, max: 120, def: 70 },
-  ],
-  draw(m: any, q: any) {
-    m.grid(q.n, "grid", (x: number, y: number, i: number, j: number, cell: number) => {
-      const w = cell * 0.9;
-      m.put(
-        x,
-        y,
-        0,
-        1,
-        `<rect x="${f1(-w / 2)}" y="${f1(-w / 2)}" width="${f1(w)}" height="${f1(
-          w
-        )}" rx="3" fill="${m.col((i + j) % 4)}" opacity="0.72"/>`,
-        cell * 0.5
-      );
-    });
-    for (let b = 0; b < q.brush; b++) {
-      const y = (b / Math.max(1, q.brush - 1)) * 1000;
-      m.raw(
-        `<line x1="0" y1="${f1(y)}" x2="1000" y2="${f1(y)}" stroke="${m.col(
-          b
-        )}" stroke-width="1.4" opacity="0.38"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "sandstonedune",
-  name: "Sahara Sandstone Sedimentary Strata",
-  cat: "Background",
-  look: {
-    bg: "#e6c79c",
-    ink: "#4a3219",
-    cols: ["#d4ad7a", "#c2955d", "#f0d8b4", "#b08047", "#9c6b34"],
-    style: "flat",
-  },
-  params: [
-    { k: "strata", l: "Rock Layers", min: 8, max: 24, def: 14 },
-    { k: "wave", l: "Strata Wave", min: 20, max: 110, def: 58 },
-  ],
-  draw(m: any, q: any) {
-    for (let i = 0; i < q.strata; i++) {
-      const y = 25 + (i / Math.max(1, q.strata - 1)) * 950;
-      const a1 = (m.rnd() - 0.5) * q.wave * 1.5;
-      const a2 = (m.rnd() - 0.5) * q.wave * 1.5;
-      m.raw(
-        `<path d="M 0 ${f1(y)} C 320 ${f1(
-          Math.max(15, Math.min(985, y + a1))
-        )}, 680 ${f1(Math.max(15, Math.min(985, y + a2)))}, 1000 ${f1(
-          y
-        )}" fill="none" stroke="${m.col(i)}" stroke-width="${f1(
-          520 / q.strata
-        )}" stroke-linecap="butt" opacity="0.72"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "jadeitecloud",
-  name: "Imperial Jadeite Cloud Marble",
-  cat: "Background",
-  look: {
-    bg: "#d1fae5",
-    ink: "#064e3b",
-    cols: ["#6ee7b7", "#34d399", "#a7f3d0", "#10b981", "#ecfdf5"],
-    style: "flat",
-  },
-  params: [
-    { k: "clouds", l: "Jadeite Veins", min: 10, max: 32, def: 18 },
-    { k: "swirl", l: "Cloud Flow", min: 30, max: 140, def: 80 },
-  ],
-  draw(m: any, q: any) {
-    m.scatter(q.clouds, 75, (x: number, y: number, k: number) => {
-      const s = 0.8 + m.rnd() * 0.9;
-      m.put(
-        x,
-        y,
-        m.rnd() * 360,
-        s,
-        `<path d="${blobPath(m.rnd, 9, 0.34)}" fill="${m.col(k)}" opacity="0.52"/>`,
-        65
-      );
-    });
-  },
-});
-
-registerMode({
-  id: "burlapjuteweave",
-  name: "Natural Hessian Jute Sackcloth",
-  cat: "Background",
-  look: {
-    bg: "#c7a87b",
-    ink: "#3d2914",
-    cols: ["#b08f61", "#d9be96", "#99784b", "#e3cca8", "#826238"],
-    style: "flat",
-  },
-  params: [
-    { k: "n", l: "Jute Weave Gauge", min: 10, max: 28, def: 16 },
-    { k: "rough", l: "Fiber Roughness", min: 10, max: 80, def: 45 },
-  ],
-  draw(m: any, q: any) {
-    const N = q.n;
-    const step = 1000 / N;
-    for (let i = 0; i <= N; i++) {
-      const p = i * step;
-      const sw = (step * 0.42) * (0.85 + (m.rnd() * q.rough) / 150);
-      m.raw(
-        `<line x1="${f1(p)}" y1="0" x2="${f1(p)}" y2="1000" stroke="${m.col(
-          i
-        )}" stroke-width="${f1(sw)}" opacity="0.62"/>` +
-          `<line x1="0" y1="${f1(p)}" x2="1000" y2="${f1(p)}" stroke="${m.col(
-            i + 1
-          )}" stroke-width="${f1(sw)}" opacity="0.62"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "alcoholinkgold",
-  name: "Alcohol Ink & Gilded Marble Flow",
-  cat: "Background",
-  look: {
-    bg: "#fdf8f5",
-    ink: "#1e1b4b",
-    cols: ["#f43f5e", "#eab308", "#8b5cf6", "#fda4af", "#fde047"],
-    style: "flat",
-  },
-  params: [
-    { k: "blooms", l: "Ink Blooms", min: 6, max: 20, def: 11 },
-    { k: "gold", l: "Gold Leaf Veins", min: 6, max: 20, def: 10 },
-  ],
-  draw(m: any, q: any) {
-    m.scatter(q.blooms, 95, (x: number, y: number, k: number) => {
-      const s = 1.0 + m.rnd() * 0.9;
-      m.put(
-        x,
-        y,
-        m.rnd() * 360,
-        s,
-        `<path d="${blobPath(m.rnd, 8, 0.3)}" fill="${m.col(k)}" opacity="0.38" stroke="${m.col(
-          1
-        )}" stroke-width="2.5"/>`,
-        68
-      );
-    });
-    for (let g = 0; g < q.gold; g++) {
-      const y = 30 + (g / q.gold) * 940;
-      const a1 = (m.rnd() - 0.5) * 140;
-      const a2 = (m.rnd() - 0.5) * 140;
-      m.raw(
-        `<path d="M 0 ${f1(y)} C 320 ${f1(
-          Math.max(15, Math.min(985, y + a1))
-        )}, 680 ${f1(Math.max(15, Math.min(985, y + a2)))}, 1000 ${f1(
-          y
-        )}" fill="none" stroke="${m.col(1)}" stroke-width="3.2" stroke-linecap="round" opacity="0.88"/>`
-      );
-    }
-  },
-});
-
-registerMode({
-  id: "concreteindustrial",
-  name: "Polished Architectural Micro-Cement",
-  cat: "Background",
-  look: {
-    bg: "#b8bec6",
-    ink: "#1f2937",
-    cols: ["#a3aab4", "#cdd2d9", "#8e96a2", "#dfe3e8", "#79828f"],
-    style: "flat",
-  },
-  params: [
-    { k: "clouds", l: "Trowel Clouds", min: 10, max: 36, def: 20 },
-    { k: "pits", l: "Micro Air Pits", min: 0, max: 200, def: 0 },
-  ],
-  draw(m: any, q: any) {
-    m.scatter(q.clouds, 75, (x: number, y: number, k: number) => {
-      m.put(
-        x,
-        y,
-        m.rnd() * 360,
-        1.1,
-        `<path d="${blobPath(m.rnd, 7, 0.35)}" fill="${m.col(k)}" opacity="0.36"/>`,
-        65
-      );
-    });
-    for (let i = 0; i < q.pits; i++) {
-      const px = 50 + m.rnd() * 900;
-      const py = 50 + m.rnd() * 900;
-      m.raw(
-        `<circle cx="${f1(px)}" cy="${f1(py)}" r="${f1(
-          1.4 + m.rnd() * 3.6
-        )}" fill="${m.col(i)}" opacity="0.48"/>`
-      );
-    }
-  },
-});
 
 /* =====================================================================
    PLAIN & UNIFIED ONE-PIECE BACKGROUNDS (100% SMOOTH DEFAULT + OPTIONAL TEXTURE)
@@ -23814,27 +23458,27 @@ function drawCalendarSheetHeroTopHeader(
     const tlOuter: [number, number][] = [[sheetX, sheetY]];
     for (let k = 0; k <= 32; k++) {
       const t = k / 32;
-      const px = sheetX + sheetW * 0.62 * (1 - t);
-      const py = sheetY + sheetH * 0.21 * Math.pow(t, 1.45);
+      const px = sheetX + sheetW * 0.56 * (1 - t);
+      const py = sheetY + topBannerH * 0.96 * Math.pow(t, 1.45);
       tlOuter.push([px, py]);
     }
-    clipSheet(tlOuter, accent2); // Golden amber inner wave
+    clipBanner(tlOuter, accent2); // Golden amber inner wave
 
     const tlInner: [number, number][] = [[sheetX, sheetY]];
     for (let k = 0; k <= 32; k++) {
       const t = k / 32;
-      const px = sheetX + sheetW * 0.48 * (1 - t);
-      const py = sheetY + sheetH * 0.145 * Math.pow(t, 1.55);
+      const px = sheetX + sheetW * 0.42 * (1 - t);
+      const py = sheetY + topBannerH * 0.68 * Math.pow(t, 1.55);
       tlInner.push([px, py]);
     }
-    clipSheet(tlInner, accent1); // Deep orange-red outer corner wave
+    clipBanner(tlInner, accent1); // Deep orange-red outer corner wave
 
-    // Matching Bottom-Right Corner Dual Wave Ribbons
+    // Matching Bottom-Right Corner Dual Wave Ribbons strictly inside bottom margin
     const brOuter: [number, number][] = [[sheetX + sheetW, sheetY + sheetH]];
     for (let k = 0; k <= 32; k++) {
       const t = k / 32;
-      const px = sheetX + sheetW - sheetW * 0.44 * (1 - t);
-      const py = sheetY + sheetH - sheetH * 0.16 * Math.pow(t, 1.45);
+      const px = sheetX + sheetW - sheetW * 0.34 * (1 - t);
+      const py = sheetY + sheetH - 26 * Math.pow(t, 1.45);
       brOuter.push([px, py]);
     }
     clipSheet(brOuter, accent2);
@@ -23842,8 +23486,8 @@ function drawCalendarSheetHeroTopHeader(
     const brInner: [number, number][] = [[sheetX + sheetW, sheetY + sheetH]];
     for (let k = 0; k <= 32; k++) {
       const t = k / 32;
-      const px = sheetX + sheetW - sheetW * 0.32 * (1 - t);
-      const py = sheetY + sheetH - sheetH * 0.105 * Math.pow(t, 1.55);
+      const px = sheetX + sheetW - sheetW * 0.24 * (1 - t);
+      const py = sheetY + sheetH - 18 * Math.pow(t, 1.55);
       brInner.push([px, py]);
     }
     clipSheet(brInner, accent1);
@@ -25449,6 +25093,717 @@ function drawWeeklyPlannerBoard(
   }
 }
 
+function drawCalendarSheetSideDecorations(
+  parts: string[],
+  sideMode: string,
+  styleIdx: number,
+  variant: number,
+  year: number,
+  sheetX: number,
+  sheetY: number,
+  sheetW: number,
+  sheetH: number,
+  topBannerH: number,
+  aspect: number,
+  cardBg: string,
+  headerBg: string,
+  textCol: string,
+  mutedCol: string,
+  accent1: string,
+  accent2: string,
+  accent3: string
+): { leftW: number; rightW: number; botH: number } {
+  if (sideMode === "none") {
+    return { leftW: 0, rightW: 0, botH: 0 };
+  }
+
+  // Strictly clip every decorative polygon to the Calendar Sheet [sheetX, sheetY, sheetX + sheetW, sheetY + sheetH]
+  // so 100% of all artwork remains inside the Artboard with zero overflow!
+  const sx1 = sheetX + sheetW;
+  const sy1 = sheetY + sheetH;
+  const clipSheet = (pts: [number, number][], fill: string, op = 1) => {
+    const c = clipPolyToRect(pts, sheetX, sheetY, sx1, sy1);
+    if (c.length >= 3) {
+      const pStr = c.map((p) => `${f1(p[0])},${f1(p[1])}`).join(" ");
+      parts.push(
+        `<polygon points="${pStr}" fill="${fill}"${
+          op < 0.995 ? ` fill-opacity="${f1(op)}"` : ""
+        }/>`
+      );
+    }
+  };
+
+  const sideModesList = [
+    "side_waves",
+    "bauhaus_left",
+    "mountain_right",
+    "gold_pillars",
+    "origami_wings",
+    "botanical_vines",
+    "retro_stripes",
+    "cyber_rails",
+    "crimson_swoosh",
+    "torn_deckle",
+    "corner_ribbons",
+    "clean_frame",
+  ];
+  const resolvedMode =
+    sideMode === "auto" || !sideMode
+      ? sideModesList[(styleIdx + variant) % sideModesList.length]
+      : sideMode;
+
+  const bodyY0 = sheetY + topBannerH;
+  const bodyH = Math.max(100, sheetH - topBannerH);
+
+  if (resolvedMode === "side_waves") {
+    // Sweeping Dual Layered Left & Right Organic Side Wave Ribbons + Bottom Wave Footer
+    const wSide = 44;
+    const bFoot = 32;
+
+    // Left outer & inner vertical wave ribbons along bodyY0..sy1
+    const lOuter: [number, number][] = [[sheetX, bodyY0]];
+    for (let k = 0; k <= 28; k++) {
+      const t = k / 28;
+      const py = bodyY0 + bodyH * t;
+      const px =
+        sheetX +
+        wSide * (0.58 + 0.36 * Math.sin(t * Math.PI * 2.2 + 0.3));
+      lOuter.push([px, py]);
+    }
+    lOuter.push([sheetX, sy1]);
+    clipSheet(lOuter, accent2);
+
+    const lInner: [number, number][] = [[sheetX, bodyY0]];
+    for (let k = 0; k <= 28; k++) {
+      const t = k / 28;
+      const py = bodyY0 + bodyH * t;
+      const px =
+        sheetX +
+        wSide * (0.34 + 0.25 * Math.cos(t * Math.PI * 2.0));
+      lInner.push([px, py]);
+    }
+    lInner.push([sheetX, sy1]);
+    clipSheet(lInner, accent1);
+
+    // Right outer & inner vertical wave ribbons
+    const rOuter: [number, number][] = [[sx1, bodyY0]];
+    for (let k = 0; k <= 28; k++) {
+      const t = k / 28;
+      const py = bodyY0 + bodyH * t;
+      const px =
+        sx1 -
+        wSide * (0.58 + 0.36 * Math.cos(t * Math.PI * 2.2 + 0.4));
+      rOuter.push([px, py]);
+    }
+    rOuter.push([sx1, sy1]);
+    clipSheet(rOuter, accent2);
+
+    const rInner: [number, number][] = [[sx1, bodyY0]];
+    for (let k = 0; k <= 28; k++) {
+      const t = k / 28;
+      const py = bodyY0 + bodyH * t;
+      const px =
+        sx1 -
+        wSide * (0.34 + 0.25 * Math.sin(t * Math.PI * 2.0));
+      rInner.push([px, py]);
+    }
+    rInner.push([sx1, sy1]);
+    clipSheet(rInner, accent1);
+
+    // Bottom horizontal wave bar connecting left and right sides
+    const bWave: [number, number][] = [[sheetX, sy1]];
+    for (let k = 0; k <= 32; k++) {
+      const t = k / 32;
+      const px = sheetX + sheetW * t;
+      const py = sy1 - bFoot * (0.48 + 0.32 * Math.sin(t * Math.PI * 3));
+      bWave.push([px, py]);
+    }
+    bWave.push([sx1, sy1]);
+    clipSheet(bWave, accent3);
+
+    return { leftW: wSide + 6, rightW: wSide + 6, botH: bFoot + 4 };
+  }
+
+  if (resolvedMode === "bauhaus_left") {
+    // Architectural Left Vertical Bauhaus Geometric Sidebar Column + Right Trim Rule
+    const leftPanelW = 68;
+    const rightRuleW = 16;
+    const xL = sheetX + 10;
+    const yL = bodyY0 + 10;
+    const hL = bodyH - 22;
+
+    clipSheet(
+      [
+        [xL, yL],
+        [xL + leftPanelW, yL],
+        [xL + leftPanelW, yL + hL],
+        [xL, yL + hL],
+      ],
+      headerBg
+    );
+
+    // Stacked Bauhaus geometric totems inside the left sidebar (semicircles, disks, triangles, stripes)
+    const segH = hL / 5;
+    for (let s = 0; s < 5; s++) {
+      const sy = yL + s * segH;
+      const colA = [accent1, accent2, accent3, "#ffffff", accent1][s % 5];
+      const colB = [accent2, accent3, accent1, accent2, "#ffffff"][s % 5];
+      if (s % 3 === 0) {
+        // Semicircle from left edge
+        const pts: [number, number][] = [];
+        const r = Math.min(leftPanelW * 0.82, segH * 0.44);
+        for (let k = 0; k <= 20; k++) {
+          const a = -Math.PI * 0.5 + (k / 20) * Math.PI;
+          pts.push([xL + Math.cos(a) * r, sy + segH * 0.5 + Math.sin(a) * r]);
+        }
+        clipSheet(pts, colA);
+      } else if (s % 3 === 1) {
+        // Diagonal split triangle + circle
+        clipSheet(
+          [
+            [xL, sy + 4],
+            [xL + leftPanelW, sy + 4],
+            [xL + leftPanelW, sy + segH - 4],
+          ],
+          colA
+        );
+        const cr = Math.min(leftPanelW * 0.28, segH * 0.22);
+        const cPts: [number, number][] = [];
+        for (let k = 0; k < 20; k++) {
+          const a = (k / 20) * Math.PI * 2;
+          cPts.push([
+            xL + leftPanelW * 0.42 + Math.cos(a) * cr,
+            sy + segH * 0.58 + Math.sin(a) * cr,
+          ]);
+        }
+        clipSheet(cPts, colB);
+      } else {
+        // Horizontal bauhaus rhythm bars + vertical pill
+        for (let b = 0; b < 4; b++) {
+          const by0 = sy + 10 + b * ((segH - 20) / 4);
+          clipSheet(
+            [
+              [xL + 8, by0],
+              [xL + leftPanelW - 8, by0],
+              [xL + leftPanelW - 8, by0 + 7],
+              [xL + 8, by0 + 7],
+            ],
+            b % 2 === 0 ? colA : colB
+          );
+        }
+      }
+    }
+
+    // Right vertical accent trim bar
+    clipSheet(
+      [
+        [sx1 - 16, yL],
+        [sx1 - 10, yL],
+        [sx1 - 10, yL + hL],
+        [sx1 - 16, yL + hL],
+      ],
+      accent1
+    );
+
+    return { leftW: leftPanelW + 16, rightW: rightRuleW + 6, botH: 6 };
+  }
+
+  if (resolvedMode === "mountain_right") {
+    // Right Vertical Panoramic Mountain, Sun & Geometric Art Sidebar + Left Accent Rail
+    const rightPanelW = 70;
+    const leftRuleW = 16;
+    const xR = sx1 - 10 - rightPanelW;
+    const yR = bodyY0 + 10;
+    const hR = bodyH - 22;
+
+    clipSheet(
+      [
+        [xR, yR],
+        [xR + rightPanelW, yR],
+        [xR + rightPanelW, yR + hR],
+        [xR, yR + hR],
+      ],
+      headerBg
+    );
+
+    // Radiant Sun Disk inside Right Sidebar
+    const sunR = rightPanelW * 0.36;
+    const sunPts: [number, number][] = [];
+    for (let k = 0; k < 24; k++) {
+      const a = (k / 24) * Math.PI * 2;
+      sunPts.push([
+        xR + rightPanelW * 0.5 + Math.cos(a) * sunR,
+        yR + hR * 0.16 + Math.sin(a) * sunR,
+      ]);
+    }
+    clipSheet(sunPts, accent2);
+
+    // Layered Vertical Mountain Ridges inside Right Sidebar
+    for (let mIdx = 0; mIdx < 4; mIdx++) {
+      const peakY = yR + hR * (0.28 + mIdx * 0.15);
+      const colM = [accent1, accent3, mixCol(accent1, headerBg, 0.35), accent2][mIdx % 4];
+      clipSheet(
+        [
+          [xR, yR + hR],
+          [xR, peakY + 45],
+          [xR + rightPanelW * (mIdx % 2 === 0 ? 0.65 : 0.35), peakY],
+          [xR + rightPanelW, peakY + 55],
+          [xR + rightPanelW, yR + hR],
+        ],
+        colM
+      );
+    }
+
+    // Left vertical dual rule
+    clipSheet(
+      [
+        [sheetX + 10, yR],
+        [sheetX + 16, yR],
+        [sheetX + 16, yR + hR],
+        [sheetX + 10, yR + hR],
+      ],
+      accent1
+    );
+    clipSheet(
+      [
+        [sheetX + 19, yR + 24],
+        [sheetX + 22, yR + 24],
+        [sheetX + 22, yR + hR - 24],
+        [sheetX + 19, yR + hR - 24],
+      ],
+      accent2
+    );
+
+    return { leftW: leftRuleW + 8, rightW: rightPanelW + 16, botH: 6 };
+  }
+
+  if (resolvedMode === "gold_pillars") {
+    // Luxury 24K Gold & Obsidian Filigree Side Pillars + Corner Diamond Medallions
+    const pilW = 36;
+    const botH = 26;
+    const gold1 = "#f59e0b";
+    const gold2 = "#fde047";
+    const darkCol = lumH(headerBg) < 90 ? headerBg : "#0f172a";
+
+    for (let side = 0; side < 2; side++) {
+      const px0 = side === 0 ? sheetX + 8 : sx1 - 8 - pilW;
+      clipSheet(
+        [
+          [px0, bodyY0 + 8],
+          [px0 + pilW, bodyY0 + 8],
+          [px0 + pilW, sy1 - 8],
+          [px0, sy1 - 8],
+        ],
+        darkCol
+      );
+      // Inner gold frame
+      parts.push(
+        `<rect x="${f1(px0 + 4)}" y="${f1(bodyY0 + 12)}" width="${f1(
+          pilW - 8
+        )}" height="${f1(bodyH - 24)}" fill="none" stroke="${gold1}" stroke-width="1.5"/>`
+      );
+      // Vertical chain of gold diamond medallions along each pillar
+      const nDia = 7;
+      const stepY = (bodyH - 48) / nDia;
+      for (let d = 0; d < nDia; d++) {
+        const dcx = px0 + pilW * 0.5;
+        const dcy = bodyY0 + 24 + (d + 0.5) * stepY;
+        const dr = pilW * 0.28;
+        clipSheet(
+          [
+            [dcx, dcy - dr],
+            [dcx + dr, dcy],
+            [dcx, dcy + dr],
+            [dcx - dr, dcy],
+          ],
+          d % 2 === 0 ? gold2 : gold1
+        );
+      }
+    }
+
+    // Bottom gold ornamental bar between pillars
+    parts.push(
+      `<rect x="${f1(sheetX + 8 + pilW + 8)}" y="${f1(sy1 - 22)}" width="${f1(
+        sheetW - (pilW + 16) * 2
+      )}" height="12" fill="${darkCol}" stroke="${gold1}" stroke-width="1.4"/>`
+    );
+
+    return { leftW: pilW + 14, rightW: pilW + 14, botH: botH };
+  }
+
+  if (resolvedMode === "origami_wings") {
+    // Origami Folded Geometric Side Prism Facets Along Left & Right Margins
+    const wingW = 42;
+    const nFacets = 6;
+    const segH = bodyH / nFacets;
+    const cols = [accent1, accent2, accent3, headerBg];
+
+    for (let i = 0; i < nFacets; i++) {
+      const y0 = bodyY0 + i * segH;
+      const yMid = y0 + segH * 0.5;
+      const y1 = y0 + segH;
+      // Left origami prism triangles
+      clipSheet(
+        [
+          [sheetX, y0],
+          [sheetX + wingW * (i % 2 === 0 ? 0.95 : 0.65), yMid],
+          [sheetX, y1],
+        ],
+        cols[i % cols.length]
+      );
+      clipSheet(
+        [
+          [sheetX, y1],
+          [sheetX + wingW * (i % 2 === 0 ? 0.95 : 0.65), yMid],
+          [sheetX + wingW * (i % 2 === 0 ? 0.65 : 0.95), y1],
+        ],
+        cols[(i + 1) % cols.length],
+        0.88
+      );
+
+      // Right origami prism triangles
+      clipSheet(
+        [
+          [sx1, y0],
+          [sx1 - wingW * (i % 2 === 0 ? 0.95 : 0.65), yMid],
+          [sx1, y1],
+        ],
+        cols[(i + 2) % cols.length]
+      );
+      clipSheet(
+        [
+          [sx1, y1],
+          [sx1 - wingW * (i % 2 === 0 ? 0.95 : 0.65), yMid],
+          [sx1 - wingW * (i % 2 === 0 ? 0.65 : 0.95), y1],
+        ],
+        cols[(i + 3) % cols.length],
+        0.88
+      );
+    }
+
+    return { leftW: wingW + 6, rightW: wingW + 6, botH: 8 };
+  }
+
+  if (resolvedMode === "botanical_vines") {
+    // Botanical Organic Leaf Vines & Arch Side Borders along Left & Right Margins
+    const vineW = 42;
+    const stemLeft = sheetX + 18;
+    const stemRight = sx1 - 18;
+
+    // Vertical vine stems
+    parts.push(
+      `<rect x="${f1(stemLeft - 1.2)}" y="${f1(bodyY0 + 12)}" width="2.4" height="${f1(
+        bodyH - 24
+      )}" fill="${accent3}"/>`
+    );
+    parts.push(
+      `<rect x="${f1(stemRight - 1.2)}" y="${f1(bodyY0 + 12)}" width="2.4" height="${f1(
+        bodyH - 24
+      )}" fill="${accent3}"/>`
+    );
+
+    const nLeaves = 9;
+    const stepY = (bodyH - 40) / nLeaves;
+    for (let i = 0; i < nLeaves; i++) {
+      const ly = bodyY0 + 24 + (i + 0.5) * stepY;
+      const dir = i % 2 === 0 ? 1 : -1;
+      const leafCol = [accent1, accent2, accent3][i % 3];
+
+      // Left vine leaf polygon
+      const lPts: [number, number][] = [];
+      for (let k = 0; k <= 14; k++) {
+        const t = k / 14;
+        const w = Math.sin(t * Math.PI) * 7.5;
+        lPts.push([
+          stemLeft + dir * t * 15 - w * 0.4,
+          ly - t * 14 - w,
+        ]);
+      }
+      for (let k = 14; k >= 0; k--) {
+        const t = k / 14;
+        const w = Math.sin(t * Math.PI) * 7.5;
+        lPts.push([
+          stemLeft + dir * t * 15 + w * 0.4,
+          ly - t * 14 + w,
+        ]);
+      }
+      clipSheet(lPts, leafCol);
+
+      // Right vine leaf polygon
+      const rPts: [number, number][] = [];
+      for (let k = 0; k <= 14; k++) {
+        const t = k / 14;
+        const w = Math.sin(t * Math.PI) * 7.5;
+        rPts.push([
+          stemRight - dir * t * 15 - w * 0.4,
+          ly - t * 14 - w,
+        ]);
+      }
+      for (let k = 14; k >= 0; k--) {
+        const t = k / 14;
+        const w = Math.sin(t * Math.PI) * 7.5;
+        rPts.push([
+          stemRight - dir * t * 15 + w * 0.4,
+          ly - t * 14 + w,
+        ]);
+      }
+      clipSheet(rPts, leafCol);
+    }
+
+    return { leftW: vineW + 4, rightW: vineW + 4, botH: 8 };
+  }
+
+  if (resolvedMode === "retro_stripes") {
+    // Retro 70s Sunset Multi-Band Vertical Side Ribbons & Rounded Corner Sweeps
+    const bandW = 7.5;
+    const bandCols = [accent1, accent2, "#f6d365", accent3];
+    for (let b = 0; b < 4; b++) {
+      const lx = sheetX + 6 + b * bandW;
+      const rx = sx1 - 6 - (b + 1) * bandW;
+      clipSheet(
+        [
+          [lx, bodyY0 + 6],
+          [lx + bandW - 1, bodyY0 + 6],
+          [lx + bandW - 1, sy1 - 6],
+          [lx, sy1 - 6],
+        ],
+        bandCols[b]
+      );
+      clipSheet(
+        [
+          [rx, bodyY0 + 6],
+          [rx + bandW - 1, bodyY0 + 6],
+          [rx + bandW - 1, sy1 - 6],
+          [rx, sy1 - 6],
+        ],
+        bandCols[b]
+      );
+    }
+    const sideTotal = 6 + 4 * bandW + 6;
+    return { leftW: sideTotal, rightW: sideTotal, botH: 10 };
+  }
+
+  if (resolvedMode === "cyber_rails") {
+    // Cyber Tech HUD Neon Side Rails, Chamfered Brackets & Telemetry Tick Bars
+    const railW = 34;
+    const darkRail = "#090d16";
+    for (let side = 0; side < 2; side++) {
+      const rx0 = side === 0 ? sheetX + 6 : sx1 - 6 - railW;
+      clipSheet(
+        [
+          [rx0, bodyY0 + 8],
+          [rx0 + railW, bodyY0 + 22],
+          [rx0 + railW, sy1 - 22],
+          [rx0, sy1 - 8],
+        ],
+        darkRail
+      );
+      // Glowing tick bars along HUD rail
+      const ticks = 14;
+      const tickStep = (bodyH - 56) / ticks;
+      for (let t = 0; t < ticks; t++) {
+        const ty = bodyY0 + 28 + t * tickStep;
+        const tw = t % 3 === 0 ? railW - 10 : (railW - 10) * 0.55;
+        const tx = side === 0 ? rx0 + 5 : rx0 + railW - 5 - tw;
+        clipSheet(
+          [
+            [tx, ty],
+            [tx + tw, ty],
+            [tx + tw, ty + 4],
+            [tx, ty + 4],
+          ],
+          t % 3 === 0 ? accent2 : accent1
+        );
+      }
+    }
+    return { leftW: railW + 10, rightW: railW + 10, botH: 10 };
+  }
+
+  if (resolvedMode === "crimson_swoosh") {
+    // 3D Layered Crimson / Cobalt Wave Side Swooshes + Bottom Wave Ribbon (Matches Sample 2 Aesthetic)
+    const swW = 38;
+    const botH = 30;
+    const baseCol = lumH(headerBg) < 160 ? headerBg : accent1;
+
+    // Left 3D wave swoosh
+    const lSwoosh: [number, number][] = [[sheetX, bodyY0]];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      lSwoosh.push([
+        sheetX + swW * (0.4 + 0.52 * Math.sin(t * Math.PI)),
+        bodyY0 + bodyH * t,
+      ]);
+    }
+    lSwoosh.push([sheetX, sy1]);
+    clipSheet(lSwoosh, baseCol);
+
+    const lInner: [number, number][] = [[sheetX, bodyY0]];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      lInner.push([
+        sheetX + swW * (0.22 + 0.34 * Math.sin(t * Math.PI * 1.3)),
+        bodyY0 + bodyH * t,
+      ]);
+    }
+    lInner.push([sheetX, sy1]);
+    clipSheet(lInner, accent1);
+
+    // Right 3D wave swoosh
+    const rSwoosh: [number, number][] = [[sx1, bodyY0]];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      rSwoosh.push([
+        sx1 - swW * (0.4 + 0.52 * Math.sin(t * Math.PI)),
+        bodyY0 + bodyH * t,
+      ]);
+    }
+    rSwoosh.push([sx1, sy1]);
+    clipSheet(rSwoosh, baseCol);
+
+    // Bottom 3D wave ribbon
+    const bSwoosh: [number, number][] = [[sheetX, sy1]];
+    for (let k = 0; k <= 28; k++) {
+      const t = k / 28;
+      bSwoosh.push([
+        sheetX + sheetW * t,
+        sy1 - botH * (0.45 + 0.45 * Math.sin(t * Math.PI)),
+      ]);
+    }
+    bSwoosh.push([sx1, sy1]);
+    clipSheet(bSwoosh, accent1);
+
+    return { leftW: swW + 6, rightW: swW + 6, botH: botH + 4 };
+  }
+
+  if (resolvedMode === "torn_deckle") {
+    // Realistic Torn Paper Deckle Side Borders along Left & Right Edges of Calendar Sheet
+    const tearW = 40;
+    const steps = 44;
+    const lColor: [number, number][] = [[sheetX, bodyY0]];
+    const lPulp: [number, number][] = [[sheetX, bodyY0]];
+    const lShadow: [number, number][] = [[sheetX, bodyY0]];
+
+    for (let k = 0; k <= steps; k++) {
+      const t = k / steps;
+      const py = bodyY0 + bodyH * t;
+      const h1 = Math.sin(k * 2.7 + variant * 1.9) * 6.5;
+      const h2 = Math.cos(k * 7.3 + styleIdx * 3.1) * 4.2;
+      const tooth = (k % 3 === 0 ? 4.5 : -2.5) * Math.sin(k * 13.7);
+      const bx = sheetX + 20 + h1 + h2 + tooth;
+      lColor.push([bx, py]);
+      lPulp.push([bx + 5.5 + Math.abs(Math.sin(k * 5.1)) * 3.5, py]);
+      lShadow.push([bx + 10.5 + Math.abs(Math.sin(k * 5.1)) * 3.5, py + 3]);
+    }
+    lColor.push([sheetX, sy1]);
+    lPulp.push([sheetX, sy1]);
+    lShadow.push([sheetX, sy1]);
+
+    clipSheet(lShadow, "#000000", 0.14);
+    clipSheet(lPulp, "#f1f5f9", 1);
+    clipSheet(lColor, accent1, 1);
+
+    const rColor: [number, number][] = [[sx1, bodyY0]];
+    const rPulp: [number, number][] = [[sx1, bodyY0]];
+    const rShadow: [number, number][] = [[sx1, bodyY0]];
+    for (let k = 0; k <= steps; k++) {
+      const t = k / steps;
+      const py = bodyY0 + bodyH * t;
+      const h1 = Math.cos(k * 2.9 + variant * 2.3) * 6.5;
+      const h2 = Math.sin(k * 6.7 + styleIdx * 2.7) * 4.2;
+      const tooth = (k % 3 === 1 ? 4.5 : -2.5) * Math.cos(k * 11.3);
+      const bx = sx1 - (20 + h1 + h2 + tooth);
+      rColor.push([bx, py]);
+      rPulp.push([bx - (5.5 + Math.abs(Math.cos(k * 4.7)) * 3.5), py]);
+      rShadow.push([bx - (10.5 + Math.abs(Math.cos(k * 4.7)) * 3.5), py + 3]);
+    }
+    rColor.push([sx1, sy1]);
+    rPulp.push([sx1, sy1]);
+    rShadow.push([sx1, sy1]);
+
+    clipSheet(rShadow, "#000000", 0.14);
+    clipSheet(rPulp, "#f1f5f9", 1);
+    clipSheet(rColor, accent3, 1);
+
+    return { leftW: tearW + 4, rightW: tearW + 4, botH: 8 };
+  }
+
+  if (resolvedMode === "corner_ribbons") {
+    // 4-Corner Diagonal Layered Ribbon Bands + Side Accent Rules (Sample 1 Extended)
+    const sideBarW = 24;
+    const botH = 34;
+
+    // Bottom-Left & Bottom-Right sweeping corner waves strictly inside botH & sideBarW
+    const blOuter: [number, number][] = [[sheetX, sy1]];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      blOuter.push([
+        sheetX + sheetW * 0.28 * (1 - t),
+        sy1 - (botH + 38 * Math.pow(t, 1.6)),
+      ]);
+    }
+    clipSheet(blOuter, accent2);
+
+    const brOuter: [number, number][] = [[sx1, sy1]];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      brOuter.push([
+        sx1 - sheetW * 0.28 * (1 - t),
+        sy1 - (botH + 38 * Math.pow(t, 1.6)),
+      ]);
+    }
+    clipSheet(brOuter, accent1);
+
+    // Left & Right thin double decorative rails
+    parts.push(
+      `<rect x="${f1(sheetX + 10)}" y="${f1(bodyY0 + 12)}" width="5" height="${f1(
+        bodyH - botH - 22
+      )}" fill="${accent1}"/>`
+    );
+    parts.push(
+      `<rect x="${f1(sx1 - 15)}" y="${f1(bodyY0 + 12)}" width="5" height="${f1(
+        bodyH - botH - 22
+      )}" fill="${accent2}"/>`
+    );
+
+    return { leftW: sideBarW + 6, rightW: sideBarW + 6, botH: botH + 10 };
+  }
+
+  // Default "clean_frame": Double Architectural Border Frame + Corner Accent Squares
+  const frameInset = 8;
+  const frameCol = mixCol(cardBg, accent1, 0.45);
+  parts.push(
+    `<rect x="${f1(sheetX + frameInset)}" y="${f1(sheetY + frameInset)}" width="${f1(
+      sheetW - frameInset * 2
+    )}" height="${f1(
+      sheetH - frameInset * 2
+    )}" fill="none" stroke="${frameCol}" stroke-width="2"/>`
+  );
+  // 4 Corner Squares strictly inside sheet
+  const cSq = 12;
+  parts.push(
+    `<rect x="${f1(sheetX + frameInset)}" y="${f1(
+      sheetY + frameInset
+    )}" width="${cSq}" height="${cSq}" fill="${accent1}"/>`
+  );
+  parts.push(
+    `<rect x="${f1(sx1 - frameInset - cSq)}" y="${f1(
+      sheetY + frameInset
+    )}" width="${cSq}" height="${cSq}" fill="${accent1}"/>`
+  );
+  parts.push(
+    `<rect x="${f1(sheetX + frameInset)}" y="${f1(
+      sy1 - frameInset - cSq
+    )}" width="${cSq}" height="${cSq}" fill="${accent2}"/>`
+  );
+  parts.push(
+    `<rect x="${f1(sx1 - frameInset - cSq)}" y="${f1(
+      sy1 - frameInset - cSq
+    )}" width="${cSq}" height="${cSq}" fill="${accent2}"/>`
+  );
+
+  return { leftW: 16, rightW: 16, botH: 14 };
+}
+
 function renderMasterCalendarCollection(
   m: any,
   q: Record<string, any>,
@@ -25459,6 +25814,7 @@ function renderMasterCalendarCollection(
   const viewMode = String(q.viewMode || spec.defView || "12m");
   const weekStart = String(q.weekStart || spec.defWeekStart || "sun");
   const colorSet = String(q.colorSet || "default");
+  const sideArt = String(q.sideArt || "auto");
   const variant = Math.max(0, Math.round(+(q.variant ?? 0)));
 
   const dims = getRatioDims(
@@ -25600,10 +25956,43 @@ function renderMasterCalendarCollection(
 
   if (viewMode === "1m") {
     // Single Month Hero Wall Calendar Card (Centered Vertical Poster on Presentation Board)
-    const cw = 760;
-    const ch = 900;
+    const cw = 820;
+    const ch = 916;
     const cx0 = (T - cw) * 0.5;
     const cy0 = (T - ch) * 0.5;
+
+    // Outer Single-Month Sheet Background
+    parts.push(
+      `<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cw)}" height="${f1(ch)}" fill="${cardBg}"/>`
+    );
+
+    // Side decorations along the Single Month card edges (strictly clipped to [cx0, cy0, cx0+cw, cy0+ch])
+    const sideReserve1M = drawCalendarSheetSideDecorations(
+      parts,
+      sideArt,
+      styleIdx,
+      variant,
+      year,
+      cx0,
+      cy0,
+      cw,
+      ch,
+      ch * 0.24,
+      aspect,
+      cardBg,
+      headerBg,
+      textCol,
+      mutedCol,
+      accent1,
+      accent2,
+      accent3
+    );
+
+    const innerX = cx0 + sideReserve1M.leftW;
+    const innerY = cy0;
+    const innerW = Math.max(360, cw - sideReserve1M.leftW - sideReserve1M.rightW);
+    const innerH = Math.max(460, ch - sideReserve1M.botH);
+
     drawSingleMonthCalendarBox(
       m,
       parts,
@@ -25611,10 +26000,10 @@ function renderMasterCalendarCollection(
       year,
       month1To12,
       weekStart,
-      cx0,
-      cy0,
-      cw,
-      ch,
+      innerX,
+      innerY,
+      innerW,
+      innerH,
       aspect,
       true,
       cardBg,
@@ -25638,7 +26027,7 @@ function renderMasterCalendarCollection(
   const sheetW = 928;
   const sheetH = 928;
 
-  // Outer Calendar Sheet Card
+  // Outer Calendar Sheet Card (Strictly inside Artboard 0..1000)
   parts.push(
     `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
       sheetH
@@ -25662,6 +26051,30 @@ function renderMasterCalendarCollection(
 
   // Generous Top Hero Header Area (Matches the dramatic top year headers in user's 4 reference images!)
   const topBannerH = viewMode === "3m" || viewMode === "4m" ? 168 : 162;
+
+  // Render Side, Border & Corner Decorative Architecture BEFORE Top Header and Month Grids,
+  // and reserve exact left/right/bottom margins so side designs NEVER touch any month box!
+  const sideReserve = drawCalendarSheetSideDecorations(
+    parts,
+    sideArt,
+    styleIdx,
+    variant,
+    year,
+    sheetX,
+    sheetY,
+    sheetW,
+    sheetH,
+    topBannerH,
+    aspect,
+    cardBg,
+    headerBg,
+    textCol,
+    mutedCol,
+    accent1,
+    accent2,
+    accent3
+  );
+
   drawCalendarSheetHeroTopHeader(
     parts,
     styleIdx,
@@ -25709,14 +26122,17 @@ function renderMasterCalendarCollection(
     startM = month1To12;
   }
 
-  const padX = 28;
-  const padY = 20;
-  const gapX = 20;
-  const gapY = 18;
-  const gridX = sheetX + padX;
-  const gridY = sheetY + topBannerH + padY;
-  const gridW = sheetW - padX * 2;
-  const gridH = sheetH - topBannerH - padY - 26;
+  const basePadX = 22;
+  const padLeft = Math.max(basePadX, sideReserve.leftW + 10);
+  const padRight = Math.max(basePadX, sideReserve.rightW + 10);
+  const padTop = 18;
+  const padBot = Math.max(22, sideReserve.botH + 10);
+  const gapX = cols === 4 ? 16 : 20;
+  const gapY = rows === 4 ? 14 : 18;
+  const gridX = sheetX + padLeft;
+  const gridY = sheetY + topBannerH + padTop;
+  const gridW = Math.max(300, sheetW - padLeft - padRight);
+  const gridH = Math.max(240, sheetH - topBannerH - padTop - padBot);
   const boxW = (gridW - gapX * (cols - 1)) / cols;
   const boxH = (gridH - gapY * (rows - 1)) / rows;
 
@@ -25798,6 +26214,28 @@ function registerMasterCalendarCollection() {
             ["4m", "4 MONTHS SEASONAL QUAD CALENDAR"],
             ["6m", "6 MONTHS HALF-YEAR (3×2) CALENDAR"],
             ["week", "7-DAY WEEKLY PLANNER & SCHEDULE SHEET"],
+          ],
+        },
+        {
+          k: "sideArt",
+          l: "CALENDAR SIDE & BORDER DECORATION STYLE",
+          def: "auto",
+          type: "select",
+          opts: [
+            ["auto", "AUTO ROTATE SIDE & CORNER ART (12 STYLES)"],
+            ["side_waves", "SWEEPING LEFT & RIGHT LAYERED WAVE RIBBONS"],
+            ["bauhaus_left", "BAUHAUS GEOMETRIC LEFT ARCHITECTURAL SIDEBAR"],
+            ["mountain_right", "PANORAMIC MOUNTAIN & SUN RIGHT ART SIDEBAR"],
+            ["gold_pillars", "24K LUXURY GOLD FILIGREE SIDE PILLARS"],
+            ["origami_wings", "ORIGAMI FOLDED PRISM SIDE WINGS"],
+            ["botanical_vines", "BOTANICAL LEAF VINES LEFT & RIGHT BORDERS"],
+            ["retro_stripes", "RETRO 70S MULTI-BAND SIDE STRIPES"],
+            ["cyber_rails", "CYBER HUD NEON TELEMETRY SIDE RAILS"],
+            ["crimson_swoosh", "3D LAYERED WAVE SIDE SWOOSHES"],
+            ["torn_deckle", "TORN PAPER FIBROUS DECKLE SIDE BORDERS"],
+            ["corner_ribbons", "4-CORNER RIBBON WAVES & SIDE RAILS"],
+            ["clean_frame", "MINIMAL ARCHITECTURAL DOUBLE FRAME"],
+            ["none", "CLEAN SHEET (NO SIDE DECORATION)"],
           ],
         },
         {
@@ -29364,7 +29802,3902 @@ function registerMasterTypographyCollection() {
   }
 }
 
-registerMasterTypographyCollection();
+// Typography collection disabled per user request
+// registerMasterTypographyCollection();
+
+/* ============================================================================
+ * 96-MODE PROCEDURAL 3-PLY FRACTAL TORN PAPER & STATIONERY MICROSTOCK STUDIO
+ * Designed for Maximum Commercial Microstock Demand & High Approval Rate on
+ * Adobe Stock, Shutterstock & Freepik (100% Pure Closed <polygon> & <rect>
+ * Vector Geometry — Zero Raster Filters, Zero ClipPath Warnings, EPS10 Ready):
+ *  - 3-Ply Layered Paper Pulp Deckle Edge (Outer White Pulp + Middle Cream/Pearl
+ *    Fibrous Core + Micro-Crevice Fiber Striation Ticks + Inner 3D Ply Bevel)
+ *  - 8-Step Dual Ambient + Key-Light Vector Polygon Drop Shadow
+ *  - 16 High-Demand Microstock Architectures:
+ *      1. scrap_1pc (Isolated Torn Paper Banner & Sticky Note Scrap - Ref 1 & 3)
+ *      2. canyon_v_rip (Tapered V-Rip Canyon Sheet Opening - Ref 2)
+ *      3. notebook_grid (Torn Math Squared Grid Notebook Set - Ref 4)
+ *      4. half_divider (Half-Page Horizontal Torn Header/Footer Divider - Ref 5A)
+ *      5. diagonal_canyon (Diagonal Ripped Paper Canyon Channel - Ref 5B)
+ *      6. center_strip (White Torn Banner Strip on Vibrant Color Sheet - Ref 5C)
+ *      7. notebook_lined (Torn Ruled Lined School Notebook Set - Ref 5D)
+ *      8. multi_scraps (Multi-Piece Torn Note & Banner Bundle)
+ *      9. layered_waves (3D Overlapping Torn Paper Strata Waves)
+ *     10. ripped_hole (3D Ripped-Open Center Paper Window Frame)
+ *     11. curled_peel_canyon (3D Rolled / Curled Paper Peel Reveal Opening)
+ *     12. horizontal_strips_pack (Full-Width Horizontal Torn Banner Strips Pack)
+ *     13. taped_memo_board (Scotch-Taped & Pinned Memo Notes & Notebook Scraps)
+ *     14. kraft_cardboard_rip (Eco Brown Kraft & Corrugated Cardboard Tear)
+ *     15. circle_badge_rip (3D Concentric Circular Ripped Paper Medallion Hole)
+ *     16. collage_scrapbook_kit (Editorial Scrapbook & Social Media Collage Kit)
+ *  - Commercial Stationery Add-Ons: Translucent Serrated Scotch Tape, 3D Glossy
+ *    Push-Pins, Metallic Wire Paperclips, Punched Spiral Binder Holes & Coils,
+ *    and 3D Folded Dog-Ear Curled Corners!
+ * ============================================================================ */
+
+export type TornPaperLayoutType =
+  | "scrap_1pc"
+  | "canyon_v_rip"
+  | "notebook_grid"
+  | "half_divider"
+  | "diagonal_canyon"
+  | "center_strip"
+  | "notebook_lined"
+  | "multi_scraps"
+  | "layered_waves"
+  | "ripped_hole"
+  | "curled_peel_canyon"
+  | "horizontal_strips_pack"
+  | "taped_memo_board"
+  | "kraft_cardboard_rip"
+  | "circle_badge_rip"
+  | "collage_scrapbook_kit";
+
+export type TornPaperAddonStyle =
+  | "auto"
+  | "scotch_tape"
+  | "push_pin"
+  | "paper_clip"
+  | "spiral_binder"
+  | "curled_corner"
+  | "tape_and_pin"
+  | "none";
+
+export interface MasterTornPaperModeSpec {
+  id: string;
+  name: string;
+  layoutType: TornPaperLayoutType;
+  defPcs: string;
+  defSurface: string;
+  defBgMode: string;
+  defColorSet: string;
+  defAddon: TornPaperAddonStyle;
+  paperCol: string;
+  secondaryCol: string;
+  bgCol: string;
+  pulpCol: string;
+  subIdx: number;
+}
+
+const TORN_PAPER_FAMILIES: {
+  layoutType: TornPaperLayoutType;
+  titlePrefix: string;
+  defPcs: string;
+  defSurface: string;
+  defBgMode: string;
+  defColorSet: string;
+  defAddon: TornPaperAddonStyle;
+  palettes: [string, string, string][]; // [paperCol, secondaryCol, bgCol]
+}[] = [
+  {
+    layoutType: "scrap_1pc",
+    titlePrefix: "ISOLATED TORN PAPER SCRAP BANNER (REF 1)",
+    defPcs: "1",
+    defSurface: "solid_matte",
+    defBgMode: "checker",
+    defColorSet: "teal_ocean",
+    defAddon: "none",
+    palettes: [
+      ["#3288a8", "#2563eb", "#e2e8f0"], // Sample 1 Exact Teal Blue
+      ["#facc15", "#eab308", "#ffffff"], // Sample 3 Exact Golden Yellow Note
+      ["#e11d48", "#be123c", "#e2e8f0"],
+      ["#10b981", "#059669", "#ffffff"],
+      ["#3b82f6", "#1d4ed8", "#e2e8f0"],
+      ["#8b5cf6", "#6d28d9", "#ffffff"],
+    ],
+  },
+  {
+    layoutType: "canyon_v_rip",
+    titlePrefix: "TAPERED V-RIP CANYON SHEET OPENING (REF 2)",
+    defPcs: "1",
+    defSurface: "textured_fiber",
+    defBgMode: "white",
+    defColorSet: "royal_indigo",
+    defAddon: "none",
+    palettes: [
+      ["#252988", "#1e1b4b", "#f1f3f5"], // Sample 2 Exact Deep Royal Indigo Blue
+      ["#0284c7", "#0369a1", "#f8fafc"],
+      ["#b91c1c", "#7f1d1d", "#f3f4f6"],
+      ["#047857", "#064e3b", "#f1f5f9"],
+      ["#1e293b", "#0f172a", "#f8fafc"],
+      ["#6d28d9", "#4c1d95", "#f3f4f6"],
+    ],
+  },
+  {
+    layoutType: "notebook_grid",
+    titlePrefix: "TORN MATH GRID NOTEBOOK PAPER SET (REF 4)",
+    defPcs: "3",
+    defSurface: "grid_notebook",
+    defBgMode: "charcoal",
+    defColorSet: "notebook_classic",
+    defAddon: "auto",
+    palettes: [
+      ["#fbfcfe", "#60a5fa", "#585a5e"], // Sample 4 Exact Squared Math Grid on Charcoal
+      ["#ffffff", "#38bdf8", "#475569"],
+      ["#fefce8", "#60a5fa", "#52525b"],
+      ["#f8fafc", "#3b82f6", "#334155"],
+      ["#ffffff", "#0ea5e9", "#e2e8f0"],
+      ["#fffbeb", "#2563eb", "#57534e"],
+    ],
+  },
+  {
+    layoutType: "half_divider",
+    titlePrefix: "HALF-PAGE HORIZONTAL TORN DIVIDER (REF 5A)",
+    defPcs: "1",
+    defSurface: "solid_matte",
+    defBgMode: "checker",
+    defColorSet: "slate_teal",
+    defAddon: "none",
+    palettes: [
+      ["#266078", "#164e63", "#e2e8f0"], // Sample 5 Top-Left Exact Deep Slate Teal
+      ["#1d4ed8", "#1e3a8a", "#e2e8f0"],
+      ["#0f766e", "#134e4a", "#ffffff"],
+      ["#be123c", "#881337", "#e2e8f0"],
+      ["#1e293b", "#0f172a", "#e2e8f0"],
+      ["#d97706", "#92400e", "#ffffff"],
+    ],
+  },
+  {
+    layoutType: "diagonal_canyon",
+    titlePrefix: "DIAGONAL RIPPED PAPER CANYON (REF 5B)",
+    defPcs: "1",
+    defSurface: "solid_matte",
+    defBgMode: "white",
+    defColorSet: "electric_cyan",
+    defAddon: "none",
+    palettes: [
+      ["#00eefc", "#06b6d4", "#ffffff"], // Sample 5 Top-Right Exact Bright Cyan
+      ["#0099f2", "#0284c7", "#f8fafc"],
+      ["#f43f5e", "#e11d48", "#ffffff"],
+      ["#f59e0b", "#d97706", "#ffffff"],
+      ["#10b981", "#059669", "#f8fafc"],
+      ["#6366f1", "#4f46e5", "#ffffff"],
+    ],
+  },
+  {
+    layoutType: "center_strip",
+    titlePrefix: "WHITE TORN BANNER STRIP ON COLOR SHEET (REF 5C)",
+    defPcs: "1",
+    defSurface: "textured_fiber",
+    defBgMode: "color_sheet",
+    defColorSet: "sky_azure",
+    defAddon: "none",
+    palettes: [
+      ["#f8fafc", "#0098f0", "#0098f0"], // Sample 5 Bottom-Center Exact White Strip on Sky Blue
+      ["#ffffff", "#e11d48", "#e11d48"],
+      ["#ffffff", "#252988", "#252988"],
+      ["#fef9c3", "#0f172a", "#0f172a"],
+      ["#ffffff", "#059669", "#059669"],
+      ["#ffffff", "#7c3aed", "#7c3aed"],
+    ],
+  },
+  {
+    layoutType: "notebook_lined",
+    titlePrefix: "TORN RULED LINED SCHOOL NOTEBOOK SET (REF 5D)",
+    defPcs: "2",
+    defSurface: "lined_notebook",
+    defBgMode: "charcoal",
+    defColorSet: "notebook_classic",
+    defAddon: "auto",
+    palettes: [
+      ["#fbfcfe", "#60a5fa", "#737578"], // Sample 5 Bottom-Right Exact 2-Piece Lined & Grid Notebook
+      ["#ffffff", "#38bdf8", "#585a5e"],
+      ["#fefce8", "#3b82f6", "#4b5563"],
+      ["#ffffff", "#2563eb", "#e2e8f0"],
+      ["#f8fafc", "#0284c7", "#3f3f46"],
+      ["#fffbeb", "#60a5fa", "#52525b"],
+    ],
+  },
+  {
+    layoutType: "multi_scraps",
+    titlePrefix: "MULTI-PIECE TORN NOTE & BANNER BUNDLE (REF 3 & 5)",
+    defPcs: "4",
+    defSurface: "solid_matte",
+    defBgMode: "checker",
+    defColorSet: "vibrant_mix",
+    defAddon: "auto",
+    palettes: [
+      ["#facc15", "#3288a8", "#e2e8f0"], // Yellow + Teal + Coral + Sky Bundle
+      ["#38bdf8", "#f43f5e", "#ffffff"],
+      ["#10b981", "#f59e0b", "#585a5e"],
+      ["#a855f7", "#06b6d4", "#e2e8f0"],
+      ["#fb923c", "#2563eb", "#ffffff"],
+      ["#f43f5e", "#eab308", "#1e293b"],
+    ],
+  },
+  {
+    layoutType: "layered_waves",
+    titlePrefix: "3D OVERLAPPING TORN PAPER STRATA WAVES",
+    defPcs: "6",
+    defSurface: "solid_matte",
+    defBgMode: "white",
+    defColorSet: "ocean_strata",
+    defAddon: "none",
+    palettes: [
+      ["#0369a1", "#38bdf8", "#f8fafc"],
+      ["#1e1b4b", "#4f46e5", "#f1f5f9"],
+      ["#064e3b", "#10b981", "#f8fafc"],
+      ["#881337", "#f43f5e", "#fff1f2"],
+      ["#78350f", "#f59e0b", "#fffbeb"],
+      ["#0f172a", "#64748b", "#f8fafc"],
+    ],
+  },
+  {
+    layoutType: "ripped_hole",
+    titlePrefix: "3D RIPPED-OPEN CENTER PAPER FRAME WINDOW",
+    defPcs: "1",
+    defSurface: "textured_fiber",
+    defBgMode: "white",
+    defColorSet: "royal_indigo",
+    defAddon: "none",
+    palettes: [
+      ["#1d4ed8", "#1e3a8a", "#f8fafc"],
+      ["#252988", "#172554", "#ffffff"],
+      ["#be123c", "#881337", "#f8fafc"],
+      ["#0f766e", "#115e59", "#ffffff"],
+      ["#1e293b", "#0f172a", "#f1f5f9"],
+      ["#f59e0b", "#b45309", "#ffffff"],
+    ],
+  },
+  {
+    layoutType: "curled_peel_canyon",
+    titlePrefix: "3D ROLLED & CURLED PAPER PEEL REVEAL OPENING",
+    defPcs: "1",
+    defSurface: "solid_matte",
+    defBgMode: "white",
+    defColorSet: "royal_indigo",
+    defAddon: "none",
+    palettes: [
+      ["#1d4ed8", "#93c5fd", "#f8fafc"],
+      ["#e11d48", "#fda4af", "#ffffff"],
+      ["#0f766e", "#5eead4", "#f8fafc"],
+      ["#1e293b", "#94a3b8", "#f1f5f9"],
+      ["#d97706", "#fde047", "#ffffff"],
+      ["#6d28d9", "#c4b5fd", "#f8fafc"],
+    ],
+  },
+  {
+    layoutType: "horizontal_strips_pack",
+    titlePrefix: "FULL-WIDTH HORIZONTAL TORN BANNER STRIPS PACK",
+    defPcs: "4",
+    defSurface: "solid_matte",
+    defBgMode: "checker",
+    defColorSet: "teal_ocean",
+    defAddon: "none",
+    palettes: [
+      ["#3288a8", "#facc15", "#e2e8f0"],
+      ["#252988", "#0098f0", "#ffffff"],
+      ["#c89d66", "#1e293b", "#e2e8f0"],
+      ["#e11d48", "#fb923c", "#585a5e"],
+      ["#059669", "#38bdf8", "#e2e8f0"],
+      ["#4f46e5", "#ec4899", "#ffffff"],
+    ],
+  },
+  {
+    layoutType: "taped_memo_board",
+    titlePrefix: "SCOTCH-TAPED & PINNED STICKY MEMO NOTEBOOK BOARD",
+    defPcs: "4",
+    defSurface: "grid_notebook",
+    defBgMode: "charcoal",
+    defColorSet: "golden_note",
+    defAddon: "tape_and_pin",
+    palettes: [
+      ["#facc15", "#fbfcfe", "#585a5e"],
+      ["#38bdf8", "#fef08a", "#475569"],
+      ["#ffffff", "#fda4af", "#e2e8f0"],
+      ["#a7f3d0", "#fde047", "#334155"],
+      ["#fbcfe8", "#bae6fd", "#52525b"],
+      ["#fed7aa", "#fbfcfe", "#1e293b"],
+    ],
+  },
+  {
+    layoutType: "kraft_cardboard_rip",
+    titlePrefix: "ECO BROWN KRAFT & CORRUGATED CARDBOARD TEAR",
+    defPcs: "2",
+    defSurface: "kraft_fiber",
+    defBgMode: "checker",
+    defColorSet: "kraft_eco",
+    defAddon: "scotch_tape",
+    palettes: [
+      ["#c89d66", "#a67c46", "#e2e8f0"],
+      ["#b88b52", "#8c6232", "#ffffff"],
+      ["#d4a973", "#9c703c", "#585a5e"],
+      ["#c1945c", "#7c5327", "#1e293b"],
+      ["#d9b382", "#a37843", "#e2e8f0"],
+      ["#b08248", "#784f21", "#f8fafc"],
+    ],
+  },
+  {
+    layoutType: "circle_badge_rip",
+    titlePrefix: "3D CONCENTRIC CIRCULAR RIPPED PAPER MEDALLION HOLE",
+    defPcs: "1",
+    defSurface: "textured_fiber",
+    defBgMode: "white",
+    defColorSet: "teal_ocean",
+    defAddon: "none",
+    palettes: [
+      ["#252988", "#0098f0", "#ffffff"],
+      ["#3288a8", "#38bdf8", "#f8fafc"],
+      ["#be123c", "#fb7185", "#ffffff"],
+      ["#047857", "#34d399", "#f8fafc"],
+      ["#1e293b", "#64748b", "#ffffff"],
+      ["#c89d66", "#e5c396", "#f8fafc"],
+    ],
+  },
+  {
+    layoutType: "collage_scrapbook_kit",
+    titlePrefix: "EDITORIAL SCRAPBOOK & SOCIAL MEDIA TORN COLLAGE KIT",
+    defPcs: "6",
+    defSurface: "grid_notebook",
+    defBgMode: "checker",
+    defColorSet: "default",
+    defAddon: "tape_and_pin",
+    palettes: [
+      ["#3288a8", "#facc15", "#e2e8f0"],
+      ["#c89d66", "#252988", "#ffffff"],
+      ["#e11d48", "#0098f0", "#585a5e"],
+      ["#059669", "#f59e0b", "#e2e8f0"],
+      ["#1e293b", "#38bdf8", "#ffffff"],
+      ["#7c3aed", "#fb923c", "#e2e8f0"],
+    ],
+  },
+];
+
+export const MASTER_TORN_PAPER_MODES: MasterTornPaperModeSpec[] = [];
+(() => {
+  // 48 distinct high-demand commercial microstock paper colors (paired with 48 complementary accents -> 96 unique combinations!)
+  const masterColors = [
+    "#bfa888", // 1. Exact Image 2 Warm Sand Kraft
+    "#3288a8", // 2. Sample 1 Ocean Teal
+    "#252988", // 3. Sample 2 Deep Royal Indigo
+    "#facc15", // 4. Sample 3 Golden Sticky Note
+    "#e11d48", // 5. Crimson Rose
+    "#059669", // 6. Emerald Forest
+    "#266078", // 7. Sample 5A Deep Slate Teal
+    "#d97706", // 8. Amber Honey Ochre
+    "#7c3aed", // 9. Royal Amethyst Violet
+    "#0098f0", // 10. Sample 5C Sky Azure
+    "#c89d66", // 11. Eco Brown Kraft Cardboard
+    "#1e293b", // 12. Executive Obsidian Slate
+    "#db2777", // 13. Berry Magenta Pink
+    "#0d9488", // 14. Tropical Lagoon Teal
+    "#ea580c", // 15. Sunset Terracotta Orange
+    "#4f46e5", // 16. Electric Indigo Blue
+    "#65a30d", // 17. Botanical Olive Matcha
+    "#00eefc", // 18. Sample 5B Electric Cyan
+    "#be123c", // 19. Ruby Burgundy
+    "#0284c7", // 20. Cerulean Marine Blue
+    "#b08248", // 21. Warm Caramel Kraft
+    "#9333ea", // 22. Deep Orchid Purple
+    "#10b981", // 23. Mint Jade Green
+    "#f43f5e", // 24. Coral Flamingo Rose
+    "#1d4ed8", // 25. Cobalt Sapphire
+    "#ca8a04", // 26. Mustard Antique Gold
+    "#0f766e", // 27. Deep Pine Teal
+    "#c2410c", // 28. Rust Clay Terracotta
+    "#3b82f6", // 29. Cornflower Blue
+    "#a855f7", // 30. Lavender Plum
+    "#15803d", // 31. Forest Leaf Green
+    "#e17055", // 32. Warm Peach Terracotta
+    "#6d28d9", // 33. Ultra Violet
+    "#0369a1", // 34. Nordic Fjord Blue
+    "#a37843", // 35. Raw Mocha Cardboard
+    "#dc2626", // 36. Scarlet Vermilion
+    "#047857", // 37. Alpine Emerald
+    "#f59e0b", // 38. Marigold Saffron
+    "#334155", // 39. Charcoal Graphite
+    "#ec4899", // 40. Hot Rose Fuchsia
+    "#0891b2", // 41. Aqua Cyan
+    "#84cc16", // 42. Chartreuse Lime
+    "#8b5cf6", // 43. Soft Iris Violet
+    "#d4a373", // 44. Tan Desert Parchment
+    "#1e3a8a", // 45. Midnight Oxford Navy
+    "#fb7185", // 46. Pastel Blush Coral
+    "#38bdf8", // 47. Glacier Sky Blue
+    "#fde047", // 48. Lemon Memo Yellow
+  ];
+  const bgRotation = ["checker", "checker", "white", "charcoal", "checker", "color_sheet"];
+  const subLabels = [
+    "S-WAVE DECKLE EDITION",
+    "3-PLY DEEP PULP TEAR",
+    "ORGANIC ARCH WAVE",
+    "STATIONERY STUDIO PACK",
+    "MULTI-PLY LAYERED RIP",
+    "COMMERCIAL MEGA BUNDLE",
+  ];
+  const pcsRotation = ["1", "2", "3", "4", "6", "9"];
+  const addonRotation: TornPaperAddonStyle[] = [
+    "none",
+    "scotch_tape",
+    "push_pin",
+    "paper_clip",
+    "spiral_binder",
+    "tape_and_pin",
+  ];
+
+  let globalIdx = 1;
+  // Interleave layout families (sIdx outer, fIdx inner) so consecutive thumbnails in the sidebar
+  // ALWAYS have completely different layouts AND completely different colors!
+  for (let sIdx = 0; sIdx < 6; sIdx++) {
+    for (let fIdx = 0; fIdx < TORN_PAPER_FAMILIES.length; fIdx++) {
+      const fam = TORN_PAPER_FAMILIES[fIdx];
+      const colorIdx1 = (globalIdx - 1) % masterColors.length;
+      const colorIdx2 = (colorIdx1 + 7 + sIdx * 5) % masterColors.length;
+      const pCol = masterColors[colorIdx1];
+      const sCol = masterColors[colorIdx2];
+      const bCol = fam.palettes[sIdx % fam.palettes.length][2];
+
+      const isMultiCapable =
+        fam.layoutType === "notebook_grid" ||
+        fam.layoutType === "notebook_lined" ||
+        fam.layoutType === "multi_scraps" ||
+        fam.layoutType === "taped_memo_board";
+      const defPcs =
+        sIdx === 0
+          ? fam.defPcs
+          : isMultiCapable
+          ? pcsRotation[(fIdx + sIdx) % pcsRotation.length]
+          : fam.defPcs;
+      const defAddon: TornPaperAddonStyle =
+        sIdx === 0
+          ? fam.defAddon
+          : isMultiCapable && sIdx === 3
+          ? addonRotation[(fIdx + sIdx) % addonRotation.length]
+          : fam.defAddon;
+      const defBgMode =
+        sIdx === 0
+          ? fam.defBgMode
+          : fam.layoutType === "center_strip"
+          ? "color_sheet"
+          : bgRotation[(fIdx + sIdx) % bgRotation.length];
+
+      MASTER_TORN_PAPER_MODES.push({
+        id: `torn_ms_${globalIdx}`,
+        name: `TORN PAPER ${globalIdx}: ${fam.titlePrefix} · ${subLabels[sIdx]}`,
+        layoutType: fam.layoutType,
+        defPcs,
+        defSurface: fam.defSurface,
+        defBgMode,
+        defColorSet: "default",
+        defAddon,
+        paperCol: pCol,
+        secondaryCol: sCol,
+        bgCol: bCol,
+        pulpCol: "#ffffff",
+        subIdx: sIdx,
+      });
+      globalIdx++;
+    }
+  }
+})();
+
+// Fast deterministic 32-bit PRNG (Mulberry32) so every seed + variant + piece + edge produces
+// mathematically unique multi-octave fractal tear geometry (Crores of non-repeating designs!)
+function createTornPrng(seedA: number, seedB: number, seedC: number, seedD = 0) {
+  let h =
+    (Math.imul(seedA ^ 0x85ebca6b, 2654435761) ^
+      Math.imul(seedB ^ 0xc2b2ae35, 2246822519) ^
+      Math.imul(seedC ^ 0x27d4eb2f, 3266489917) ^
+      Math.imul(seedD ^ 0x165667b1, 668265263)) >>>
+    0;
+  if (h === 0) h = 0x9e3779b9;
+  return () => {
+    h = (h + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(h ^ (h >>> 15), 1 | h);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// 1D Value Noise with Cosine Interpolation across arbitrary frequency & phase
+function buildTornFractal1D(rng: () => number, numNodes: number): (t: number) => number {
+  const nodes: number[] = [];
+  for (let i = 0; i <= numNodes + 2; i++) {
+    nodes.push(rng() * 2 - 1);
+  }
+  return (t: number) => {
+    const clamped = Math.max(0, Math.min(1, t)) * numNodes;
+    const idx = Math.floor(clamped);
+    const frac = clamped - idx;
+    const mu = (1 - Math.cos(frac * Math.PI)) * 0.5;
+    const a = nodes[idx] ?? 0;
+    const b = nodes[idx + 1] ?? 0;
+    return a * (1 - mu) + b * mu;
+  };
+}
+
+interface DualFractalTearProfile {
+  colorPts: [number, number][];
+  midPulpPts: [number, number][];
+  pulpPts: [number, number][];
+  // 1D lookup of normal displacement at parameter t in [0..1] for precise grid clipping
+  evalInnerDisp: (t: number) => number;
+}
+
+/**
+ * Synthesizes a hyper-realistic 3-Ply torn paper edge from (x0,y0) to (x1,y1)
+ * with outward normal (nx,ny) and optional macro S-Wave / Arch contour (waveAmp, like Image 2).
+ */
+function buildDualFractalTearEdge(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  nx: number,
+  ny: number,
+  rng: () => number,
+  tearAmp: number,
+  pulpWidth: number,
+  steps = 96,
+  allowCornerFlare = true,
+  waveAmp = 0
+): DualFractalTearProfile {
+  const oct1 = buildTornFractal1D(rng, 5 + Math.floor(rng() * 4));
+  const oct2 = buildTornFractal1D(rng, 14 + Math.floor(rng() * 8));
+  const oct3 = buildTornFractal1D(rng, 32 + Math.floor(rng() * 14));
+  const oct4 = buildTornFractal1D(rng, 72 + Math.floor(rng() * 28));
+  const pulpOct1 = buildTornFractal1D(rng, 8 + Math.floor(rng() * 5));
+  const pulpOct2 = buildTornFractal1D(rng, 22 + Math.floor(rng() * 10));
+  const pulpScallop = buildTornFractal1D(rng, 16 + Math.floor(rng() * 8));
+  const midMicro = buildTornFractal1D(rng, 48 + Math.floor(rng() * 20));
+
+  // Smooth macro S-wave / arch phase & frequency so full-width tears match Image 2 (image_1c6c261e.png)
+  const wavePhase = rng() * Math.PI * 2;
+  const waveFreq = 1.15 + rng() * 0.75;
+  const waveArchSign = rng() < 0.5 ? 1 : -1;
+
+  // Generate 2 to 4 irregular paper-tear notches along the tear edge
+  const notchCount = 2 + Math.floor(rng() * 3);
+  const notches: { center: number; width: number; depth: number; pulpBoost: number }[] = [];
+  for (let i = 0; i < notchCount; i++) {
+    notches.push({
+      center: 0.1 + rng() * 0.8,
+      width: 0.024 + rng() * 0.048,
+      depth: (rng() < 0.65 ? -1 : 1) * (0.4 + rng() * 0.75) * tearAmp,
+      pulpBoost: (0.45 + rng() * 0.85) * pulpWidth,
+    });
+  }
+
+  const flareStart = allowCornerFlare && rng() < 0.5 ? 0.5 + rng() * 0.85 : 0;
+  const flareEnd = allowCornerFlare && rng() < 0.5 ? 0.5 + rng() * 0.85 : 0;
+
+  const innerDisps: number[] = [];
+  const colorPts: [number, number][] = [];
+  const midPulpPts: [number, number][] = [];
+  const pulpPts: [number, number][] = [];
+
+  for (let k = 0; k <= steps; k++) {
+    const t = k / steps;
+    const bx = x0 + (x1 - x0) * t;
+    const by = y0 + (y1 - y0) * t;
+
+    // Smooth organic macro S-curve / arch contour (exact Image 2 wavy tear profile)
+    const macroWave =
+      waveAmp !== 0
+        ? Math.sin(t * Math.PI * waveFreq + wavePhase) * waveAmp * 0.72 +
+          waveArchSign * Math.sin(t * Math.PI) * waveAmp * 0.38
+        : 0;
+
+    // Multi-octave fractal displacement for the colored paper boundary
+    let dColor =
+      macroWave +
+      oct1(t) * tearAmp * 0.52 +
+      oct2(t) * tearAmp * 0.34 +
+      oct3(t) * tearAmp * 0.22 +
+      oct4(t) * tearAmp * 0.12;
+
+    // Organic scalloped & toothy fiber serrations
+    const saw =
+      ((k * 3 + Math.floor(rng() * 3)) % 5 === 0 ? 1 : -0.45) *
+      (0.12 + rng() * 0.18) *
+      tearAmp;
+    dColor += saw;
+
+    let extraPulp = 0;
+    for (const n of notches) {
+      const dist = Math.abs(t - n.center);
+      if (dist < n.width) {
+        const u = 1 - dist / n.width;
+        const vShape = Math.pow(u, 1.35);
+        dColor += n.depth * vShape;
+        extraPulp += n.pulpBoost * vShape;
+      }
+    }
+
+    let cornerPeel = 0;
+    if (flareStart > 0 && t < 0.15) {
+      const u = 1 - t / 0.15;
+      cornerPeel = Math.pow(u, 1.7) * pulpWidth * 1.35 * flareStart;
+      dColor -= cornerPeel * 0.68;
+    }
+    if (flareEnd > 0 && t > 0.85) {
+      const u = (t - 0.85) / 0.15;
+      cornerPeel = Math.pow(u, 1.7) * pulpWidth * 1.35 * flareEnd;
+      dColor -= cornerPeel * 0.68;
+    }
+
+    innerDisps.push(dColor);
+
+    // Bold, crisp white fibrous paper-pulp deckle band (like Image 2 image_1c6c261e.png)
+    const localPulpW =
+      pulpWidth *
+        (0.95 +
+          0.55 * Math.abs(pulpOct1(t)) +
+          0.38 * Math.abs(pulpOct2(t)) +
+          0.32 * Math.abs(pulpScallop(t))) +
+      extraPulp +
+      cornerPeel * 0.82;
+
+    const effPulpW = Math.max(5.5, localPulpW);
+    const dMid = dColor + effPulpW * (0.28 + 0.14 * midMicro(t));
+    const dPulp = dColor + effPulpW;
+
+    colorPts.push([bx + nx * dColor, by + ny * dColor]);
+    midPulpPts.push([bx + nx * dMid, by + ny * dMid]);
+    pulpPts.push([bx + nx * dPulp, by + ny * dPulp]);
+  }
+
+  const evalInnerDisp = (t: number) => {
+    const pos = Math.max(0, Math.min(1, t)) * steps;
+    const idx = Math.floor(pos);
+    const frac = pos - idx;
+    const a = innerDisps[idx] ?? 0;
+    const b = innerDisps[Math.min(steps, idx + 1)] ?? a;
+    return a + (b - a) * frac;
+  };
+
+  return { colorPts, midPulpPts, pulpPts, evalInnerDisp };
+}
+
+// Emits a hyper-realistic 9-step scalloped contact + soft ambient vector polygon drop shadow
+// directly beneath the white torn pulp edge (matches Image 2 image_1c6c261e.png & 100% EPS10 safe!)
+function emitTornVectorDropShadow(
+  parts: string[],
+  poly: [number, number][],
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  shadowDx = 6,
+  shadowDy = 12,
+  strength = 1
+) {
+  let cx = 0;
+  let cy = 0;
+  for (const p of poly) {
+    cx += p[0];
+    cy += p[1];
+  }
+  cx /= Math.max(1, poly.length);
+  cy /= Math.max(1, poly.length);
+
+  const steps = 9;
+  for (let s = steps; s >= 1; s--) {
+    const ratio = s / steps;
+    const curve = Math.pow(ratio, 1.1);
+    const dx = shadowDx * curve;
+    const dy = shadowDy * curve;
+    const expand = (s - 1) * 1.05;
+
+    const shifted: [number, number][] = poly.map((p) => {
+      const vx = p[0] - cx;
+      const vy = p[1] - cy;
+      const len = Math.hypot(vx, vy) || 1;
+      return [p[0] + dx + (vx / len) * expand, p[1] + dy + (vy / len) * expand];
+    });
+    const clipped = clipPolyToRect(shifted, clipX0, clipY0, clipX1, clipY1);
+    if (clipped.length >= 3) {
+      // Inner steps (s=1..3) form a crisp dark-grey scalloped contact shadow right under the white deckle edge!
+      const baseOp = s <= 3 ? 0.095 + (3 - s) * 0.045 : 0.026 + Math.pow(1 - ratio, 1.2) * 0.055;
+      const op = Math.min(0.42, baseOp * strength);
+      const ptsStr = clipped.map((pt) => `${f1(pt[0])},${f1(pt[1])}`).join(" ");
+      parts.push(`<polygon points="${ptsStr}" fill="#0f172a" fill-opacity="${f1(op)}"/>`);
+    }
+  }
+}
+
+// Emits a closed polygon clipped to the Artboard bounds [clipX0, clipY0, clipX1, clipY1]
+function emitTornClippedPoly(
+  parts: string[],
+  poly: [number, number][],
+  fill: string,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  op = 1
+) {
+  const clipped = clipPolyToRect(poly, clipX0, clipY0, clipX1, clipY1);
+  if (clipped.length >= 3) {
+    const ptsStr = clipped.map((pt) => `${f1(pt[0])},${f1(pt[1])}`).join(" ");
+    parts.push(
+      `<polygon points="${ptsStr}" fill="${fill}"${
+        op < 0.995 ? ` fill-opacity="${f1(op)}"` : ""
+      }/>`
+    );
+  }
+}
+
+// Emits micro-crevice fiber striation ticks between the colored sheet edge and outer pulp edge
+// so close-up inspection shows genuine torn cellulose fibers!
+function emitPulpFiberStriations(
+  parts: string[],
+  colorWorld: [number, number][],
+  pulpWorld: [number, number][],
+  fiberCol: string,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  op = 0.42
+) {
+  const n = Math.min(colorWorld.length, pulpWorld.length);
+  for (let i = 1; i < n - 1; i += 3) {
+    const c0 = colorWorld[i];
+    const p0 = pulpWorld[i];
+    const c1 = colorWorld[i + 1] || c0;
+    const dist = Math.hypot(p0[0] - c0[0], p0[1] - c0[1]);
+    if (dist > 3.2) {
+      const tipX = c0[0] * 0.18 + p0[0] * 0.82;
+      const tipY = c0[1] * 0.18 + p0[1] * 0.82;
+      const baseB: [number, number] = [
+        c0[0] * 0.65 + c1[0] * 0.35,
+        c0[1] * 0.65 + c1[1] * 0.35,
+      ];
+      emitTornClippedPoly(
+        parts,
+        [c0, [tipX, tipY], baseB],
+        fiberCol,
+        clipX0,
+        clipY0,
+        clipX1,
+        clipY1,
+        op
+      );
+    }
+  }
+}
+
+// Builds a regular N-sided polygon approximating a circle (100% pure closed <polygon> geometry)
+function makeTornCirclePoly(cx: number, cy: number, r: number, segs = 24): [number, number][] {
+  const pts: [number, number][] = [];
+  for (let i = 0; i < segs; i++) {
+    const a = (i / segs) * Math.PI * 2;
+    pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+  }
+  return pts;
+}
+
+/**
+ * Emits a translucent adhesive Scotch / Washi tape strip with serrated tape-cutter zigzag ends
+ * centered at (tx, ty) with length tapeLen, width tapeW, and rotation angleDeg.
+ */
+function emitVectorScotchTape(
+  parts: string[],
+  tx: number,
+  ty: number,
+  tapeLen: number,
+  tapeW: number,
+  angleDeg: number,
+  tapeTint: string,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number
+) {
+  const rad = (angleDeg * Math.PI) / 180;
+  const cosA = Math.cos(rad);
+  const sinA = Math.sin(rad);
+  const toW = (lx: number, ly: number): [number, number] => [
+    tx + lx * cosA - ly * sinA,
+    ty + lx * sinA + ly * cosA,
+  ];
+
+  const hw = tapeLen * 0.5;
+  const hh = tapeW * 0.5;
+  const teeth = 7;
+  const toothAmp = 4.2;
+
+  const poly: [number, number][] = [];
+  // Top long edge
+  poly.push(toW(-hw, -hh));
+  poly.push(toW(hw, -hh));
+  // Right serrated cutter edge
+  for (let i = 1; i <= teeth * 2; i++) {
+    const v = -hh + (i / (teeth * 2)) * tapeW;
+    const xOff = i % 2 === 1 ? toothAmp : 0;
+    poly.push(toW(hw + xOff, v));
+  }
+  // Bottom long edge
+  poly.push(toW(-hw, hh));
+  // Left serrated cutter edge
+  for (let i = teeth * 2 - 1; i >= 1; i--) {
+    const v = -hh + (i / (teeth * 2)) * tapeW;
+    const xOff = i % 2 === 1 ? -toothAmp : 0;
+    poly.push(toW(-hw + xOff, v));
+  }
+
+  // Subtle shadow under tape
+  const shadowPoly = poly.map((p): [number, number] => [p[0] + 1.5, p[1] + 2.2]);
+  emitTornClippedPoly(parts, shadowPoly, "#0f172a", clipX0, clipY0, clipX1, clipY1, 0.12);
+
+  // Translucent matte tape body
+  emitTornClippedPoly(parts, poly, tapeTint, clipX0, clipY0, clipX1, clipY1, 0.52);
+
+  // Specular glossy sheen streaks along the tape
+  const sheen1: [number, number][] = [
+    toW(-hw + 4, -hh + 2.2),
+    toW(hw - 4, -hh + 2.2),
+    toW(hw - 4, -hh + 5.2),
+    toW(-hw + 4, -hh + 5.2),
+  ];
+  emitTornClippedPoly(parts, sheen1, "#ffffff", clipX0, clipY0, clipX1, clipY1, 0.48);
+
+  const sheen2: [number, number][] = [
+    toW(-hw + 6, hh - 4.5),
+    toW(hw - 6, hh - 4.5),
+    toW(hw - 6, hh - 2.0),
+    toW(-hw + 6, hh - 2.0),
+  ];
+  emitTornClippedPoly(parts, sheen2, "#ffffff", clipX0, clipY0, clipX1, clipY1, 0.32);
+}
+
+/**
+ * Emits a 3D glossy & metallic Push-Pin / Thumbtack at (px, py) with cast shadow & pin needle hole
+ */
+function emitVector3DPushPin(
+  parts: string[],
+  px: number,
+  py: number,
+  pinCol: string,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  scale = 1
+) {
+  const rOuter = 17.5 * scale;
+  const rInner = 11.5 * scale;
+  const darkCol = mixCol(pinCol, "#020617", 0.42);
+  const brightCol = mixCol(pinCol, "#ffffff", 0.55);
+
+  // 1) Long diagonal cast shadow on paper
+  const shadowTipX = px + 14 * scale;
+  const shadowTipY = py + 18 * scale;
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(shadowTipX, shadowTipY, rOuter * 0.88, 20),
+    "#020617",
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    0.22
+  );
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(px + 7 * scale, py + 9 * scale, rOuter * 0.65, 18),
+    "#020617",
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    0.28
+  );
+
+  // 2) Pin needle dark puncture point & metallic needle shaft
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(px + 2 * scale, py + 4 * scale, 3.2 * scale, 12),
+    "#0f172a",
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    0.75
+  );
+
+  // 3) Outer plastic/metallic base flange
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(px, py, rOuter, 24),
+    darkCol,
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    1
+  );
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(px - 1.2 * scale, py - 1.5 * scale, rOuter * 0.88, 24),
+    pinCol,
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    1
+  );
+
+  // 4) Inner elevated cap collar
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(px - 2.2 * scale, py - 2.8 * scale, rInner, 22),
+    darkCol,
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    0.92
+  );
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(px - 3.2 * scale, py - 3.8 * scale, rInner * 0.86, 22),
+    mixCol(pinCol, "#ffffff", 0.18),
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    1
+  );
+
+  // 5) Specular 3D glossy dome highlight
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(px - 6.2 * scale, py - 6.8 * scale, rInner * 0.34, 16),
+    brightCol,
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    0.92
+  );
+  emitTornClippedPoly(
+    parts,
+    makeTornCirclePoly(px - 7.0 * scale, py - 7.5 * scale, rInner * 0.16, 12),
+    "#ffffff",
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    0.95
+  );
+}
+
+/**
+ * Emits a 3D metallic wire Paperclip clipped onto the edge of a sheet at (cx, cy)
+ */
+function emitVector3DPaperClip(
+  parts: string[],
+  cx: number,
+  cy: number,
+  angleDeg: number,
+  metalCol: string,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  scale = 1
+) {
+  const rad = (angleDeg * Math.PI) / 180;
+  const cosA = Math.cos(rad);
+  const sinA = Math.sin(rad);
+  const toW = (lx: number, ly: number): [number, number] => [
+    cx + (lx * cosA - ly * sinA) * scale,
+    cy + (lx * sinA + ly * cosA) * scale,
+  ];
+
+  // Build a continuous looped wire paperclip path in local coordinates
+  const wirePath: [number, number][] = [];
+  // Outer loop start (bottom right) up to top arch
+  wirePath.push([11, 22]);
+  wirePath.push([11, -28]);
+  for (let i = 0; i <= 10; i++) {
+    const a = (i / 10) * Math.PI;
+    wirePath.push([Math.cos(a) * 11, -28 - Math.sin(a) * 11]);
+  }
+  // Left outer straight down to bottom arch
+  wirePath.push([-11, 28]);
+  for (let i = 0; i <= 10; i++) {
+    const a = Math.PI + (i / 10) * Math.PI;
+    wirePath.push([-1.5 + Math.cos(a) * 9.5, 28 - Math.sin(a) * 9.5]);
+  }
+  // Inner right straight up to inner top arch
+  wirePath.push([8, -20]);
+  for (let i = 0; i <= 10; i++) {
+    const a = (i / 10) * Math.PI;
+    wirePath.push([1.5 + Math.cos(a) * 6.5, -20 - Math.sin(a) * 6.5]);
+  }
+  // Inner left straight down
+  wirePath.push([-5, 18]);
+
+  const emitWirePass = (dxOff: number, dyOff: number, thickness: number, col: string, op: number) => {
+    const halfT = thickness * 0.5;
+    for (let i = 0; i < wirePath.length - 1; i++) {
+      const p0 = wirePath[i];
+      const p1 = wirePath[i + 1];
+      const vx = p1[0] - p0[0];
+      const vy = p1[1] - p0[1];
+      const len = Math.hypot(vx, vy) || 1;
+      const nx = -vy / len;
+      const ny = vx / len;
+      const ex = (vx / len) * halfT * 0.45;
+      const ey = (vy / len) * halfT * 0.45;
+
+      const quad: [number, number][] = [
+        toW(p0[0] - ex + nx * halfT + dxOff, p0[1] - ey + ny * halfT + dyOff),
+        toW(p1[0] + ex + nx * halfT + dxOff, p1[1] + ey + ny * halfT + dyOff),
+        toW(p1[0] + ex - nx * halfT + dxOff, p1[1] + ey - ny * halfT + dyOff),
+        toW(p0[0] - ex - nx * halfT + dxOff, p0[1] - ey - ny * halfT + dyOff),
+      ];
+      emitTornClippedPoly(parts, quad, col, clipX0, clipY0, clipX1, clipY1, op);
+    }
+  };
+
+  // Cast shadow
+  emitWirePass(3.2, 4.5, 4.2, "#020617", 0.24);
+  // Base metallic wire
+  emitWirePass(0, 0, 3.8, mixCol(metalCol, "#1e293b", 0.35), 1);
+  // Specular metallic core highlight
+  emitWirePass(-0.6, -0.6, 1.8, mixCol(metalCol, "#ffffff", 0.65), 0.95);
+}
+
+/**
+ * Renders an isolated 4-sided (or top/bottom) 3-Ply torn paper scrap / sticky note / school notebook scrap
+ * with:
+ *  1) 8-step soft ambient + directional vector polygon drop shadow
+ *  2) 3-Ply Fibrous Paper-Pulp Deckle Edge (Outer white pulp + Middle pearl/cream sub-ply + Micro-crevice fiber ticks)
+ *  3) Inner 3D ply bevel rim + colored or notebook/kraft/bullet-dot/corrugated paper body
+ *  4) Commercial Microstock Stationery Add-Ons (Scotch Tape, 3D Push-Pin, Paperclip, Spiral Binder Holes, Curled Corner)
+ */
+function drawIsolatedTornPaperScrap(
+  parts: string[],
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
+  angleDeg: number,
+  rng: () => number,
+  paperCol: string,
+  pulpCol: string,
+  surfaceMode: string,
+  gridLineCol: string,
+  marginLineCol: string,
+  tearAmp: number,
+  pulpW: number,
+  tornSides: "all4" | "top_bot" | "bottom_only" | "top_only",
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  addonStyle: TornPaperAddonStyle = "none",
+  pieceIdx = 0
+) {
+  const cx = bx + bw * 0.5;
+  const cy = by + bh * 0.5;
+  const rad = (angleDeg * Math.PI) / 180;
+  const cosA = Math.cos(rad);
+  const sinA = Math.sin(rad);
+
+  const toWorld = (lx: number, ly: number): [number, number] => {
+    const dx = lx - cx;
+    const dy = ly - cy;
+    return [cx + dx * cosA - dy * sinA, cy + dx * sinA + dy * cosA];
+  };
+
+  const stepsH = Math.max(48, Math.min(110, Math.round(bw * 0.14)));
+  const stepsV = Math.max(36, Math.min(90, Math.round(bh * 0.14)));
+
+  const topTear =
+    tornSides === "all4" || tornSides === "top_bot" || tornSides === "top_only"
+      ? buildDualFractalTearEdge(bx, by, bx + bw, by, 0, -1, rng, tearAmp, pulpW, stepsH, true)
+      : buildDualFractalTearEdge(bx, by, bx + bw, by, 0, -1, rng, 0.4, 0.2, 16, false);
+
+  const rightTear =
+    tornSides === "all4"
+      ? buildDualFractalTearEdge(
+          bx + bw,
+          by,
+          bx + bw,
+          by + bh,
+          1,
+          0,
+          rng,
+          tearAmp * 0.9,
+          pulpW * 0.92,
+          stepsV,
+          true
+        )
+      : buildDualFractalTearEdge(bx + bw, by, bx + bw, by + bh, 1, 0, rng, 0.4, 0.2, 16, false);
+
+  const botTear =
+    tornSides === "all4" || tornSides === "top_bot" || tornSides === "bottom_only"
+      ? buildDualFractalTearEdge(
+          bx + bw,
+          by + bh,
+          bx,
+          by + bh,
+          0,
+          1,
+          rng,
+          tearAmp * 1.08,
+          pulpW * 1.12,
+          stepsH,
+          true
+        )
+      : buildDualFractalTearEdge(bx + bw, by + bh, bx, by + bh, 0, 1, rng, 0.4, 0.2, 16, false);
+
+  const leftTear =
+    tornSides === "all4"
+      ? buildDualFractalTearEdge(
+          bx,
+          by + bh,
+          bx,
+          by,
+          -1,
+          0,
+          rng,
+          tearAmp * 0.9,
+          pulpW * 0.95,
+          stepsV,
+          true
+        )
+      : buildDualFractalTearEdge(bx, by + bh, bx, by, -1, 0, rng, 0.4, 0.2, 16, false);
+
+  const outerPulpPolyLocal: [number, number][] = [
+    ...topTear.pulpPts,
+    ...rightTear.pulpPts,
+    ...botTear.pulpPts,
+    ...leftTear.pulpPts,
+  ];
+  const midPulpPolyLocal: [number, number][] = [
+    ...topTear.midPulpPts,
+    ...rightTear.midPulpPts,
+    ...botTear.midPulpPts,
+    ...leftTear.midPulpPts,
+  ];
+  const innerColorPolyLocal: [number, number][] = [
+    ...topTear.colorPts,
+    ...rightTear.colorPts,
+    ...botTear.colorPts,
+    ...leftTear.colorPts,
+  ];
+
+  const outerPulpWorld = outerPulpPolyLocal.map((p) => toWorld(p[0], p[1]));
+  const midPulpWorld = midPulpPolyLocal.map((p) => toWorld(p[0], p[1]));
+  const innerColorWorld = innerColorPolyLocal.map((p) => toWorld(p[0], p[1]));
+
+  // 1) 9-step scalloped contact + soft vector drop shadow behind the outer fibrous paper-pulp polygon
+  emitTornVectorDropShadow(parts, outerPulpWorld, clipX0, clipY0, clipX1, clipY1, 6, 13, 1.18);
+
+  // 2) Pure Bright White Fibrous Paper-Pulp Deckle Edge (like Image 2 image_1c6c261e.png)
+  const isKraftSurface = surfaceMode === "kraft_fiber" || surfaceMode === "corrugated_rib";
+  const effectivePulpOuter = isKraftSurface ? "#faf6f0" : "#ffffff";
+
+  emitTornClippedPoly(parts, outerPulpWorld, effectivePulpOuter, clipX0, clipY0, clipX1, clipY1, 1);
+  // Subtle inner sub-ply highlight step right next to the colored sheet boundary
+  emitTornClippedPoly(
+    parts,
+    midPulpWorld,
+    isKraftSurface ? "#efe4d4" : "#f1f5f9",
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    0.45
+  );
+
+  // 3) Inner 3D Ply Bevel Rim + Colored or Notebook/Kraft Paper Sheet
+  const isGridNotebook = surfaceMode === "grid_notebook";
+  const isLinedNotebook = surfaceMode === "lined_notebook";
+  const isDotBullet = surfaceMode === "dot_bullet_grid";
+  const isTexturedFiber = surfaceMode === "textured_fiber";
+  const isKraftFiber = surfaceMode === "kraft_fiber";
+  const isCorrugatedRib = surfaceMode === "corrugated_rib";
+
+  const effectiveBodyCol = paperCol;
+  const bodyLum = lumH(effectiveBodyCol);
+  const autoGridCol =
+    bodyLum > 215
+      ? gridLineCol || "#60a5fa"
+      : bodyLum > 140
+      ? mixCol(effectiveBodyCol, "#0f172a", 0.36)
+      : mixCol(effectiveBodyCol, "#ffffff", 0.42);
+  const autoMarginCol =
+    bodyLum > 200
+      ? marginLineCol || "#ef4444"
+      : bodyLum > 140
+      ? mixCol(effectiveBodyCol, "#be123c", 0.68)
+      : mixCol(effectiveBodyCol, "#fde047", 0.72);
+
+  // Inner ply thickness rim shadow (offset 1.4px toward pulp)
+  const bevelRimWorld = innerColorWorld.map((p): [number, number] => [p[0] + 1.2, p[1] + 1.5]);
+  emitTornClippedPoly(
+    parts,
+    bevelRimWorld,
+    mixCol(effectiveBodyCol, "#0f172a", 0.28),
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    0.45
+  );
+
+  emitTornClippedPoly(
+    parts,
+    innerColorWorld,
+    effectiveBodyCol,
+    clipX0,
+    clipY0,
+    clipX1,
+    clipY1,
+    1
+  );
+
+  // Helper to evaluate exact local torn bounds at any normalized position u, v in [0..1]
+  const getTopLimitY = (u: number) => by - topTear.evalInnerDisp(u);
+  const getBotLimitY = (u: number) => by + bh + botTear.evalInnerDisp(1 - u);
+  const getLeftLimitX = (v: number) => bx - leftTear.evalInnerDisp(1 - v);
+  const getRightLimitX = (v: number) => bx + bw + rightTear.evalInnerDisp(v);
+
+  // Emit a horizontal line strip at local y = ly with thickness th, clipped precisely to the left & right torn edges!
+  const emitClippedHorizRule = (ly: number, th: number, col: string, op = 1) => {
+    const v = Math.max(0, Math.min(1, (ly - by) / Math.max(1, bh)));
+    const xL = getLeftLimitX(v) + 1.2;
+    const xR = getRightLimitX(v) - 1.2;
+    if (xR - xL < 6) return;
+    const segs = 16;
+    const dx = (xR - xL) / segs;
+    for (let s = 0; s < segs; s++) {
+      const sx0 = xL + s * dx;
+      const sx1 = sx0 + dx + 0.3;
+      const uMid = Math.max(0, Math.min(1, ((sx0 + sx1) * 0.5 - bx) / Math.max(1, bw)));
+      const yMin = getTopLimitY(uMid) + 1.2;
+      const yMax = getBotLimitY(uMid) - 1.2;
+      if (ly >= yMin && ly + th <= yMax) {
+        const quad: [number, number][] = [
+          toWorld(sx0, ly),
+          toWorld(sx1, ly),
+          toWorld(sx1, ly + th),
+          toWorld(sx0, ly + th),
+        ];
+        emitTornClippedPoly(parts, quad, col, clipX0, clipY0, clipX1, clipY1, op);
+      }
+    }
+  };
+
+  // Emit a vertical line strip at local x = lx with thickness th, clipped precisely to the top & bottom torn edges!
+  const emitClippedVertRule = (lx: number, th: number, col: string, op = 1) => {
+    const u = Math.max(0, Math.min(1, (lx - bx) / Math.max(1, bw)));
+    const yT = getTopLimitY(u) + 1.2;
+    const yB = getBotLimitY(u) - 1.2;
+    if (yB - yT < 6) return;
+    const segs = 12;
+    const dy = (yB - yT) / segs;
+    for (let s = 0; s < segs; s++) {
+      const sy0 = yT + s * dy;
+      const sy1 = sy0 + dy + 0.3;
+      const vMid = Math.max(0, Math.min(1, ((sy0 + sy1) * 0.5 - by) / Math.max(1, bh)));
+      const xMin = getLeftLimitX(vMid) + 1.2;
+      const xMax = getRightLimitX(vMid) - 1.2;
+      if (lx >= xMin && lx + th <= xMax) {
+        const quad: [number, number][] = [
+          toWorld(lx, sy0),
+          toWorld(lx + th, sy0),
+          toWorld(lx + th, sy1),
+          toWorld(lx, sy1),
+        ];
+        emitTornClippedPoly(parts, quad, col, clipX0, clipY0, clipX1, clipY1, op);
+      }
+    }
+  };
+
+  if (isGridNotebook) {
+    // SAMPLE 4 (image_e2216120.png): School Math Notebook Squared Grid + Double Margin Lines
+    const cellStep = Math.max(16, Math.min(26, Math.round(Math.min(bw, bh) * 0.085)));
+    const offsetX = (rng() * cellStep * 0.5) % cellStep;
+    const offsetY = (rng() * cellStep * 0.5) % cellStep;
+
+    for (let lx = bx + offsetX; lx < bx + bw; lx += cellStep) {
+      emitClippedVertRule(lx, 1.15, autoGridCol, 0.78);
+    }
+    for (let ly = by + offsetY; ly < by + bh; ly += cellStep) {
+      emitClippedHorizRule(ly, 1.15, autoGridCol, 0.78);
+    }
+
+    const marginOnRight = rng() < 0.55;
+    const marginX = marginOnRight
+      ? bx + bw - Math.max(34, bw * 0.14)
+      : bx + Math.max(34, bw * 0.14);
+    emitClippedVertRule(marginX, 1.45, autoMarginCol, 0.88);
+    emitClippedVertRule(marginX + 5.2, 1.45, autoMarginCol, 0.88);
+  } else if (isLinedNotebook) {
+    // SAMPLE 5 Bottom-Right (image_0d1d8749.png): College-Ruled Horizontal Lined Notebook + Double Margin Lines
+    const lineStep = Math.max(18, Math.min(28, Math.round(bh * 0.095)));
+
+    for (let ly = by + lineStep * 0.8; ly < by + bh; ly += lineStep) {
+      emitClippedHorizRule(ly, 1.25, autoGridCol, 0.82);
+    }
+
+    const marginX = bx + Math.max(36, bw * 0.13);
+    emitClippedVertRule(marginX, 1.45, autoMarginCol, 0.88);
+    emitClippedVertRule(marginX + 5.2, 1.45, autoMarginCol, 0.88);
+
+    if (bh > 180) {
+      const topHeaderY = by + lineStep * 1.35;
+      emitClippedHorizRule(topHeaderY, 1.35, autoMarginCol, 0.85);
+      emitClippedHorizRule(topHeaderY + 4.8, 1.35, autoMarginCol, 0.85);
+    }
+  } else if (isDotBullet) {
+    // Bullet-Journal Dotted Matrix Grid + Top Header Rule
+    const dotStep = Math.max(18, Math.min(28, Math.round(Math.min(bw, bh) * 0.09)));
+    const dotCol = autoGridCol;
+    for (let ly = by + dotStep; ly < by + bh - dotStep * 0.5; ly += dotStep) {
+      const v = Math.max(0, Math.min(1, (ly - by) / Math.max(1, bh)));
+      const xMin = getLeftLimitX(v) + 6;
+      const xMax = getRightLimitX(v) - 6;
+      for (let lx = bx + dotStep; lx < bx + bw - dotStep * 0.5; lx += dotStep) {
+        if (lx >= xMin && lx <= xMax) {
+          const u = Math.max(0, Math.min(1, (lx - bx) / Math.max(1, bw)));
+          if (ly >= getTopLimitY(u) + 6 && ly <= getBotLimitY(u) - 6) {
+            const wc = toWorld(lx, ly);
+            emitTornClippedPoly(
+              parts,
+              makeTornCirclePoly(wc[0], wc[1], 1.65, 8),
+              dotCol,
+              clipX0,
+              clipY0,
+              clipX1,
+              clipY1,
+              0.55
+            );
+          }
+        }
+      }
+    }
+    if (bh > 160) {
+      emitClippedHorizRule(by + dotStep * 1.45, 1.4, "#94a3b8", 0.65);
+    }
+  } else if (isKraftFiber) {
+    // Eco Natural Brown Kraft Paper Grain + Organic Wood-Pulp Specks
+    const darkFlecks = mixCol(effectiveBodyCol, "#3e2723", 0.35);
+    const lightFlecks = mixCol(effectiveBodyCol, "#fff8f0", 0.32);
+    for (let ly = by + 12; ly < by + bh - 12; ly += 13) {
+      emitClippedHorizRule(ly, 0.9, darkFlecks, 0.22);
+    }
+    const speckCount = Math.min(65, Math.round((bw * bh) / 3800));
+    for (let sp = 0; sp < speckCount; sp++) {
+      const u = 0.08 + rng() * 0.84;
+      const v = 0.08 + rng() * 0.84;
+      const lx = bx + u * bw;
+      const ly = by + v * bh;
+      if (
+        lx > getLeftLimitX(v) + 8 &&
+        lx < getRightLimitX(v) - 8 &&
+        ly > getTopLimitY(u) + 8 &&
+        ly < getBotLimitY(u) - 8
+      ) {
+        const fw = 3 + rng() * 9;
+        const fh = 0.9 + rng() * 1.4;
+        const col = rng() < 0.65 ? darkFlecks : lightFlecks;
+        emitTornClippedPoly(
+          parts,
+          [
+            toWorld(lx, ly),
+            toWorld(lx + fw, ly + (rng() - 0.5) * 3),
+            toWorld(lx + fw, ly + fh),
+            toWorld(lx, ly + fh),
+          ],
+          col,
+          clipX0,
+          clipY0,
+          clipX1,
+          clipY1,
+          0.38
+        );
+      }
+    }
+  } else if (isCorrugatedRib) {
+    // 3D Corrugated Cardboard Fluting Ribs
+    const ribStep = 14;
+    const darkRib = mixCol(effectiveBodyCol, "#271709", 0.28);
+    const lightRib = mixCol(effectiveBodyCol, "#fff8ee", 0.24);
+    for (let lx = bx + 10; lx < bx + bw - 10; lx += ribStep) {
+      emitClippedVertRule(lx, 4.2, darkRib, 0.34);
+      emitClippedVertRule(lx + 4.4, 2.6, lightRib, 0.28);
+    }
+  } else if (isTexturedFiber) {
+    // Subtle micro-embossed paper grain lines inside textured paper scraps (Sample 2 & Sample 5C)
+    const grainCol =
+      lumH(effectiveBodyCol) > 140
+        ? mixCol(effectiveBodyCol, "#94a3b8", 0.14)
+        : mixCol(effectiveBodyCol, "#ffffff", 0.1);
+    const grainStep = 14;
+    for (let ly = by + 10; ly < by + bh - 10; ly += grainStep) {
+      emitClippedHorizRule(ly, 0.9, grainCol, 0.35);
+    }
+  }
+
+  // 4) Commercial Microstock Stationery Add-Ons (Scotch Tape, Push-Pin, Paperclip, Spiral Binder, Curled Corner)
+  let resolvedAddon: TornPaperAddonStyle = addonStyle;
+  if (addonStyle === "auto") {
+    if (isGridNotebook || isLinedNotebook || isDotBullet) {
+      const autoPool: TornPaperAddonStyle[] = [
+        "none",
+        "spiral_binder",
+        "scotch_tape",
+        "paper_clip",
+        "push_pin",
+      ];
+      resolvedAddon = autoPool[pieceIdx % autoPool.length];
+    } else {
+      resolvedAddon = "none";
+    }
+  }
+
+  if (resolvedAddon === "spiral_binder" || (resolvedAddon === "tape_and_pin" && pieceIdx % 3 === 2)) {
+    // Punched Spiral Notebook Binder Holes along Top or Left Edge + Optional Twin Metallic Wire Coils
+    const binderOnTop = bw >= bh;
+    const holeSpacing = 38;
+    const holeR = 6.2;
+    const holeFill = "#475569";
+    if (binderOnTop) {
+      const hy = by + 22;
+      for (let hx = bx + 36; hx < bx + bw - 30; hx += holeSpacing) {
+        const u = (hx - bx) / Math.max(1, bw);
+        if (hy - holeR > getTopLimitY(u) + 3) {
+          const wc = toWorld(hx, hy);
+          emitTornClippedPoly(
+            parts,
+            makeTornCirclePoly(wc[0] + 1, wc[1] + 1.2, holeR + 1.1, 14),
+            "#cbd5e1",
+            clipX0,
+            clipY0,
+            clipX1,
+            clipY1,
+            0.85
+          );
+          emitTornClippedPoly(
+            parts,
+            makeTornCirclePoly(wc[0], wc[1], holeR, 14),
+            holeFill,
+            clipX0,
+            clipY0,
+            clipX1,
+            clipY1,
+            0.92
+          );
+          // Twin metallic binder wire ring extending to top edge
+          const ringQuad1: [number, number][] = [
+            toWorld(hx - 2.6, by - 12),
+            toWorld(hx - 0.6, by - 12),
+            toWorld(hx - 0.6, hy),
+            toWorld(hx - 2.6, hy),
+          ];
+          const ringQuad2: [number, number][] = [
+            toWorld(hx + 1.0, by - 12),
+            toWorld(hx + 3.0, by - 12),
+            toWorld(hx + 3.0, hy),
+            toWorld(hx + 1.0, hy),
+          ];
+          emitTornClippedPoly(parts, ringQuad1, "#64748b", clipX0, clipY0, clipX1, clipY1, 0.92);
+          emitTornClippedPoly(parts, ringQuad2, "#94a3b8", clipX0, clipY0, clipX1, clipY1, 0.92);
+        }
+      }
+    } else {
+      const hx = bx + 22;
+      for (let hy = by + 34; hy < by + bh - 28; hy += holeSpacing) {
+        const v = (hy - by) / Math.max(1, bh);
+        if (hx - holeR > getLeftLimitX(v) + 3) {
+          const wc = toWorld(hx, hy);
+          emitTornClippedPoly(
+            parts,
+            makeTornCirclePoly(wc[0], wc[1], holeR, 14),
+            holeFill,
+            clipX0,
+            clipY0,
+            clipX1,
+            clipY1,
+            0.92
+          );
+        }
+      }
+    }
+  }
+
+  if (resolvedAddon === "scotch_tape" || (resolvedAddon === "tape_and_pin" && pieceIdx % 2 === 0)) {
+    const tapeLen = Math.min(135, Math.max(68, bw * 0.24));
+    const tapeW = Math.min(38, Math.max(22, Math.min(bw, bh) * 0.1));
+    const tapeCol = isKraftSurface ? "#e6ccb2" : "#f1f5f9";
+    if (pieceIdx % 2 === 0) {
+      // Diagonal translucent Scotch tape across Top-Left and Top-Right (or Bottom-Right) corners
+      const tl = toWorld(bx + 14, by + 10);
+      const br = toWorld(bx + bw - 14, by + 10);
+      emitVectorScotchTape(
+        parts,
+        tl[0],
+        tl[1],
+        tapeLen,
+        tapeW,
+        angleDeg - 36,
+        tapeCol,
+        clipX0,
+        clipY0,
+        clipX1,
+        clipY1
+      );
+      emitVectorScotchTape(
+        parts,
+        br[0],
+        br[1],
+        tapeLen,
+        tapeW,
+        angleDeg + 36,
+        tapeCol,
+        clipX0,
+        clipY0,
+        clipX1,
+        clipY1
+      );
+    } else {
+      // Single centered top vertical/tilted Scotch tape strip
+      const tc = toWorld(bx + bw * 0.5, by + 2);
+      emitVectorScotchTape(
+        parts,
+        tc[0],
+        tc[1],
+        tapeLen * 1.05,
+        tapeW * 1.05,
+        angleDeg + (rng() - 0.5) * 10,
+        tapeCol,
+        clipX0,
+        clipY0,
+        clipX1,
+        clipY1
+      );
+    }
+  }
+
+  if (resolvedAddon === "push_pin" || (resolvedAddon === "tape_and_pin" && pieceIdx % 2 === 1)) {
+    const pinColors = ["#ef4444", "#0284c7", "#eab308", "#10b981", "#8b5cf6"];
+    const pCol = pinColors[pieceIdx % pinColors.length];
+    const pinScale = Math.max(0.7, Math.min(1.15, Math.min(bw, bh) / 340));
+    const pt = toWorld(bx + bw * 0.5 + (rng() - 0.5) * 24, by + Math.min(36, bh * 0.14));
+    emitVector3DPushPin(parts, pt[0], pt[1], pCol, clipX0, clipY0, clipX1, clipY1, pinScale);
+  }
+
+  if (resolvedAddon === "paper_clip") {
+    const clipColors = ["#94a3b8", "#f59e0b", "#38bdf8", "#fb7185"];
+    const mCol = clipColors[pieceIdx % clipColors.length];
+    const clipScale = Math.max(0.75, Math.min(1.2, Math.min(bw, bh) / 320));
+    const pcPt = toWorld(bx + bw * 0.22, by + 4);
+    emitVector3DPaperClip(
+      parts,
+      pcPt[0],
+      pcPt[1],
+      angleDeg - 8,
+      mCol,
+      clipX0,
+      clipY0,
+      clipX1,
+      clipY1,
+      clipScale
+    );
+  }
+
+  if (resolvedAddon === "curled_corner") {
+    // 3D Folded Dog-Ear Bottom-Right Corner Peel with Shaded Underside Triangle Flap
+    const foldSize = Math.min(72, Math.min(bw, bh) * 0.22);
+    const pCorner = toWorld(bx + bw - 4, by + bh - 4);
+    const pTop = toWorld(bx + bw - 4, by + bh - foldSize);
+    const pLeft = toWorld(bx + bw - foldSize, by + bh - 4);
+    const pFlapTip = toWorld(bx + bw - foldSize * 0.92, by + bh - foldSize * 0.92);
+
+    // Shadow cast onto the sheet by the folded flap
+    const pShadowTip = toWorld(bx + bw - foldSize * 1.08, by + bh - foldSize * 0.85);
+    emitTornClippedPoly(
+      parts,
+      [pTop, pShadowTip, pLeft],
+      "#020617",
+      clipX0,
+      clipY0,
+      clipX1,
+      clipY1,
+      0.22
+    );
+
+    // Multi-band shaded 3D underside flap
+    const undersideBase = mixCol(effectiveBodyCol, "#ffffff", 0.45);
+    const undersideShade = mixCol(effectiveBodyCol, "#64748b", 0.25);
+    emitTornClippedPoly(
+      parts,
+      [pTop, pFlapTip, pLeft],
+      undersideBase,
+      clipX0,
+      clipY0,
+      clipX1,
+      clipY1,
+      1
+    );
+    const pMidCrease = toWorld(bx + bw - foldSize * 0.5, by + bh - foldSize * 0.5);
+    emitTornClippedPoly(
+      parts,
+      [pTop, pMidCrease, pLeft, pCorner],
+      undersideShade,
+      clipX0,
+      clipY0,
+      clipX1,
+      clipY1,
+      0.32
+    );
+  }
+}
+
+// Draws a crisp Microstock Transparency Checkerboard Grid (exact Image 2 & Sample 5A contrast)
+function drawTornTransparencyCheckerboard(
+  parts: string[],
+  x0: number,
+  y0: number,
+  w: number,
+  h: number,
+  cellSize = 28
+) {
+  parts.push(
+    `<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(w)}" height="${f1(
+      h
+    )}" fill="#f4f5f7" data-bg="1"/>`
+  );
+  const cols = Math.ceil(w / cellSize);
+  const rows = Math.ceil(h / cellSize);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if ((r + c) % 2 === 1) {
+        const cx = x0 + c * cellSize;
+        const cy = y0 + r * cellSize;
+        const cw = Math.min(cellSize, x0 + w - cx);
+        const ch = Math.min(cellSize, y0 + h - cy);
+        if (cw > 0 && ch > 0) {
+          parts.push(
+            `<rect x="${f1(cx)}" y="${f1(cy)}" width="${f1(cw)}" height="${f1(
+              ch
+            )}" fill="#c2c6cc" data-checker="1"/>`
+          );
+        }
+      }
+    }
+  }
+}
+
+// Renders the background board according to bgMode
+function emitTornBackgroundBoard(
+  parts: string[],
+  bgMode: string,
+  secondaryCol: string,
+  defaultCol = "#ffffff"
+) {
+  if (bgMode === "checker") {
+    drawTornTransparencyCheckerboard(parts, 0, 0, T, T, 28);
+  } else if (bgMode === "charcoal") {
+    parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="#585a5e" data-bg="1"/>`);
+  } else if (bgMode === "dark") {
+    parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="#0f172a" data-bg="1"/>`);
+  } else if (bgMode === "color_sheet") {
+    parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${secondaryCol}" data-bg="1"/>`);
+  } else {
+    parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${defaultCol}" data-bg="1"/>`);
+  }
+}
+
+function renderMasterTornPaperCollection(
+  m: any,
+  q: Record<string, any>,
+  spec: MasterTornPaperModeSpec
+) {
+  const pcsStr = String(q.pcs || spec.defPcs || "1");
+  const layoutType = String(q.layoutType || spec.layoutType || "scrap_1pc") as TornPaperLayoutType;
+  const surfaceMode = String(q.paperSurface || spec.defSurface || "solid_matte");
+  const bgMode = String(q.bgMode || spec.defBgMode || "checker");
+  const colorSet = String(q.colorSet || spec.defColorSet || "default");
+  const addonStyle = String(q.addonStyle || spec.defAddon || "auto") as TornPaperAddonStyle;
+  const tearAmp = Math.max(4, Math.min(42, +(q.tearAmp ?? 15)));
+  const pulpW = Math.max(4, Math.min(40, +(q.pulpW ?? 16)));
+  const variant = Math.max(0, Math.round(+(q.variant ?? 0)));
+
+  const modeNum = Math.max(1, parseInt(spec.id.replace("torn_ms_", ""), 10) || 1);
+  const rng = createTornPrng(
+    (m.seed || 123456789) >>> 0,
+    variant * 7919 + modeNum * 104729,
+    Math.round(tearAmp * 100) + Math.round(pulpW * 1000),
+    pcsStr.charCodeAt(0) * 31
+  );
+
+  // Resolve active colors
+  let paperCol = spec.paperCol;
+  let secondaryCol = spec.secondaryCol;
+  let bgCol = spec.bgCol;
+  let pulpCol = spec.pulpCol || "#ffffff";
+
+  if (colorSet === "palette" && m.C?.cols && m.C.cols.length >= 2) {
+    paperCol = m.C.cols[0];
+    secondaryCol = m.C.cols[1];
+    bgCol = m.bg || m.C?.bg || spec.bgCol;
+  } else if (colorSet === "teal_ocean") {
+    paperCol = "#3288a8";
+    secondaryCol = "#0284c7";
+  } else if (colorSet === "royal_indigo") {
+    paperCol = "#252988";
+    secondaryCol = "#1e1b4b";
+  } else if (colorSet === "golden_note") {
+    paperCol = "#facc15";
+    secondaryCol = "#eab308";
+  } else if (colorSet === "electric_cyan") {
+    paperCol = "#00eefc";
+    secondaryCol = "#0098f0";
+  } else if (colorSet === "slate_teal") {
+    paperCol = "#266078";
+    secondaryCol = "#155e75";
+  } else if (colorSet === "crimson_ruby") {
+    paperCol = "#e11d48";
+    secondaryCol = "#9f1239";
+  } else if (colorSet === "emerald_forest") {
+    paperCol = "#059669";
+    secondaryCol = "#065f46";
+  } else if (colorSet === "obsidian_noir") {
+    paperCol = "#1e293b";
+    secondaryCol = "#0f172a";
+  } else if (colorSet === "kraft_eco") {
+    paperCol = "#c89d66";
+    secondaryCol = "#9c703c";
+    pulpCol = "#f5ebe0";
+  }
+
+  // 32 High-Demand Commercial Microstock Paper Colors — rotates on EVERY click (variant > 0)
+  const multiPalettePool = [
+    "#3288a8", // 1. Sample 1 Teal Ocean
+    "#facc15", // 2. Sample 3 Golden Sticky Note
+    "#252988", // 3. Sample 2 Deep Royal Indigo
+    "#0098f0", // 4. Sample 5 Sky Azure
+    "#e11d48", // 5. Crimson Rose
+    "#10b981", // 6. Emerald Mint
+    "#266078", // 7. Sample 5 Deep Slate Teal
+    "#c89d66", // 8. Eco Brown Kraft
+    "#7c3aed", // 9. Royal Amethyst Violet
+    "#f97316", // 10. Sunset Tangerine Coral
+    "#00eefc", // 11. Sample 5 Electric Cyan
+    "#1e293b", // 12. Executive Obsidian Slate
+    "#db2777", // 13. Vibrant Berry Magenta
+    "#84cc16", // 14. Botanical Lime Chartreuse
+    "#1d4ed8", // 15. Cobalt Sapphire Blue
+    "#d97706", // 16. Warm Amber Honey
+    "#0d9488", // 17. Tropical Lagoon Teal
+    "#9333ea", // 18. Deep Orchid Purple
+    "#dc2626", // 19. Scarlet Ruby Red
+    "#6ee7b7", // 20. Soft Pastel Mint Note
+    "#fdba74", // 21. Pastel Apricot Peach Note
+    "#c4b5fd", // 22. Pastel Lavender Memo
+    "#fda4af", // 23. Pastel Rose Blush Memo
+    "#7dd3fc", // 24. Pastel Sky Ice Note
+    "#b08248", // 25. Warm Caramel Cardboard
+    "#065f46", // 26. Deep Forest Pine
+    "#172554", // 27. Midnight Navy Blue
+    "#fb7185", // 28. Coral Flamingo Pink
+    "#eab308", // 29. Marigold Mustard Gold
+    "#4f46e5", // 30. Electric Indigo
+    "#c2410c", // 31. Terracotta Rust Clay
+    "#fef08a", // 32. Lemon Cream Sticky Note
+  ];
+
+  // GUARANTEE: On EVERY click (variant > 0), paperCol and secondaryCol change to a brand-new commercial colour!
+  if (variant > 0 && colorSet !== "palette") {
+    const idx1 = (modeNum * 3 + variant * 7) % multiPalettePool.length;
+    const idx2 = (idx1 + 5 + (variant % 13)) % multiPalettePool.length;
+    paperCol = multiPalettePool[idx1];
+    secondaryCol = multiPalettePool[idx2];
+    bgCol =
+      bgMode === "color_sheet"
+        ? secondaryCol
+        : multiPalettePool[(idx2 + 9) % multiPalettePool.length];
+  }
+
+  const parts: string[] = [];
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT GROUP A: ISOLATED & MULTI-PIECE TORN SCRAPS, STICKY NOTES, NOTEBOOKS & KRAFT
+  // ---------------------------------------------------------------------------
+  if (
+    layoutType === "scrap_1pc" ||
+    layoutType === "multi_scraps" ||
+    layoutType === "notebook_grid" ||
+    layoutType === "notebook_lined" ||
+    layoutType === "taped_memo_board" ||
+    layoutType === "kraft_cardboard_rip"
+  ) {
+    emitTornBackgroundBoard(parts, bgMode, secondaryCol, "#ffffff");
+
+    const count = Math.max(1, Math.min(12, parseInt(pcsStr, 10) || 1));
+    const effectiveSurface =
+      layoutType === "notebook_grid" && surfaceMode === "solid_matte"
+        ? "grid_notebook"
+        : layoutType === "notebook_lined" && surfaceMode === "solid_matte"
+        ? "lined_notebook"
+        : layoutType === "kraft_cardboard_rip" && surfaceMode === "solid_matte"
+        ? "kraft_fiber"
+        : surfaceMode;
+
+    const effectiveAddon: TornPaperAddonStyle =
+      layoutType === "taped_memo_board" && addonStyle === "none"
+        ? "tape_and_pin"
+        : layoutType === "kraft_cardboard_rip" && addonStyle === "auto"
+        ? "scotch_tape"
+        : addonStyle;
+
+    if (count === 1) {
+      const isNotebook =
+        effectiveSurface === "grid_notebook" ||
+        effectiveSurface === "lined_notebook" ||
+        effectiveSurface === "dot_bullet_grid";
+      const bw = isNotebook ? 680 + (rng() - 0.5) * 60 : 760 + (rng() - 0.5) * 50;
+      const bh = isNotebook ? 520 + (rng() - 0.5) * 60 : 410 + (rng() - 0.5) * 50;
+      const bx = (T - bw) * 0.5;
+      const by = (T - bh) * 0.5;
+      const angle = (rng() - 0.5) * 3.2;
+
+      drawIsolatedTornPaperScrap(
+        parts,
+        bx,
+        by,
+        bw,
+        bh,
+        angle,
+        rng,
+        paperCol,
+        pulpCol,
+        effectiveSurface,
+        "#60a5fa",
+        "#ef4444",
+        tearAmp,
+        pulpW,
+        "all4",
+        24,
+        24,
+        T - 24,
+        T - 24,
+        effectiveAddon,
+        0
+      );
+      m.raw(parts.join(""));
+      return;
+    }
+
+    // Multi-Piece Grid (2, 3, 4, 6, 8, 9, 12 PCS) — like Sample 4 (3-piece notebook grid) & Sample 5D (2-piece notebook)
+    let cols = 2;
+    let rows = 2;
+    if (count === 2) {
+      cols = 2;
+      rows = 1;
+    } else if (count === 3) {
+      const use2Plus1 =
+        layoutType === "notebook_grid" ||
+        layoutType === "notebook_lined" ||
+        layoutType === "taped_memo_board" ||
+        rng() < 0.7;
+      if (use2Plus1) {
+        const pad = 64;
+        const gap = 58;
+        const topW = (T - pad * 2 - gap) * 0.5;
+        const topH = 370;
+        drawIsolatedTornPaperScrap(
+          parts,
+          pad,
+          pad + 10,
+          topW,
+          topH,
+          (rng() - 0.5) * 3.5,
+          rng,
+          paperCol,
+          pulpCol,
+          effectiveSurface,
+          "#60a5fa",
+          "#ef4444",
+          tearAmp * 0.85,
+          pulpW * 0.85,
+          "all4",
+          18,
+          18,
+          T - 18,
+          T - 18,
+          effectiveAddon,
+          0
+        );
+        drawIsolatedTornPaperScrap(
+          parts,
+          pad + topW + gap,
+          pad + 22,
+          topW,
+          topH - 16,
+          (rng() - 0.5) * 3.5,
+          rng,
+          layoutType === "multi_scraps" || layoutType === "taped_memo_board"
+            ? secondaryCol
+            : paperCol,
+          pulpCol,
+          layoutType === "taped_memo_board" ? "lined_notebook" : effectiveSurface,
+          "#60a5fa",
+          "#ef4444",
+          tearAmp * 0.85,
+          pulpW * 0.85,
+          "all4",
+          18,
+          18,
+          T - 18,
+          T - 18,
+          effectiveAddon,
+          1
+        );
+        const botW = T - pad * 2 - 30;
+        const botH = 340;
+        drawIsolatedTornPaperScrap(
+          parts,
+          (T - botW) * 0.5,
+          pad + topH + gap + 12,
+          botW,
+          botH,
+          (rng() - 0.5) * 2.4,
+          rng,
+          layoutType === "multi_scraps"
+            ? multiPalettePool[(modeNum + variant + 4) % multiPalettePool.length]
+            : paperCol,
+          pulpCol,
+          effectiveSurface,
+          "#60a5fa",
+          "#ef4444",
+          tearAmp * 0.85,
+          pulpW * 0.85,
+          "all4",
+          18,
+          18,
+          T - 18,
+          T - 18,
+          effectiveAddon,
+          2
+        );
+        m.raw(parts.join(""));
+        return;
+      }
+      cols = 1;
+      rows = 3;
+    } else if (count === 4) {
+      cols = 2;
+      rows = 2;
+    } else if (count === 6) {
+      cols = 2;
+      rows = 3;
+    } else if (count === 8) {
+      cols = 2;
+      rows = 4;
+    } else if (count === 9) {
+      cols = 3;
+      rows = 3;
+    } else if (count >= 12) {
+      cols = 3;
+      rows = 4;
+    }
+
+    const outerPad = count >= 9 ? 48 : 58;
+    const gapX = count >= 9 ? 38 : 52;
+    const gapY = count >= 9 ? 36 : 48;
+    const cellW = (T - outerPad * 2 - gapX * (cols - 1)) / cols;
+    const cellH = (T - outerPad * 2 - gapY * (rows - 1)) / rows;
+    const scaleFactor = Math.max(0.45, Math.min(0.9, 1.05 / Math.sqrt(Math.max(1, count * 0.5))));
+
+    const surfaceCycle = [
+      effectiveSurface,
+      "grid_notebook",
+      "lined_notebook",
+      "dot_bullet_grid",
+      "kraft_fiber",
+    ];
+    const kraftCycle = ["kraft_fiber", "corrugated_rib"];
+
+    for (let i = 0; i < count; i++) {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      const bx0 = outerPad + c * (cellW + gapX) + cellW * 0.04;
+      const by0 = outerPad + r * (cellH + gapY) + cellH * 0.06;
+      const bw0 = cellW * 0.92;
+      const bh0 = count === 2 ? Math.min(cellH * 0.72, 580) : cellH * 0.88;
+      const byCentered = count === 2 ? (T - bh0) * 0.5 + (i === 0 ? -12 : 14) : by0;
+      const pieceCol =
+        i === 0
+          ? paperCol
+          : i === 1 && (layoutType === "multi_scraps" || layoutType === "taped_memo_board")
+          ? secondaryCol
+          : layoutType === "multi_scraps" || layoutType === "taped_memo_board"
+          ? multiPalettePool[(modeNum + variant * 2 + i * 3) % multiPalettePool.length]
+          : layoutType === "kraft_cardboard_rip" && i % 2 === 1
+          ? secondaryCol
+          : paperCol;
+
+      const pieceSurface =
+        layoutType === "kraft_cardboard_rip"
+          ? kraftCycle[i % kraftCycle.length]
+          : layoutType === "taped_memo_board"
+          ? surfaceCycle[i % surfaceCycle.length]
+          : (layoutType === "notebook_lined" || layoutType === "notebook_grid") &&
+            count >= 2 &&
+            i % 2 === 1
+          ? effectiveSurface === "grid_notebook"
+            ? "lined_notebook"
+            : "grid_notebook"
+          : effectiveSurface;
+
+      drawIsolatedTornPaperScrap(
+        parts,
+        bx0,
+        byCentered,
+        bw0,
+        bh0,
+        (rng() - 0.5) * 3.8,
+        rng,
+        pieceCol,
+        pulpCol,
+        pieceSurface,
+        "#60a5fa",
+        "#ef4444",
+        tearAmp * scaleFactor,
+        pulpW * scaleFactor,
+        "all4",
+        16,
+        16,
+        T - 16,
+        T - 16,
+        effectiveAddon,
+        i
+      );
+    }
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 12: FULL-WIDTH HORIZONTAL TORN BANNER DIVIDER STRIPS PACK
+  // (High-demand commercial microstock pack of 3 to 8 stacked horizontal torn banner ribbons)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "horizontal_strips_pack") {
+    emitTornBackgroundBoard(parts, bgMode, secondaryCol, "#f8fafc");
+    const numStrips = Math.max(3, Math.min(8, parseInt(pcsStr, 10) || 4));
+    const padY = 58;
+    const totalAvailH = T - padY * 2;
+    const slotH = totalAvailH / numStrips;
+    const stripH = slotH * 0.64;
+
+    const stripSurfaces = [
+      surfaceMode,
+      "solid_matte",
+      "kraft_fiber",
+      "grid_notebook",
+      "textured_fiber",
+      "lined_notebook",
+    ];
+
+    for (let i = 0; i < numStrips; i++) {
+      const sy = padY + i * slotH + (slotH - stripH) * 0.5;
+      const sCol =
+        i === 0
+          ? paperCol
+          : i === 1
+          ? secondaryCol
+          : multiPalettePool[(modeNum + variant * 2 + i * 3) % multiPalettePool.length];
+      const sSurf =
+        surfaceMode === "solid_matte" && i % 3 === 2
+          ? stripSurfaces[(i + variant) % stripSurfaces.length]
+          : surfaceMode;
+
+      drawIsolatedTornPaperScrap(
+        parts,
+        36,
+        sy,
+        T - 72,
+        stripH,
+        (rng() - 0.5) * 0.9,
+        rng,
+        sCol,
+        sSurf === "kraft_fiber" ? "#f5ebe0" : pulpCol,
+        sSurf,
+        "#60a5fa",
+        "#ef4444",
+        tearAmp * 0.85,
+        pulpW * 0.85,
+        "all4",
+        16,
+        16,
+        T - 16,
+        T - 16,
+        addonStyle === "auto" ? "none" : addonStyle,
+        i
+      );
+    }
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 16: EDITORIAL SCRAPBOOK & SOCIAL MEDIA TORN PAPER COLLAGE KIT
+  // (Overlapping multi-material designer moodboard collage with Kraft, Grid Notebook,
+  // Colored Torn Banners, Scotch Tape, 3D Push-Pins & Paperclips)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "collage_scrapbook_kit") {
+    emitTornBackgroundBoard(parts, bgMode, secondaryCol, "#f8fafc");
+
+    const cPool = (offset: number) =>
+      multiPalettePool[(modeNum * 3 + variant * 7 + offset * 5) % multiPalettePool.length];
+
+    const collageItems: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      ang: number;
+      col: string;
+      surf: string;
+      addon: TornPaperAddonStyle;
+    }[] = [
+      // 1) Large Eco Kraft / Tinted base sheet (top-left)
+      {
+        x: 68,
+        y: 74,
+        w: 520,
+        h: 410,
+        ang: -4.2 + (rng() - 0.5) * 2,
+        col: variant === 0 ? "#c89d66" : cPool(1),
+        surf: "kraft_fiber",
+        addon: "scotch_tape",
+      },
+      // 2) Squared Math Grid Notebook sheet overlapping on right
+      {
+        x: 410,
+        y: 115,
+        w: 515,
+        h: 430,
+        ang: 3.6 + (rng() - 0.5) * 2,
+        col: variant === 0 ? "#fbfcfe" : cPool(2),
+        surf: "grid_notebook",
+        addon: "spiral_binder",
+      },
+      // 3) Ruled Lined Notebook or Bullet Dot sheet (bottom-left)
+      {
+        x: 75,
+        y: 475,
+        w: 490,
+        h: 415,
+        ang: 2.5 + (rng() - 0.5) * 2,
+        col: variant === 0 ? "#fef08a" : cPool(3),
+        surf: "lined_notebook",
+        addon: "paper_clip",
+      },
+      // 4) Vibrant Sticky Note card (bottom-right)
+      {
+        x: 505,
+        y: 515,
+        w: 410,
+        h: 380,
+        ang: -3.8 + (rng() - 0.5) * 2,
+        col: secondaryCol,
+        surf: "solid_matte",
+        addon: "push_pin",
+      },
+      // 5) Center Hero Torn Banner Headline Strip overlapping the collage
+      {
+        x: 155,
+        y: 375,
+        w: 690,
+        h: 215,
+        ang: -1.4 + (rng() - 0.5) * 1.8,
+        col: paperCol,
+        surf: "textured_fiber",
+        addon: addonStyle === "none" ? "none" : "scotch_tape",
+      },
+    ];
+
+    for (let i = 0; i < collageItems.length; i++) {
+      const it = collageItems[i];
+      drawIsolatedTornPaperScrap(
+        parts,
+        it.x,
+        it.y,
+        it.w,
+        it.h,
+        it.ang,
+        rng,
+        it.col,
+        it.surf === "kraft_fiber" ? "#f5ebe0" : pulpCol,
+        it.surf,
+        "#60a5fa",
+        "#ef4444",
+        tearAmp * 0.9,
+        pulpW * 0.9,
+        "all4",
+        18,
+        18,
+        T - 18,
+        T - 18,
+        addonStyle === "none" ? "none" : it.addon,
+        i
+      );
+    }
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 11: 3D MULTI-LAYER STEPPED WAVY TORN PAPER REVEAL CANYON (IMAGE 2 STYLE)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "curled_peel_canyon") {
+    emitTornBackgroundBoard(parts, bgMode, secondaryCol, "#f1f5f9");
+
+    const topSubEdge = buildDualFractalTearEdge(
+      0,
+      T * 0.36,
+      T,
+      T * 0.33,
+      0,
+      1,
+      rng,
+      tearAmp * 1.25,
+      pulpW * 1.35,
+      110,
+      true,
+      58
+    );
+    const topMainEdge = buildDualFractalTearEdge(
+      0,
+      T * 0.25,
+      T,
+      T * 0.22,
+      0,
+      1,
+      rng,
+      tearAmp * 1.25,
+      pulpW * 1.4,
+      110,
+      true,
+      68
+    );
+    const botSubEdge = buildDualFractalTearEdge(
+      0,
+      T * 0.66,
+      T,
+      T * 0.64,
+      0,
+      -1,
+      rng,
+      tearAmp * 1.25,
+      pulpW * 1.35,
+      110,
+      true,
+      58
+    );
+    const botMainEdge = buildDualFractalTearEdge(
+      0,
+      T * 0.78,
+      T,
+      T * 0.75,
+      0,
+      -1,
+      rng,
+      tearAmp * 1.25,
+      pulpW * 1.4,
+      110,
+      true,
+      68
+    );
+
+    // Secondary under-sheets (top & bottom)
+    const upSubPulp: [number, number][] = [[0, 0], [T, 0], ...topSubEdge.pulpPts.slice().reverse()];
+    const upSubCol: [number, number][] = [[0, 0], [T, 0], ...topSubEdge.colorPts.slice().reverse()];
+    emitTornVectorDropShadow(parts, upSubPulp, 0, 0, T, T, 2, 15, 1.25);
+    emitTornClippedPoly(parts, upSubPulp, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, upSubCol, secondaryCol, 0, 0, T, T, 1);
+
+    const dnSubPulp: [number, number][] = [...botSubEdge.pulpPts, [T, T], [0, T]];
+    const dnSubCol: [number, number][] = [...botSubEdge.colorPts, [T, T], [0, T]];
+    emitTornVectorDropShadow(parts, dnSubPulp, 0, 0, T, T, 2, -14, 1.25);
+    emitTornClippedPoly(parts, dnSubPulp, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, dnSubCol, secondaryCol, 0, 0, T, T, 1);
+
+    // Primary top sheets (top & bottom)
+    const upMainPulp: [number, number][] = [[0, 0], [T, 0], ...topMainEdge.pulpPts.slice().reverse()];
+    const upMainCol: [number, number][] = [[0, 0], [T, 0], ...topMainEdge.colorPts.slice().reverse()];
+    emitTornVectorDropShadow(parts, upMainPulp, 0, 0, T, T, 2, 15, 1.28);
+    emitTornClippedPoly(parts, upMainPulp, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, upMainCol, paperCol, 0, 0, T, T, 1);
+
+    const dnMainPulp: [number, number][] = [...botMainEdge.pulpPts, [T, T], [0, T]];
+    const dnMainCol: [number, number][] = [...botMainEdge.colorPts, [T, T], [0, T]];
+    emitTornVectorDropShadow(parts, dnMainPulp, 0, 0, T, T, 2, -14, 1.28);
+    emitTornClippedPoly(parts, dnMainPulp, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, dnMainCol, paperCol, 0, 0, T, T, 1);
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 15: 3D CONCENTRIC CIRCULAR RIPPED PAPER MEDALLION HOLE
+  // (100% Non-Self-Intersecting Top & Bottom Semicircle Frame Polygons!)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "circle_badge_rip") {
+    emitTornBackgroundBoard(parts, bgMode, secondaryCol, "#f8fafc");
+
+    const cx = T * 0.5;
+    const cy = T * 0.5;
+    // Draw from SMALLEST inner hole (190) to LARGEST outer hole (365) so outer sheets sit on top of inner sheets!
+    const ringRadii = [190, 275, 365];
+    const thirdCol = multiPalettePool[(modeNum * 5 + variant * 3 + 11) % multiPalettePool.length];
+    const ringColors = [thirdCol, secondaryCol, paperCol];
+
+    for (let rIdx = 0; rIdx < ringRadii.length; rIdx++) {
+      const baseR = ringRadii[rIdx];
+      const halfSegs = 64;
+      const octA = buildTornFractal1D(rng, 8 + rIdx * 3);
+      const octB = buildTornFractal1D(rng, 22 + rIdx * 5);
+      const octC = buildTornFractal1D(rng, 54 + rIdx * 7);
+      const pulpOct = buildTornFractal1D(rng, 18 + rIdx * 5);
+
+      const evalRadiiAtAngle = (ang: number, uNorm: number): { rCol: number; rPulp: number } => {
+        const dR =
+          (octA(uNorm) * 0.55 + octB(uNorm) * 0.32 + octC(uNorm) * 0.2) * tearAmp * 1.25 +
+          Math.sin(ang * 5) * tearAmp * 0.45;
+        const rCol = Math.max(70, baseR + dR);
+        const rPulp = Math.max(48, rCol - pulpW * (1.15 + 0.65 * Math.abs(pulpOct(uNorm))));
+        return { rCol, rPulp };
+      };
+
+      // TOP HALF-SHEET (y <= cy):
+      // Outer boundary: [0, cy+1] -> [0, 0] -> [T, 0] -> [T, cy+1]
+      // Inner top arc: angle goes from 0 (right: cx+r, cy) through -PI/2 (top: cx, cy-r) to -PI (left: cx-r, cy)
+      const topArcPulp: [number, number][] = [];
+      const topArcCol: [number, number][] = [];
+      for (let k = 0; k <= halfSegs; k++) {
+        const f = k / halfSegs;
+        const ang = -f * Math.PI; // 0 -> -PI (y <= cy)
+        const { rCol, rPulp } = evalRadiiAtAngle(ang, f * 0.5);
+        const yOff = k === 0 || k === halfSegs ? 0.8 : 0;
+        topArcPulp.push([cx + Math.cos(ang) * rPulp, cy + Math.sin(ang) * rPulp + yOff]);
+        topArcCol.push([cx + Math.cos(ang) * rCol, cy + Math.sin(ang) * rCol + yOff]);
+      }
+
+      const topHalfPulp: [number, number][] = [
+        [0, cy + 0.8],
+        [0, 0],
+        [T, 0],
+        [T, cy + 0.8],
+        ...topArcPulp,
+      ];
+      const topHalfCol: [number, number][] = [
+        [0, cy + 0.8],
+        [0, 0],
+        [T, 0],
+        [T, cy + 0.8],
+        ...topArcCol,
+      ];
+
+      // BOTTOM HALF-SHEET (y >= cy):
+      // Outer boundary: [T, cy-1] -> [T, T] -> [0, T] -> [0, cy-1]
+      // Inner bottom arc: angle goes from PI (left: cx-r, cy) through PI/2 (bottom: cx, cy+r) to 0 (right: cx+r, cy)
+      const botArcPulp: [number, number][] = [];
+      const botArcCol: [number, number][] = [];
+      for (let k = 0; k <= halfSegs; k++) {
+        const f = k / halfSegs;
+        const ang = Math.PI * (1 - f); // PI -> 0 (y >= cy)
+        const { rCol, rPulp } = evalRadiiAtAngle(ang, 0.5 + f * 0.5);
+        const yOff = k === 0 || k === halfSegs ? -0.8 : 0;
+        botArcPulp.push([cx + Math.cos(ang) * rPulp, cy + Math.sin(ang) * rPulp + yOff]);
+        botArcCol.push([cx + Math.cos(ang) * rCol, cy + Math.sin(ang) * rCol + yOff]);
+      }
+
+      const botHalfPulp: [number, number][] = [
+        [T, cy - 0.8],
+        [T, T],
+        [0, T],
+        [0, cy - 0.8],
+        ...botArcPulp,
+      ];
+      const botHalfCol: [number, number][] = [
+        [T, cy - 0.8],
+        [T, T],
+        [0, T],
+        [0, cy - 0.8],
+        ...botArcCol,
+      ];
+
+      emitTornVectorDropShadow(parts, topHalfPulp, 0, 0, T, T, 3, 12, 1.22);
+      emitTornVectorDropShadow(parts, botHalfPulp, 0, 0, T, T, 3, -10, 1.22);
+
+      emitTornClippedPoly(parts, topHalfPulp, "#ffffff", 0, 0, T, T, 1);
+      emitTornClippedPoly(parts, botHalfPulp, "#ffffff", 0, 0, T, T, 1);
+
+      emitTornClippedPoly(parts, topHalfCol, ringColors[rIdx], 0, 0, T, T, 1);
+      emitTornClippedPoly(parts, botHalfCol, ringColors[rIdx], 0, 0, T, T, 1);
+    }
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 2: TAPERED V-RIP CANYON SHEET OPENING (SAMPLE 2 EXACT)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "canyon_v_rip") {
+    const underCol =
+      bgMode === "charcoal"
+        ? "#e2e8f0"
+        : bgMode === "dark"
+        ? "#1e293b"
+        : "#f1f3f6";
+    if (bgMode === "checker") {
+      drawTornTransparencyCheckerboard(parts, 0, 0, T, T, 28);
+    } else {
+      parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${underCol}" data-bg="1"/>`);
+      const grainCol = mixCol(underCol, "#94a3b8", 0.16);
+      for (let gy = 12; gy < T; gy += 10) {
+        parts.push(
+          `<rect x="0" y="${f1(gy)}" width="${T}" height="0.9" fill="${grainCol}" fill-opacity="0.45"/>`
+        );
+      }
+    }
+
+    const dirMode = (modeNum + variant) % 3;
+    const steps = 110;
+    const centerMidY = T * (0.48 + (rng() - 0.5) * 0.06);
+
+    const topRaw = buildDualFractalTearEdge(
+      0,
+      0,
+      T,
+      0,
+      0,
+      1,
+      rng,
+      tearAmp * 1.45,
+      pulpW * 1.45,
+      steps,
+      false,
+      36
+    );
+    const botRaw = buildDualFractalTearEdge(
+      0,
+      0,
+      T,
+      0,
+      0,
+      -1,
+      rng,
+      tearAmp * 1.45,
+      pulpW * 1.45,
+      steps,
+      false,
+      36
+    );
+
+    const topColorPts: [number, number][] = [];
+    const topPulpPts: [number, number][] = [];
+    const botColorPts: [number, number][] = [];
+    const botPulpPts: [number, number][] = [];
+
+    for (let k = 0; k <= steps; k++) {
+      const t = k / steps;
+      const x = t * T;
+      const openFrac =
+        dirMode === 0
+          ? 0.035 + 0.965 * Math.pow(t, 0.82)
+          : dirMode === 1
+          ? 0.035 + 0.965 * Math.pow(1 - t, 0.82)
+          : 0.18 + 0.82 * Math.sin(t * Math.PI);
+      const halfGap = (24 + openFrac * 265) * (0.92 + 0.12 * Math.sin(t * Math.PI * 2.3));
+
+      const rawTopC = topRaw.colorPts[k][1];
+      const rawTopP = topRaw.pulpPts[k][1];
+      const pulpDeltaTop = Math.max(8, rawTopP - rawTopC);
+
+      const yTopColor = Math.max(28, centerMidY - halfGap + rawTopC * (0.45 + 0.65 * openFrac));
+      const yTopPulp = yTopColor + pulpDeltaTop * (0.75 + 0.55 * openFrac);
+      topColorPts.push([x, yTopColor]);
+      topPulpPts.push([x, yTopPulp]);
+
+      const rawBotC = botRaw.colorPts[k][1];
+      const rawBotP = botRaw.pulpPts[k][1];
+      const pulpDeltaBot = Math.max(8, rawBotC - rawBotP);
+
+      const yBotColor = Math.min(T - 28, centerMidY + halfGap + rawBotC * (0.45 + 0.65 * openFrac));
+      const yBotPulp = yBotColor - pulpDeltaBot * (0.75 + 0.55 * openFrac);
+      botColorPts.push([x, yBotColor]);
+      botPulpPts.push([x, yBotPulp]);
+    }
+
+    const upperPulpPoly: [number, number][] = [[0, 0], [T, 0], ...topPulpPts.slice().reverse()];
+    const upperColorPoly: [number, number][] = [[0, 0], [T, 0], ...topColorPts.slice().reverse()];
+
+    const lowerPulpPoly: [number, number][] = [...botPulpPts, [T, T], [0, T]];
+    const lowerColorPoly: [number, number][] = [...botColorPts, [T, T], [0, T]];
+
+    emitTornVectorDropShadow(parts, upperPulpPoly, 0, 0, T, T, 4, 14, 1.25);
+    emitTornVectorDropShadow(parts, lowerPulpPoly, 0, 0, T, T, 4, -12, 1.2);
+
+    emitTornClippedPoly(parts, upperPulpPoly, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, upperColorPoly, paperCol, 0, 0, T, T, 1);
+
+    emitTornClippedPoly(parts, lowerPulpPoly, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, lowerColorPoly, paperCol, 0, 0, T, T, 1);
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 4: WAVY S-CURVE HALF-PAGE HORIZONTAL TORN DIVIDER (EXACT IMAGE 2 & REF 5A)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "half_divider") {
+    emitTornBackgroundBoard(parts, bgMode, secondaryCol, "#ffffff");
+
+    // subStyle 0 & 2: Top Wavy Torn Sheet over Checkerboard (EXACT Image 2 image_1c6c261e.png!)
+    // subStyle 1: Bottom Wavy Torn Sheet over Checkerboard (EXACT Ref 5A!)
+    // subStyle 3: 2-Ply Overlapping Upper Wavy Torn Sheets over Checkerboard!
+    const subStyle = (modeNum + variant) % 4;
+    const waveSweep = 72 + rng() * 38;
+
+    if (subStyle === 0 || subStyle === 2) {
+      // Exact Image 2: Upper colored/kraft paper sheet with sweeping S-wave curve,
+      // thick pure white torn deckle edge below, casting scalloped shadow onto lower checkerboard!
+      const yLeft = T * (0.56 + (rng() - 0.5) * 0.08);
+      const yRight = T * (0.48 + (rng() - 0.5) * 0.08);
+      const tear = buildDualFractalTearEdge(
+        0,
+        yLeft,
+        T,
+        yRight,
+        0,
+        1,
+        rng,
+        tearAmp * 1.15,
+        pulpW * 1.55,
+        120,
+        true,
+        waveSweep
+      );
+
+      const upperPulpPoly: [number, number][] = [[0, 0], [T, 0], ...tear.pulpPts.slice().reverse()];
+      const upperColorPoly: [number, number][] = [[0, 0], [T, 0], ...tear.colorPts.slice().reverse()];
+
+      emitTornVectorDropShadow(parts, upperPulpPoly, 0, 0, T, T, 2, 16, 1.32);
+      emitTornClippedPoly(parts, upperPulpPoly, "#ffffff", 0, 0, T, T, 1);
+      emitTornClippedPoly(parts, upperColorPoly, paperCol, 0, 0, T, T, 1);
+    } else if (subStyle === 1) {
+      // Ref 5A: Lower wavy torn paper sheet with pure white deckle edge on top
+      const yLeft = T * (0.52 + (rng() - 0.5) * 0.08);
+      const yRight = T * (0.44 + (rng() - 0.5) * 0.08);
+      const tear = buildDualFractalTearEdge(
+        0,
+        yLeft,
+        T,
+        yRight,
+        0,
+        -1,
+        rng,
+        tearAmp * 1.15,
+        pulpW * 1.55,
+        120,
+        true,
+        waveSweep
+      );
+
+      const lowerPulpPoly: [number, number][] = [...tear.pulpPts, [T, T], [0, T]];
+      const lowerColorPoly: [number, number][] = [...tear.colorPts, [T, T], [0, T]];
+
+      emitTornVectorDropShadow(parts, lowerPulpPoly, 0, 0, T, T, 2, -15, 1.32);
+      emitTornClippedPoly(parts, lowerPulpPoly, "#ffffff", 0, 0, T, T, 1);
+      emitTornClippedPoly(parts, lowerColorPoly, paperCol, 0, 0, T, T, 1);
+    } else {
+      // 2-Ply Overlapping Upper Wavy Torn Paper Sheets over Checkerboard
+      const subTear = buildDualFractalTearEdge(
+        0,
+        T * 0.62,
+        T,
+        T * 0.55,
+        0,
+        1,
+        rng,
+        tearAmp * 1.15,
+        pulpW * 1.5,
+        120,
+        true,
+        waveSweep * 0.9
+      );
+      const mainTear = buildDualFractalTearEdge(
+        0,
+        T * 0.44,
+        T,
+        T * 0.38,
+        0,
+        1,
+        rng,
+        tearAmp * 1.15,
+        pulpW * 1.55,
+        120,
+        true,
+        waveSweep
+      );
+
+      const subPulp: [number, number][] = [[0, 0], [T, 0], ...subTear.pulpPts.slice().reverse()];
+      const subCol: [number, number][] = [[0, 0], [T, 0], ...subTear.colorPts.slice().reverse()];
+      emitTornVectorDropShadow(parts, subPulp, 0, 0, T, T, 2, 16, 1.3);
+      emitTornClippedPoly(parts, subPulp, "#ffffff", 0, 0, T, T, 1);
+      emitTornClippedPoly(parts, subCol, secondaryCol, 0, 0, T, T, 1);
+
+      const mainPulp: [number, number][] = [[0, 0], [T, 0], ...mainTear.pulpPts.slice().reverse()];
+      const mainCol: [number, number][] = [[0, 0], [T, 0], ...mainTear.colorPts.slice().reverse()];
+      emitTornVectorDropShadow(parts, mainPulp, 0, 0, T, T, 2, 16, 1.32);
+      emitTornClippedPoly(parts, mainPulp, "#ffffff", 0, 0, T, T, 1);
+      emitTornClippedPoly(parts, mainCol, paperCol, 0, 0, T, T, 1);
+    }
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 5: DIAGONAL RIPPED PAPER CANYON (SAMPLE 5B EXACT + WAVY CONTOUR)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "diagonal_canyon") {
+    const underCol = bgMode === "charcoal" ? "#585a5e" : "#ffffff";
+    if (bgMode === "checker") {
+      drawTornTransparencyCheckerboard(parts, 0, 0, T, T, 28);
+    } else {
+      parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${underCol}" data-bg="1"/>`);
+    }
+
+    const flipDiag = (modeNum + variant) % 2 === 1;
+    const ax0 = -60;
+    const ay0 = flipDiag ? 140 : T - 140;
+    const ax1 = T + 60;
+    const ay1 = flipDiag ? T - 140 : 140;
+
+    const dx = ax1 - ax0;
+    const dy = ay1 - ay0;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = -dy / len;
+    const uy = dx / len;
+
+    const halfChannel = 155 + (rng() - 0.5) * 28;
+
+    const upperEdge = buildDualFractalTearEdge(
+      ax0 + ux * halfChannel,
+      ay0 + uy * halfChannel,
+      ax1 + ux * halfChannel,
+      ay1 + uy * halfChannel,
+      -ux,
+      -uy,
+      rng,
+      tearAmp * 1.35,
+      pulpW * 1.45,
+      110,
+      true,
+      44
+    );
+
+    const lowerEdge = buildDualFractalTearEdge(
+      ax0 - ux * halfChannel,
+      ay0 - uy * halfChannel,
+      ax1 - ux * halfChannel,
+      ay1 - uy * halfChannel,
+      ux,
+      uy,
+      rng,
+      tearAmp * 1.35,
+      pulpW * 1.45,
+      110,
+      true,
+      44
+    );
+
+    const farCorner1: [number, number] = [ax1 + ux * 1600, ay1 + uy * 1600];
+    const farCorner0: [number, number] = [ax0 + ux * 1600, ay0 + uy * 1600];
+    const upperPulpPoly: [number, number][] = [...upperEdge.pulpPts, farCorner1, farCorner0];
+    const upperColorPoly: [number, number][] = [...upperEdge.colorPts, farCorner1, farCorner0];
+
+    const farBot1: [number, number] = [ax1 - ux * 1600, ay1 - uy * 1600];
+    const farBot0: [number, number] = [ax0 - ux * 1600, ay0 - uy * 1600];
+    const lowerPulpPoly: [number, number][] = [...lowerEdge.pulpPts, farBot1, farBot0];
+    const lowerColorPoly: [number, number][] = [...lowerEdge.colorPts, farBot1, farBot0];
+
+    emitTornVectorDropShadow(parts, upperPulpPoly, 0, 0, T, T, -ux * 14, -uy * 14, 1.25);
+    emitTornVectorDropShadow(parts, lowerPulpPoly, 0, 0, T, T, ux * 14, uy * 14, 1.25);
+
+    emitTornClippedPoly(parts, upperPulpPoly, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, upperColorPoly, paperCol, 0, 0, T, T, 1);
+
+    emitTornClippedPoly(parts, lowerPulpPoly, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, lowerColorPoly, paperCol, 0, 0, T, T, 1);
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 6: WAVY TORN BANNER STRIP ON VIBRANT COLOR SHEET (SAMPLE 5C EXACT)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "center_strip") {
+    const sheetBg = secondaryCol;
+    const stripBodyCol = paperCol;
+    if (bgMode === "checker") {
+      drawTornTransparencyCheckerboard(parts, 0, 0, T, T, 28);
+    } else {
+      parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="${sheetBg}" data-bg="1"/>`);
+    }
+
+    const stripTopY = T * (0.27 + (rng() - 0.5) * 0.04);
+    const stripBotY = T * (0.73 + (rng() - 0.5) * 0.04);
+
+    const topEdge = buildDualFractalTearEdge(
+      0,
+      stripTopY,
+      T,
+      stripTopY + (rng() - 0.5) * 24,
+      0,
+      -1,
+      rng,
+      tearAmp * 1.2,
+      pulpW * 1.45,
+      110,
+      true,
+      46
+    );
+    const botEdge = buildDualFractalTearEdge(
+      T,
+      stripBotY,
+      0,
+      stripBotY + (rng() - 0.5) * 24,
+      0,
+      1,
+      rng,
+      tearAmp * 1.2,
+      pulpW * 1.45,
+      110,
+      true,
+      46
+    );
+
+    const stripPulpPoly: [number, number][] = [...topEdge.pulpPts, ...botEdge.pulpPts];
+    const stripColorPoly: [number, number][] = [...topEdge.colorPts, ...botEdge.colorPts];
+
+    emitTornVectorDropShadow(parts, stripPulpPoly, 0, 0, T, T, 0, 14, 1.28);
+    emitTornClippedPoly(parts, stripPulpPoly, "#ffffff", 0, 0, T, T, 1);
+    emitTornClippedPoly(parts, stripColorPoly, stripBodyCol, 0, 0, T, T, 1);
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 9: 3D OVERLAPPING WAVY TORN PAPER STRATA WAVES (IMAGE 2 MULTI-WAVE)
+  // ---------------------------------------------------------------------------
+  if (layoutType === "layered_waves") {
+    emitTornBackgroundBoard(parts, bgMode, secondaryCol, bgCol);
+    const numLayers = Math.max(4, Math.min(8, parseInt(pcsStr, 10) || 5));
+
+    for (let l = 0; l < numLayers; l++) {
+      const frac = (l + 1) / (numLayers + 1);
+      const yLeft = T * (frac - 0.03 + (rng() - 0.5) * 0.06);
+      const yRight = T * (frac + 0.03 + (rng() - 0.5) * 0.06);
+      const tear = buildDualFractalTearEdge(
+        0,
+        yLeft,
+        T,
+        yRight,
+        0,
+        -1,
+        rng,
+        tearAmp * 1.15,
+        pulpW * 1.4,
+        104,
+        true,
+        55
+      );
+      const layerPulp: [number, number][] = [...tear.pulpPts, [T, T], [0, T]];
+      const layerColor: [number, number][] = [...tear.colorPts, [T, T], [0, T]];
+      const tCol = l / Math.max(1, numLayers - 1);
+      const lCol =
+        l % 2 === 0
+          ? mixCol(paperCol, secondaryCol, tCol * 0.85)
+          : mixCol(secondaryCol, paperCol, tCol * 0.85);
+
+      emitTornVectorDropShadow(parts, layerPulp, 0, 0, T, T, 0, -13, 1.22);
+      emitTornClippedPoly(parts, layerPulp, "#ffffff", 0, 0, T, T, 1);
+      emitTornClippedPoly(parts, layerColor, lCol, 0, 0, T, T, 1);
+    }
+
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYOUT 10: 3D RIPPED-OPEN CENTER PAPER FRAME WINDOW (SEAMLESS MITRED CORNERS)
+  // ---------------------------------------------------------------------------
+  emitTornBackgroundBoard(parts, bgMode, secondaryCol, "#f8fafc");
+
+  const holeX = 165;
+  const holeY = 195;
+  const holeW = T - holeX * 2;
+  const holeH = T - holeY * 2;
+
+  const topFlap = buildDualFractalTearEdge(
+    holeX,
+    holeY,
+    holeX + holeW,
+    holeY,
+    0,
+    1,
+    rng,
+    tearAmp * 1.25,
+    pulpW * 1.35,
+    84,
+    false,
+    24
+  );
+  const rightFlap = buildDualFractalTearEdge(
+    holeX + holeW,
+    holeY,
+    holeX + holeW,
+    holeY + holeH,
+    -1,
+    0,
+    rng,
+    tearAmp * 1.25,
+    pulpW * 1.35,
+    72,
+    false,
+    24
+  );
+  const botFlap = buildDualFractalTearEdge(
+    holeX + holeW,
+    holeY + holeH,
+    holeX,
+    holeY + holeH,
+    0,
+    -1,
+    rng,
+    tearAmp * 1.25,
+    pulpW * 1.35,
+    84,
+    false,
+    24
+  );
+  const leftFlap = buildDualFractalTearEdge(
+    holeX,
+    holeY + holeH,
+    holeX,
+    holeY,
+    1,
+    0,
+    rng,
+    tearAmp * 1.25,
+    pulpW * 1.35,
+    72,
+    false,
+    24
+  );
+
+  // Use diagonal mitred outer corners ([0,0], [T,0], [T,T], [0,T]) so the 4 frame sides
+  // meet cleanly at the 4 corners without overlapping over each other's white pulp edge!
+  const topFramePulp: [number, number][] = [
+    [0, 0],
+    [T, 0],
+    ...topFlap.pulpPts.slice().reverse(),
+  ];
+  const topFrameCol: [number, number][] = [
+    [0, 0],
+    [T, 0],
+    ...topFlap.colorPts.slice().reverse(),
+  ];
+
+  const rightFramePulp: [number, number][] = [
+    [T, 0],
+    [T, T],
+    ...rightFlap.pulpPts.slice().reverse(),
+  ];
+  const rightFrameCol: [number, number][] = [
+    [T, 0],
+    [T, T],
+    ...rightFlap.colorPts.slice().reverse(),
+  ];
+
+  const botFramePulp: [number, number][] = [
+    [T, T],
+    [0, T],
+    ...botFlap.pulpPts.slice().reverse(),
+  ];
+  const botFrameCol: [number, number][] = [
+    [T, T],
+    [0, T],
+    ...botFlap.colorPts.slice().reverse(),
+  ];
+
+  const leftFramePulp: [number, number][] = [
+    [0, T],
+    [0, 0],
+    ...leftFlap.pulpPts.slice().reverse(),
+  ];
+  const leftFrameCol: [number, number][] = [
+    [0, T],
+    [0, 0],
+    ...leftFlap.colorPts.slice().reverse(),
+  ];
+
+  emitTornVectorDropShadow(parts, topFramePulp, 0, 0, T, T, 0, 12, 1.18);
+  emitTornVectorDropShadow(parts, botFramePulp, 0, 0, T, T, 0, -10, 1.18);
+  emitTornVectorDropShadow(parts, leftFramePulp, 0, 0, T, T, 11, 4, 1.18);
+  emitTornVectorDropShadow(parts, rightFramePulp, 0, 0, T, T, -11, 4, 1.18);
+
+  emitTornClippedPoly(parts, topFramePulp, "#ffffff", 0, 0, T, T, 1);
+  emitTornClippedPoly(parts, botFramePulp, "#ffffff", 0, 0, T, T, 1);
+  emitTornClippedPoly(parts, leftFramePulp, "#ffffff", 0, 0, T, T, 1);
+  emitTornClippedPoly(parts, rightFramePulp, "#ffffff", 0, 0, T, T, 1);
+
+  emitTornClippedPoly(parts, topFrameCol, paperCol, 0, 0, T, T, 1);
+  emitTornClippedPoly(parts, botFrameCol, paperCol, 0, 0, T, T, 1);
+  emitTornClippedPoly(parts, leftFrameCol, paperCol, 0, 0, T, T, 1);
+  emitTornClippedPoly(parts, rightFrameCol, paperCol, 0, 0, T, T, 1);
+
+  m.raw(parts.join(""));
+}
+
+function registerMasterTornPaperCollection() {
+  for (const tm of MASTER_TORN_PAPER_MODES) {
+    registerMode({
+      id: tm.id,
+      name: tm.name,
+      cat: "Torn Paper",
+      look: {
+        bg: tm.bgCol,
+        ink: "#0f172a",
+        cols: [tm.paperCol, tm.secondaryCol, "#facc15", "#e11d48", "#10b981"],
+        style: "flat",
+        sw: 2,
+      },
+      params: [
+        {
+          k: "layoutType",
+          l: "TORN PAPER ARCHITECTURE (16 MICROSTOCK STYLES)",
+          def: tm.layoutType,
+          type: "select",
+          opts: [
+            ["scrap_1pc", "ISOLATED TORN PAPER SCRAP BANNER (REF 1 & 3)"],
+            ["canyon_v_rip", "TAPERED V-RIP CANYON SHEET OPENING (REF 2)"],
+            ["notebook_grid", "TORN MATH GRID NOTEBOOK PAPER SET (REF 4)"],
+            ["half_divider", "HALF-PAGE HORIZONTAL TORN DIVIDER (REF 5A)"],
+            ["diagonal_canyon", "DIAGONAL RIPPED PAPER CANYON (REF 5B)"],
+            ["center_strip", "WHITE TORN BANNER STRIP ON COLOR SHEET (REF 5C)"],
+            ["notebook_lined", "TORN RULED LINED SCHOOL NOTEBOOK SET (REF 5D)"],
+            ["multi_scraps", "MULTI-PIECE TORN NOTE & BANNER BUNDLE"],
+            ["layered_waves", "3D OVERLAPPING TORN PAPER STRATA WAVES"],
+            ["ripped_hole", "3D RIPPED-OPEN CENTER PAPER FRAME WINDOW"],
+            ["curled_peel_canyon", "3D ROLLED & CURLED PAPER PEEL REVEAL"],
+            ["horizontal_strips_pack", "FULL-WIDTH HORIZONTAL TORN BANNER STRIPS PACK"],
+            ["taped_memo_board", "SCOTCH-TAPED & PINNED MEMO NOTEBOOK BOARD"],
+            ["kraft_cardboard_rip", "ECO BROWN KRAFT & CORRUGATED CARDBOARD TEAR"],
+            ["circle_badge_rip", "3D CONCENTRIC CIRCULAR RIPPED MEDALLION HOLE"],
+            ["collage_scrapbook_kit", "EDITORIAL SCRAPBOOK & SOCIAL MEDIA COLLAGE KIT"],
+          ],
+        },
+        {
+          k: "pcs",
+          l: "NUMBER OF TORN PAPER PIECES / LAYERS",
+          def: tm.defPcs,
+          type: "select",
+          opts: [
+            ["1", "1 PC HERO TORN PAPER DESIGN"],
+            ["2", "2 PCS TORN PAPER DUO SET (REF 5D)"],
+            ["3", "3 PCS TORN NOTEBOOK / BANNER SET (REF 4)"],
+            ["4", "4 PCS TORN PAPER COLLECTION (2×2)"],
+            ["6", "6 PCS TORN PAPER BUNDLE (2×3)"],
+            ["8", "8 PCS TORN PAPER MEGA PACK (2×4)"],
+            ["9", "9 PCS TORN PAPER GRID SHEET (3×3)"],
+            ["12", "12 PCS ULTIMATE TORN PAPER PACK (3×4)"],
+          ],
+        },
+        {
+          k: "paperSurface",
+          l: "PAPER SURFACE & NOTEBOOK RULING (7 SURFACES)",
+          def: tm.defSurface,
+          type: "select",
+          opts: [
+            ["solid_matte", "SOLID MATTE COLORED CRAFT PAPER (REF 1, 3, 5)"],
+            ["grid_notebook", "SQUARED MATH GRAPH NOTEBOOK + RED MARGIN (REF 4)"],
+            ["lined_notebook", "RULED LINED SCHOOL NOTEBOOK + RED MARGIN (REF 5D)"],
+            ["dot_bullet_grid", "BULLET-JOURNAL DOTTED MATRIX GRID NOTEBOOK"],
+            ["textured_fiber", "EMBOSSED TEXTURED COTTON PAPER GRAIN (REF 2)"],
+            ["kraft_fiber", "ECO NATURAL BROWN KRAFT PAPER + WOOD-PULP FLECKS"],
+            ["corrugated_rib", "3D CORRUGATED CARDBOARD FLUTING RIBS"],
+          ],
+        },
+        {
+          k: "addonStyle",
+          l: "COMMERCIAL STATIONERY ADD-ONS (TAPE / PIN / CLIP)",
+          def: tm.defAddon,
+          type: "select",
+          opts: [
+            ["auto", "AUTO MICROSTOCK STATIONERY MIX"],
+            ["scotch_tape", "TRANSLUCENT SERRATED SCOTCH / WASHI TAPE"],
+            ["push_pin", "3D GLOSSY & METALLIC THUMBTACK PUSH-PIN"],
+            ["paper_clip", "3D METALLIC WIRE PAPERCLIP"],
+            ["spiral_binder", "PUNCHED SPIRAL NOTEBOOK BINDER HOLES & COILS"],
+            ["curled_corner", "3D FOLDED DOG-EAR CURLED CORNER PEEL"],
+            ["tape_and_pin", "COMBO PACK (SCOTCH TAPE + 3D PUSH-PIN + BINDER)"],
+            ["none", "CLEAN TORN PAPER EDGE ONLY (NO ADD-ONS)"],
+          ],
+        },
+        {
+          k: "bgMode",
+          l: "BACKDROP PRESENTATION MODE",
+          def: tm.defBgMode,
+          type: "select",
+          opts: [
+            ["checker", "TRANSPARENT CHECKERBOARD GRID (REF 1 & 5A)"],
+            ["white", "CRISP STUDIO WHITE BACKDROP (REF 2, 3, 5B)"],
+            ["charcoal", "CHARCOAL GRAY STUDIO BOARD (REF 4 & 5D)"],
+            ["color_sheet", "VIBRANT CONTRAST COLOR SHEET (REF 5C)"],
+            ["dark", "DEEP OBSIDIAN NOIR BOARD"],
+          ],
+        },
+        {
+          k: "colorSet",
+          l: "PAPER COLOUR HARMONY",
+          def: tm.defColorSet,
+          type: "select",
+          opts: [
+            ["default", "ORIGINAL REFERENCE CURATED PALETTE"],
+            ["teal_ocean", "TEAL OCEAN BLUE (SAMPLE 1 EXACT)"],
+            ["royal_indigo", "DEEP ROYAL INDIGO BLUE (SAMPLE 2 EXACT)"],
+            ["golden_note", "BRIGHT GOLDEN YELLOW STICKY NOTE (SAMPLE 3)"],
+            ["notebook_classic", "CLASSIC WHITE NOTEBOOK + CYAN GRID & RED MARGIN"],
+            ["slate_teal", "DEEP SLATE TEAL DIVIDER (SAMPLE 5A)"],
+            ["electric_cyan", "ELECTRIC CYAN CANYON (SAMPLE 5B)"],
+            ["sky_azure", "SKY AZURE SHEET + WHITE TORN STRIP (SAMPLE 5C)"],
+            ["kraft_eco", "ECO NATURAL BROWN KRAFT & CARDBOARD"],
+            ["crimson_ruby", "CRIMSON RUBY & SCARLET"],
+            ["emerald_forest", "EMERALD FOREST GREEN"],
+            ["obsidian_noir", "EXECUTIVE OBSIDIAN SLATE"],
+            ["palette", "ACTIVE STUDIO PALETTE COLOURS"],
+          ],
+        },
+        {
+          k: "tearAmp",
+          l: "FRACTAL TEAR JAGGEDNESS & V-NOTCH DEPTH",
+          min: 5,
+          max: 36,
+          step: 1,
+          def: 15,
+        },
+        {
+          k: "pulpW",
+          l: "3-PLY FIBROUS PAPER-PULP DECKLE WIDTH",
+          min: 5,
+          max: 34,
+          step: 1,
+          def: 16,
+        },
+        {
+          k: "variant",
+          l: "UNIQUE FRACTAL TEAR SEED VARIATION",
+          min: 0,
+          max: 999999,
+          step: 1,
+          def: 0,
+        },
+      ],
+      draw(m: any, q: any) {
+        renderMasterTornPaperCollection(m, q, tm);
+      },
+    });
+  }
+}
+
+registerMasterTornPaperCollection();
+
+/* ============================================================================
+ * 72-MODE PROCEDURAL ULTRA-SMOOTH TRANSPARENT VECTOR SHADOW STUDIO
+ * (100% Zero-Banding, Zero-Crack, Sub-Pixel 96-Layer Gaussian Continuum +
+ * True Transparent Background for Adobe Stock, Shutterstock & Freepik)
+ *  - Ref 1: oval_contact (Soft Elliptical / Oval Ground Contact Shadow)
+ *  - Ref 2: linear_fade_overlay (Full-Frame Smooth Vertical/Directional Linear Fade Shadow)
+ *  - Ref 3: angled_perspective_cast (Tilted Directional Product Cast Shadow with Penumbra Tail)
+ *  - Ref 4: floating_wide_bar (Wide Horizontal Floating Banner / Shelf Contact Shadow)
+ *  - Plus 8 Commercial Microstock Shadow Architectures (Curved Arch Lift, Dual Contact+Ambient
+ *    Pedestal, Circular Disc Base, Floating Card Perimeter, Multi-Shadow Bundle Kit,
+ *    Studio Floor Horizon Vignette, Center-Pinched Bow Shadow, Soft Diagonal Gobo)
+ * ============================================================================ */
+
+export type ShadowArchitectureType =
+  | "oval_contact"
+  | "linear_fade_overlay"
+  | "angled_perspective_cast"
+  | "floating_wide_bar"
+  | "curved_page_arch"
+  | "double_contact_pedestal"
+  | "circular_disc_base"
+  | "pinched_bow_shadow"
+  | "card_bottom_lip"
+  | "studio_horizon_vignette"
+  | "diagonal_gobo_soft"
+  | "multi_shadow_kit";
+
+export interface MasterShadowModeSpec {
+  id: string;
+  name: string;
+  archType: ShadowArchitectureType;
+  defPcs: string;
+  defBgMode: string;
+  defTone: string;
+  defDensity: number;
+  defSoftness: number;
+  defAngle: number;
+  subIdx: number;
+}
+
+const SHADOW_FAMILIES: {
+  archType: ShadowArchitectureType;
+  titlePrefix: string;
+  defPcs: string;
+  defDensity: number;
+  defSoftness: number;
+  defAngle: number;
+}[] = [
+  {
+    archType: "oval_contact",
+    titlePrefix: "SOFT OVAL GROUND CONTACT SHADOW (REF 1 EXACT)",
+    defPcs: "1",
+    defDensity: 84,
+    defSoftness: 88,
+    defAngle: 0,
+  },
+  {
+    archType: "linear_fade_overlay",
+    titlePrefix: "SMOOTH LINEAR VIGNETTE FADE SHADOW OVERLAY (REF 2 EXACT)",
+    defPcs: "1",
+    defDensity: 95,
+    defSoftness: 92,
+    defAngle: 0,
+  },
+  {
+    archType: "angled_perspective_cast",
+    titlePrefix: "ANGLED PERSPECTIVE PRODUCT CAST SHADOW (REF 3 EXACT)",
+    defPcs: "1",
+    defDensity: 88,
+    defSoftness: 90,
+    defAngle: 12,
+  },
+  {
+    archType: "floating_wide_bar",
+    titlePrefix: "WIDE FLOATING BANNER & SHELF CONTACT SHADOW (REF 4 EXACT)",
+    defPcs: "1",
+    defDensity: 78,
+    defSoftness: 86,
+    defAngle: 0,
+  },
+  {
+    archType: "curved_page_arch",
+    titlePrefix: "3D CURVED PAPER & CARD ARCH LIFT DROP SHADOW",
+    defPcs: "1",
+    defDensity: 82,
+    defSoftness: 85,
+    defAngle: 0,
+  },
+  {
+    archType: "double_contact_pedestal",
+    titlePrefix: "3D DUAL CORE + AMBIENT OCCLUSION PEDESTAL SHADOW",
+    defPcs: "1",
+    defDensity: 90,
+    defSoftness: 92,
+    defAngle: 0,
+  },
+  {
+    archType: "circular_disc_base",
+    titlePrefix: "SOFT SPHERE & BOTTLE BASE RADIAL CONTACT SHADOW",
+    defPcs: "1",
+    defDensity: 86,
+    defSoftness: 90,
+    defAngle: 0,
+  },
+  {
+    archType: "pinched_bow_shadow",
+    titlePrefix: "3D CENTER-PINCHED FLOATING RIBBON BOW SHADOW",
+    defPcs: "1",
+    defDensity: 80,
+    defSoftness: 86,
+    defAngle: 0,
+  },
+  {
+    archType: "card_bottom_lip",
+    titlePrefix: "ASYMMETRIC FLOATING UI CARD & BANNER EDGE SHADOW",
+    defPcs: "1",
+    defDensity: 84,
+    defSoftness: 84,
+    defAngle: -4,
+  },
+  {
+    archType: "studio_horizon_vignette",
+    titlePrefix: "STUDIO STAGE FLOOR & HORIZON AMBIENT SHADOW",
+    defPcs: "1",
+    defDensity: 88,
+    defSoftness: 94,
+    defAngle: 0,
+  },
+  {
+    archType: "diagonal_gobo_soft",
+    titlePrefix: "SOFT SUNLIT WINDOW & DIAGONAL BEAM CAST SHADOW",
+    defPcs: "1",
+    defDensity: 76,
+    defSoftness: 92,
+    defAngle: 28,
+  },
+  {
+    archType: "multi_shadow_kit",
+    titlePrefix: "COMMERCIAL MICROSTOCK MULTI-SHADOW DIVIDER BUNDLE KIT",
+    defPcs: "4",
+    defDensity: 85,
+    defSoftness: 88,
+    defAngle: 0,
+  },
+];
+
+export const MASTER_SHADOW_MODES: MasterShadowModeSpec[] = [];
+(() => {
+  const subVariants = [
+    { label: "ULTRA-SOFT GAUSSIAN", pcs: "1", tone: "pure_black", dOff: 0, sOff: 4, aOff: 0 },
+    { label: "DEEP CORE OCCLUSION", pcs: "1", tone: "charcoal_ink", dOff: 8, sOff: 0, aOff: -5 },
+    { label: "WIDE FEATHER PENUMBRA", pcs: "2", tone: "pure_black", dOff: -6, sOff: 6, aOff: 7 },
+    { label: "4-PC STUDIO PACK", pcs: "4", tone: "warm_umbra", dOff: 4, sOff: 2, aOff: -3 },
+    { label: "6-PC DESIGNER KIT", pcs: "6", tone: "cool_slate", dOff: 2, sOff: 5, aOff: 9 },
+    { label: "8-PC MEGA BUNDLE", pcs: "8", tone: "pure_black", dOff: 5, sOff: 3, aOff: -8 },
+  ];
+  let idx = 1;
+  // Interleave families so consecutive Shadow thumbnails in the sidebar show different shadow architectures!
+  for (let sIdx = 0; sIdx < 6; sIdx++) {
+    for (let fIdx = 0; fIdx < SHADOW_FAMILIES.length; fIdx++) {
+      const fam = SHADOW_FAMILIES[fIdx];
+      const sv = subVariants[sIdx];
+      const pcs =
+        sIdx === 0
+          ? fam.defPcs
+          : fam.archType === "linear_fade_overlay" ||
+            fam.archType === "studio_horizon_vignette" ||
+            fam.archType === "diagonal_gobo_soft"
+          ? "1"
+          : sv.pcs;
+      MASTER_SHADOW_MODES.push({
+        id: `shadow_ms_${idx}`,
+        name: `SHADOW ${idx}: ${fam.titlePrefix} · ${sv.label}`,
+        archType: fam.archType,
+        defPcs: pcs,
+        defBgMode: "transparent",
+        defTone: sv.tone,
+        defDensity: Math.max(40, Math.min(100, fam.defDensity + sv.dOff)),
+        defSoftness: Math.max(50, Math.min(100, fam.defSoftness + sv.sOff)),
+        defAngle: fam.defAngle + sv.aOff,
+        subIdx: sIdx,
+      });
+      idx++;
+    }
+  }
+})();
+
+// High-precision 2-decimal formatter so 144-vertex Gaussian shadow layers never have jagged stair-steps
+function sf2(n: number): string {
+  return Number.isFinite(n) ? n.toFixed(2) : "0.00";
+}
+
+function resolveShadowToneHex(tone: string): string {
+  if (tone === "warm_umbra") return "#181310";
+  if (tone === "cool_slate") return "#0b1120";
+  if (tone === "charcoal_ink") return "#111317";
+  if (tone === "deep_espresso") return "#1c1411";
+  if (tone === "navy_void") return "#090f24";
+  return "#050507";
+}
+
+/**
+ * Emits a 92-Layer Ultra-Smooth Zero-Banding Gaussian Shadow Field around center (cx, cy).
+ * Because 92 concentric 144-vertex smooth closed polygons are stacked with differential
+ * bell-curve opacity (~0.007 to 0.024 per layer), adjacent layers differ by < 0.7/255 gray level —
+ * producing 100% seamless photographic blur with ZERO cracks, ZERO polygon corners, and ZERO rings
+ * in SVG, PNG, JPG, and Adobe Illustrator EPS10!
+ */
+function emitGaussianSmoothShadowShape(
+  parts: string[],
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  angleDeg: number,
+  shadowHex: string,
+  densityPct: number,
+  softnessPct: number,
+  shapeProfile:
+    | "oval"
+    | "perspective_cast"
+    | "wide_bar"
+    | "curved_arch"
+    | "dual_pedestal"
+    | "circular"
+    | "pinched_bow"
+    | "card_lip",
+  skewTail = 0.38,
+  archBend = 0.28,
+  clipX0 = 4,
+  clipY0 = 4,
+  clipX1 = T - 4,
+  clipY1 = T - 4
+) {
+  const rad = (angleDeg * Math.PI) / 180;
+  const cosA = Math.cos(rad);
+  const sinA = Math.sin(rad);
+
+  const layers = 92;
+  const verts = 144;
+  const densityNorm = Math.max(0.25, Math.min(1.15, densityPct / 85));
+  const softNorm = Math.max(0.45, Math.min(1.25, softnessPct / 85));
+
+  // Core shift for directional perspective shadows (Ref 3: dense dark core shifted toward top-left)
+  const coreShiftX =
+    shapeProfile === "perspective_cast"
+      ? -rx * 0.24 * skewTail
+      : shapeProfile === "card_lip"
+      ? 0
+      : 0;
+  const coreShiftY =
+    shapeProfile === "perspective_cast"
+      ? -ry * 0.14 * skewTail
+      : shapeProfile === "card_lip"
+      ? -ry * 0.18
+      : 0;
+
+  for (let i = 0; i < layers; i++) {
+    // u goes from 1.0 (outermost softest penumbra boundary) down to 0.03 (innermost dense umbra core)
+    const t = i / (layers - 1); // 0 (outer) -> 1 (inner)
+    const u = 1 - t * 0.965;
+
+    // Smooth non-linear radial scale so outer penumbra feathers out super gently
+    const scaleU = Math.pow(u, 0.86 + (1 - softNorm) * 0.25);
+
+    // Progressive core interpolation: outer layers are centered at (0,0), inner layers pull toward (coreShiftX, coreShiftY)
+    const pull = Math.pow(t, 1.35);
+    const locCx = coreShiftX * pull;
+    const locCy = coreShiftY * pull;
+
+    // Differential layer opacity following a smooth Gaussian derivative profile
+    let diffOp = (0.0085 + 0.0195 * Math.pow(Math.sin(t * Math.PI), 0.95)) * densityNorm;
+    if (shapeProfile === "dual_pedestal" && t > 0.62) {
+      // Extra dense contact core for 3D product pedestal
+      diffOp *= 1.35;
+    }
+    diffOp = Math.max(0.003, Math.min(0.038, diffOp));
+
+    const pts: [number, number][] = [];
+    for (let v = 0; v < verts; v++) {
+      const theta = (v / verts) * Math.PI * 2;
+      const c = Math.cos(theta);
+      const s = Math.sin(theta);
+
+      let lx = c * rx * scaleU;
+      let ly = s * ry * scaleU;
+
+      if (shapeProfile === "wide_bar") {
+        // Super-ellipse / capsule profile (Ref 4: wide uniform horizontal bar with soft rounded ends)
+        const expP = 0.72 + 0.24 * (1 - t); // rounder on outer halo, flatter bar in inner core
+        lx = Math.sign(c) * Math.pow(Math.abs(c), expP) * rx * scaleU;
+        ly = Math.sign(s) * Math.pow(Math.abs(s), 0.94) * ry * scaleU;
+      } else if (shapeProfile === "perspective_cast") {
+        // Ref 3: Asymmetric directional tail — stretches further and wider toward bottom-right (+c, +s)
+        const tailStretch = c > 0 ? 1 + c * 0.34 * (1 - t * 0.5) : 1 + c * 0.14;
+        const vertAsym = s > 0 ? 1 + s * 0.22 * (1 - t * 0.4) : 1 - Math.abs(s) * 0.08;
+        lx *= tailStretch;
+        ly *= vertAsym;
+        // Slight organic shear along the cast direction
+        ly += (lx / Math.max(1, rx)) * ry * 0.22 * skewTail;
+      } else if (shapeProfile === "curved_arch") {
+        // 3D Curved paper / card arch lift shadow (bows upward in the middle)
+        const xNorm = c;
+        const archOffset = (xNorm * xNorm - 0.35) * ry * 1.15 * archBend;
+        ly += archOffset * (0.55 + 0.45 * scaleU);
+      } else if (shapeProfile === "pinched_bow") {
+        // Center-pinched floating paper shadow (narrower waist at x=0, wider lobes at ends)
+        const waist = 0.62 + 0.38 * (c * c);
+        ly *= waist;
+      } else if (shapeProfile === "card_lip") {
+        // Asymmetric floating card edge shadow (crisper top edge, long soft downward falloff)
+        const yMod = s < 0 ? 0.55 : 1.35;
+        ly *= yMod;
+      }
+
+      lx += locCx;
+      ly += locCy;
+
+      const wx = cx + lx * cosA - ly * sinA;
+      const wy = cy + lx * sinA + ly * cosA;
+      pts.push([
+        Math.max(clipX0, Math.min(clipX1, wx)),
+        Math.max(clipY0, Math.min(clipY1, wy)),
+      ]);
+    }
+
+    const ptsStr = pts.map((p) => `${sf2(p[0])},${sf2(p[1])}`).join(" ");
+    parts.push(`<polygon points="${ptsStr}" fill="${shadowHex}" fill-opacity="${sf2(diffOp)}"/>`);
+  }
+}
+
+function renderMasterShadowCollection(
+  m: any,
+  q: Record<string, any>,
+  spec: MasterShadowModeSpec
+) {
+  const archType = String(q.archType || spec.archType || "oval_contact") as ShadowArchitectureType;
+  const pcsStr = String(q.pcs || spec.defPcs || "1");
+  const bgMode = String(q.bgMode || spec.defBgMode || "transparent");
+  const shadowTone = String(q.shadowTone || spec.defTone || "pure_black");
+  const density = Math.max(25, Math.min(100, +(q.density ?? spec.defDensity ?? 85)));
+  const softness = Math.max(40, Math.min(100, +(q.softness ?? spec.defSoftness ?? 88)));
+  const baseAngle = +(q.angle ?? spec.defAngle ?? 0);
+  const variant = Math.max(0, Math.round(+(q.variant ?? 0)));
+
+  const modeNum = Math.max(1, parseInt(spec.id.replace("shadow_ms_", ""), 10) || 1);
+  const rng = createTornPrng(
+    (m.seed || 987654321) >>> 0,
+    variant * 104729 + modeNum * 7919,
+    Math.round(density * 10) + Math.round(softness * 100),
+    pcsStr.charCodeAt(0) * 43
+  );
+
+  // Subtle tone rotation on clicks if default tone is active, while keeping natural realistic shadow colors
+  const tonePool = ["pure_black", "charcoal_ink", "warm_umbra", "cool_slate", "deep_espresso"];
+  const effectiveTone =
+    variant > 0 && shadowTone === spec.defTone
+      ? tonePool[(modeNum + variant) % tonePool.length]
+      : shadowTone;
+  const shadowHex = resolveShadowToneHex(effectiveTone);
+
+  const parts: string[] = [];
+
+  // Optional background board (when bgMode === "transparent", we emit ZERO background rect so the
+  // background is 100% transparent!)
+  if (bgMode === "checker") {
+    drawTornTransparencyCheckerboard(parts, 0, 0, T, T, 28);
+  } else if (bgMode === "white") {
+    parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="#ffffff" data-bg="1"/>`);
+  } else if (bgMode === "soft_gray") {
+    parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="#f1f5f9" data-bg="1"/>`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // ARCHITECTURE 2: FULL-FRAME SMOOTH LINEAR VIGNETTE FADE SHADOW OVERLAY (REF 2 EXACT)
+  // ---------------------------------------------------------------------------
+  if (archType === "linear_fade_overlay") {
+    const dirIdx = (modeNum + variant) % 4; // 0: Bottom-to-Top (Ref 2 Exact), 1: Top-to-Bottom, 2: Diagonal Corner, 3: Top+Bottom Dual Cinema Vignette
+    const gradId = `sh_lin_${modeNum}_${variant}_${(m.seed || 1) & 0xffff}`;
+    const maxOp = Math.min(0.98, (density / 100) * 1.04);
+    const gamma = 1.45 + ((100 - softness) / 100) * 0.65;
+
+    let x1 = 0;
+    let y1 = T;
+    let x2 = 0;
+    let y2 = 0;
+    if (dirIdx === 1) {
+      y1 = 0;
+      y2 = T;
+    } else if (dirIdx === 2) {
+      x1 = 0;
+      y1 = T;
+      x2 = T;
+      y2 = 0;
+    }
+
+    const stops: string[] = [];
+    const numStops = 20;
+    for (let s = 0; s <= numStops; s++) {
+      const f = s / numStops; // 0 at dark base -> 1 at transparent top
+      let op: number;
+      if (dirIdx === 3) {
+        // Dual Top + Bottom Vignette
+        const distFromEdge = 1 - Math.abs(f - 0.5) * 2; // 0 at edges, 1 at center
+        op = maxOp * Math.pow(Math.max(0, 1 - distFromEdge * 1.15), gamma);
+      } else {
+        // Smooth S-curve power falloff matching Ref 2 (image 2)
+        op = maxOp * Math.pow(Math.max(0, 1 - f), gamma);
+      }
+      stops.push(
+        `<stop offset="${(f * 100).toFixed(1)}%" stop-color="${shadowHex}" stop-opacity="${op.toFixed(
+          4
+        )}"/>`
+      );
+    }
+
+    m.def(
+      `<linearGradient id="${gradId}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops.join(
+        ""
+      )}</linearGradient>`
+    );
+    parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="url(#${gradId})"/>`);
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // ARCHITECTURE 10: STUDIO STAGE FLOOR & HORIZON AMBIENT VIGNETTE SHADOW
+  // ---------------------------------------------------------------------------
+  if (archType === "studio_horizon_vignette") {
+    const horizonGradId = `sh_hor_${modeNum}_${variant}_${(m.seed || 1) & 0xffff}`;
+    const maxOp = Math.min(0.92, (density / 100) * 0.95);
+    const stops: string[] = [];
+    const horizonCurve = [
+      [0, 0],
+      [0.32, 0.02],
+      [0.48, 0.14],
+      [0.56, 0.42],
+      [0.64, 0.52],
+      [0.76, 0.34],
+      [0.88, 0.18],
+      [1.0, 0.08],
+    ];
+    for (const [off, mult] of horizonCurve) {
+      stops.push(
+        `<stop offset="${(off * 100).toFixed(1)}%" stop-color="${shadowHex}" stop-opacity="${(
+          maxOp * mult
+        ).toFixed(4)}"/>`
+      );
+    }
+    m.def(
+      `<linearGradient id="${horizonGradId}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="${T}">${stops.join(
+        ""
+      )}</linearGradient>`
+    );
+    parts.push(`<rect x="0" y="0" width="${T}" height="${T}" fill="url(#${horizonGradId})"/>`);
+    // Plus a centered soft ground contact shadow on the stage floor
+    emitGaussianSmoothShadowShape(
+      parts,
+      T * 0.5,
+      T * 0.62,
+      360 + (rng() - 0.5) * 40,
+      78 + (rng() - 0.5) * 14,
+      0,
+      shadowHex,
+      density * 0.85,
+      softness,
+      "oval"
+    );
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // ARCHITECTURE 11: SOFT SUNLIT WINDOW & DIAGONAL BEAM CAST SHADOW (GOBO)
+  // ---------------------------------------------------------------------------
+  if (archType === "diagonal_gobo_soft") {
+    const numSlats = 3 + (variant % 2);
+    const ang = (baseAngle || 26) + (rng() - 0.5) * 10;
+    for (let s = 0; s < numSlats; s++) {
+      const cy = 210 + s * (580 / Math.max(1, numSlats - 1)) + (rng() - 0.5) * 20;
+      const cx = T * 0.5 + (s - (numSlats - 1) * 0.5) * 35;
+      emitGaussianSmoothShadowShape(
+        parts,
+        cx,
+        cy,
+        420,
+        74 + (rng() - 0.5) * 14,
+        ang,
+        shadowHex,
+        density * 0.72,
+        Math.min(100, softness + 6),
+        "wide_bar"
+      );
+    }
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // SINGLE OR MULTI-PIECE GAUSSIAN CONTACT / PERSPECTIVE / FLOATING BAR SHADOWS
+  // (Ref 1: oval_contact, Ref 3: angled_perspective_cast, Ref 4: floating_wide_bar,
+  //  curved_page_arch, double_contact_pedestal, circular_disc_base, pinched_bow_shadow,
+  //  card_bottom_lip, multi_shadow_kit)
+  // ---------------------------------------------------------------------------
+  const count = Math.max(1, Math.min(8, parseInt(pcsStr, 10) || 1));
+
+  const mapArchToProfile = (
+    a: ShadowArchitectureType,
+    itemIdx: number
+  ):
+    | "oval"
+    | "perspective_cast"
+    | "wide_bar"
+    | "curved_arch"
+    | "dual_pedestal"
+    | "circular"
+    | "pinched_bow"
+    | "card_lip" => {
+    if (a === "oval_contact") return "oval";
+    if (a === "angled_perspective_cast") return "perspective_cast";
+    if (a === "floating_wide_bar") return "wide_bar";
+    if (a === "curved_page_arch") return "curved_arch";
+    if (a === "double_contact_pedestal") return "dual_pedestal";
+    if (a === "circular_disc_base") return "circular";
+    if (a === "pinched_bow_shadow") return "pinched_bow";
+    if (a === "card_bottom_lip") return "card_lip";
+    const cycle: (
+      | "oval"
+      | "wide_bar"
+      | "perspective_cast"
+      | "curved_arch"
+      | "dual_pedestal"
+      | "pinched_bow"
+      | "card_lip"
+      | "circular"
+    )[] = [
+      "oval",
+      "wide_bar",
+      "perspective_cast",
+      "curved_arch",
+      "dual_pedestal",
+      "pinched_bow",
+      "card_lip",
+      "circular",
+    ];
+    return cycle[(itemIdx + variant) % cycle.length];
+  };
+
+  if (count === 1) {
+    const prof = mapArchToProfile(archType, 0);
+    const jx = (rng() - 0.5) * 26;
+    const jy = (rng() - 0.5) * 24;
+    let rx = 355 + (rng() - 0.5) * 48;
+    let ry = 105 + (rng() - 0.5) * 22;
+    let ang = baseAngle + (rng() - 0.5) * 4;
+
+    if (prof === "wide_bar") {
+      // Ref 4 Exact: Wide horizontal floating bar contact shadow
+      rx = 415 + (rng() - 0.5) * 36;
+      ry = 82 + (rng() - 0.5) * 16;
+      ang = (rng() - 0.5) * 1.8;
+    } else if (prof === "perspective_cast") {
+      // Ref 3 Exact: Tilted perspective product cast shadow
+      rx = 365 + (rng() - 0.5) * 42;
+      ry = 118 + (rng() - 0.5) * 22;
+      ang = (baseAngle !== 0 ? baseAngle : 11) + (rng() - 0.5) * 8;
+    } else if (prof === "circular") {
+      rx = 285 + (rng() - 0.5) * 34;
+      ry = 148 + (rng() - 0.5) * 24;
+    } else if (prof === "dual_pedestal") {
+      // Wide ambient occlusion base + inner sharp contact core
+      emitGaussianSmoothShadowShape(
+        parts,
+        T * 0.5 + jx,
+        T * 0.54 + jy,
+        410,
+        130,
+        ang * 0.4,
+        shadowHex,
+        density * 0.58,
+        Math.min(100, softness + 8),
+        "oval"
+      );
+      rx = 235 + (rng() - 0.5) * 28;
+      ry = 58 + (rng() - 0.5) * 12;
+    }
+
+    const skewTail = (rng() < 0.5 ? 1 : -1) * (0.32 + rng() * 0.25);
+    const archBend = (rng() < 0.65 ? 1 : -1) * (0.24 + rng() * 0.22);
+
+    emitGaussianSmoothShadowShape(
+      parts,
+      T * 0.5 + jx,
+      T * 0.53 + jy,
+      rx,
+      ry,
+      ang,
+      shadowHex,
+      density,
+      softness,
+      prof,
+      skewTail,
+      archBend
+    );
+    m.raw(parts.join(""));
+    return;
+  }
+
+  // Multi-Shadow Pack (2, 4, 6, 8 PCS stacked or 2-column studio pack)
+  const cols = count <= 3 ? 1 : 2;
+  const rows = Math.ceil(count / cols);
+  const padX = cols === 1 ? 90 : 52;
+  const padY = 64;
+  const cellW = (T - padX * 2) / cols;
+  const cellH = (T - padY * 2) / rows;
+
+  for (let i = 0; i < count; i++) {
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    const cx = padX + c * cellW + cellW * 0.5 + (rng() - 0.5) * 14;
+    const cy = padY + r * cellH + cellH * 0.52 + (rng() - 0.5) * 10;
+    const prof = mapArchToProfile(archType, i);
+
+    const rx =
+      (prof === "wide_bar" ? cellW * 0.44 : prof === "circular" ? cellW * 0.34 : cellW * 0.4) *
+      (0.92 + rng() * 0.14);
+    const ry =
+      Math.min(cellH * 0.32, prof === "wide_bar" ? 62 : prof === "circular" ? 88 : 74) *
+      (0.9 + rng() * 0.18);
+    const ang =
+      prof === "perspective_cast"
+        ? (i % 2 === 0 ? 10 : -10) + (rng() - 0.5) * 5
+        : (rng() - 0.5) * 2.5;
+    const skewTail = (i % 2 === 0 ? 1 : -1) * (0.3 + rng() * 0.2);
+    const archBend = (i % 2 === 0 ? 1 : -1) * (0.24 + rng() * 0.18);
+
+    emitGaussianSmoothShadowShape(
+      parts,
+      cx,
+      cy,
+      rx,
+      ry,
+      ang,
+      shadowHex,
+      density,
+      softness,
+      prof,
+      skewTail,
+      archBend
+    );
+  }
+
+  m.raw(parts.join(""));
+}
+
+function registerMasterShadowCollection() {
+  for (const sm of MASTER_SHADOW_MODES) {
+    registerMode({
+      id: sm.id,
+      name: sm.name,
+      cat: "Shadow",
+      look: {
+        bg: "#ffffff",
+        ink: "#050507",
+        cols: ["#050507", "#1e293b", "#334155", "#475569", "#64748b"],
+        style: "flat",
+        sw: 2,
+      },
+      params: [
+        {
+          k: "archType",
+          l: "SHADOW ARCHITECTURE (12 MICROSTOCK STYLES)",
+          def: sm.archType,
+          type: "select",
+          opts: [
+            ["oval_contact", "SOFT OVAL GROUND CONTACT SHADOW (REF 1 EXACT)"],
+            ["linear_fade_overlay", "SMOOTH LINEAR VIGNETTE FADE OVERLAY (REF 2 EXACT)"],
+            ["angled_perspective_cast", "ANGLED PERSPECTIVE PRODUCT CAST SHADOW (REF 3 EXACT)"],
+            ["floating_wide_bar", "WIDE FLOATING BANNER & SHELF SHADOW (REF 4 EXACT)"],
+            ["curved_page_arch", "3D CURVED PAPER & CARD ARCH LIFT SHADOW"],
+            ["double_contact_pedestal", "3D DUAL CORE + AMBIENT PEDESTAL SHADOW"],
+            ["circular_disc_base", "SOFT SPHERE & BOTTLE BASE RADIAL SHADOW"],
+            ["pinched_bow_shadow", "3D CENTER-PINCHED FLOATING RIBBON SHADOW"],
+            ["card_bottom_lip", "ASYMMETRIC FLOATING UI CARD EDGE SHADOW"],
+            ["studio_horizon_vignette", "STUDIO STAGE FLOOR & HORIZON VIGNETTE"],
+            ["diagonal_gobo_soft", "SOFT SUNLIT WINDOW & DIAGONAL BEAM SHADOW"],
+            ["multi_shadow_kit", "COMMERCIAL MULTI-SHADOW DIVIDER BUNDLE KIT"],
+          ],
+        },
+        {
+          k: "pcs",
+          l: "NUMBER OF SHADOW ELEMENTS ON ARTBOARD",
+          def: sm.defPcs,
+          type: "select",
+          opts: [
+            ["1", "1 PC HERO STUDIO SHADOW"],
+            ["2", "2 PCS DUAL SHADOW SET"],
+            ["3", "3 PCS STACKED SHADOW DIVIDERS"],
+            ["4", "4 PCS SHADOW COLLECTION (2×2)"],
+            ["6", "6 PCS SHADOW STUDIO PACK (2×3)"],
+            ["8", "8 PCS MEGA SHADOW BUNDLE (2×4)"],
+          ],
+        },
+        {
+          k: "bgMode",
+          l: "BACKGROUND TRANSPARENCY MODE",
+          def: sm.defBgMode,
+          type: "select",
+          opts: [
+            ["transparent", "100% TRUE TRANSPARENT BACKGROUND (NO BG)"],
+            ["white", "PURE STUDIO WHITE BACKDROP (REF 1–4 PREVIEW)"],
+            ["checker", "VECTOR TRANSPARENCY CHECKERBOARD GRID"],
+            ["soft_gray", "SOFT DAYLIGHT STUDIO SILVER BOARD"],
+          ],
+        },
+        {
+          k: "shadowTone",
+          l: "SHADOW UMBRA COLOUR TONE",
+          def: sm.defTone,
+          type: "select",
+          opts: [
+            ["pure_black", "PURE STUDIO CARBON BLACK (#050507)"],
+            ["charcoal_ink", "NEUTRAL GRAPHITE CHARCOAL (#111317)"],
+            ["warm_umbra", "WARM NATURAL SUNLIGHT UMBRA (#181310)"],
+            ["cool_slate", "COOL AMBIENT DAYLIGHT SLATE (#0B1120)"],
+            ["deep_espresso", "DEEP ESPRESSO SEPIA SHADOW (#1C1411)"],
+            ["navy_void", "MIDNIGHT CINEMA AMBIENT (#090F24)"],
+          ],
+        },
+        {
+          k: "density",
+          l: "CORE UMBRA DARKNESS DENSITY (%)",
+          min: 30,
+          max: 100,
+          step: 1,
+          def: sm.defDensity,
+        },
+        {
+          k: "softness",
+          l: "GAUSSIAN FEATHER SOFTNESS SPREAD (%)",
+          min: 45,
+          max: 100,
+          step: 1,
+          def: sm.defSoftness,
+        },
+        {
+          k: "angle",
+          l: "PERSPECTIVE TILT & CAST DIRECTION ANGLE (°)",
+          min: -45,
+          max: 45,
+          step: 1,
+          def: sm.defAngle,
+        },
+        {
+          k: "variant",
+          l: "UNIQUE SHADOW SEED VARIATION",
+          min: 0,
+          max: 999999,
+          step: 1,
+          def: 0,
+        },
+      ],
+      draw(m: any, q: any) {
+        renderMasterShadowCollection(m, q, sm);
+      },
+    });
+  }
+}
+
+registerMasterShadowCollection();
 
 /* ---------------- renderer & smart random ---------------- */
 export function cfgFromP(P: PatternState) {
@@ -29813,7 +34146,11 @@ export function genParams(
       }
       return;
     }
-    if (md.cat === "Calendar" && (p.k === "year" || p.k === "viewMode" || p.k === "month" || p.k === "weekStart")) {
+    if (md.cat === "Calendar" && (p.k === "year" || p.k === "viewMode" || p.k === "month" || p.k === "weekStart" || p.k === "sideArt")) {
+      q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
+      return;
+    }
+    if (md.cat === "Torn Paper" && (p.k === "pcs" || p.k === "layoutType" || p.k === "paperSurface" || p.k === "bgMode" || p.k === "addonStyle")) {
       q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
       return;
     }
@@ -29821,7 +34158,7 @@ export function genParams(
       q[p.k] = curParams[p.k] !== undefined ? curParams[p.k] : p.def;
       return;
     }
-    if ((md.cat === "Calendar" || md.cat === "Typography") && p.k === "colorSet") {
+    if ((md.cat === "Calendar" || md.cat === "Typography" || md.cat === "Torn Paper") && p.k === "colorSet") {
       if (extremeDiverse && p.opts && p.opts.length > 1) {
         const pickIdx =
           batchIdx >= 0
@@ -29833,7 +34170,7 @@ export function genParams(
       }
       return;
     }
-    if ((md.cat === "Poster" || md.cat === "Lighting" || md.cat === "Calendar" || md.cat === "Typography") && p.k === "variant") {
+    if ((md.cat === "Poster" || md.cat === "Lighting" || md.cat === "Calendar" || md.cat === "Typography" || md.cat === "Torn Paper") && p.k === "variant") {
       const curVar = Math.max(0, Math.round(+(curParams.variant ?? 0)));
       q.variant = extremeDiverse && batchIdx >= 0 ? ((batchIdx * 11 + curVar) % 48) + 1 : curVar + 1;
       return;
@@ -29904,7 +34241,8 @@ export function genParams(
       !(md.cat === "Brush" && p.k === "cm") &&
       !(md.cat === "Poster" && (p.k === "pcs" || (!extremeDiverse && p.k === "colorSet"))) &&
       !(md.cat === "Lighting" && (p.k === "bgMode" || p.k === "pcs" || (!extremeDiverse && p.k === "colorSet"))) &&
-      !(md.cat === "Calendar" && (p.k === "year" || p.k === "viewMode" || p.k === "month" || p.k === "weekStart" || (!extremeDiverse && p.k === "colorSet"))) &&
+      !(md.cat === "Calendar" && (p.k === "year" || p.k === "viewMode" || p.k === "month" || p.k === "weekStart" || p.k === "sideArt" || (!extremeDiverse && p.k === "colorSet"))) &&
+      !(md.cat === "Torn Paper" && (p.k === "pcs" || p.k === "layoutType" || p.k === "paperSurface" || p.k === "bgMode" || p.k === "addonStyle" || (!extremeDiverse && p.k === "colorSet"))) &&
       !(md.cat === "Typography" && (p.k === "pcs" || p.k === "occasion" || p.k === "fontStyle" || (!extremeDiverse && p.k === "colorSet")))
   );
   const flipCount = extremeDiverse ? sel.length : Math.min(sel.length, 1 + Math.floor(Math.random() * 2));
@@ -30027,6 +34365,23 @@ export function genCand(
     name = "sumi ink brush";
   }
 
+  if (md.cat === "Background" && colours) {
+    // Strictly Single-Color (Monochromatic Tonal) Gradient Palettes for Background category!
+    const step = batchIdx >= 0 ? batchIdx : seed;
+    const monoHue = (step * 137.508 + (seed % 53)) % 360;
+    const monoSat = 62 + ((seed * 19) % 28);
+    const isLightMono = (step + seed) % 5 === 0;
+    const cLight = hsl(monoHue, Math.max(40, monoSat - 8), isLightMono ? 88 : 58);
+    const cMidLight = hsl(monoHue, monoSat, isLightMono ? 76 : 44);
+    const cMid = hsl(monoHue, monoSat, isLightMono ? 64 : 33);
+    const cMidDark = hsl(monoHue, Math.min(95, monoSat + 6), isLightMono ? 52 : 22);
+    const cDark = hsl(monoHue, Math.min(96, monoSat + 10), isLightMono ? 38 : 11);
+    bg = cDark;
+    ink = cLight;
+    cols = [cLight, cMidLight, cMid, cMidDark, cDark];
+    name = `single-color gradient ${Math.round(monoHue)}deg`;
+  }
+
   // Micro-mutate colour tones by 1-3 RGB levels so even same-palette generations are chromatographically unique
   if (colours) {
     const jitterCol = (hex: string, salt: number) => {
@@ -30039,15 +34394,19 @@ export function genCand(
     };
     cols = cols.map((c, idx) => jitterCol(c, seed + idx * 13));
   }
-  [ink, cols] = fixContrast(bg, ink, cols);
+  if (md.cat !== "Background") {
+    [ink, cols] = fixContrast(bg, ink, cols);
+  }
 
   const allowStyleVary =
     md.cat !== "Poster" &&
     md.cat !== "Lighting" &&
     md.cat !== "Calendar" &&
+    md.cat !== "Torn Paper" &&
     md.cat !== "Typography" &&
     md.cat !== "Brush" &&
     md.cat !== "Plain BG" &&
+    md.cat !== "Background" &&
     md.cat !== "Gradient";
   const stylePool: ("flat" | "both" | "line")[] = ["flat", "both", "flat", "both", "line"];
   const style: "flat" | "both" | "line" = !colours
@@ -30085,12 +34444,20 @@ export function genCand(
   } else if (md.cat === "Calendar") {
     bg = P.bg || "#000000";
     ink = "#ffffff";
+  } else if (md.cat === "Torn Paper") {
+    bg = L.bg || P.bg || "#e2e8f0";
+    ink = "#0f172a";
   } else if (md.cat === "Typography") {
     bg = P.bg || "#ffffff";
     ink = P.ink || "#111111";
   }
   const bgGrad: BgGradientMode =
-    md.cat === "Poster" || md.cat === "Lighting" || md.cat === "Calendar" || md.cat === "Typography"
+    md.cat === "Poster" ||
+    md.cat === "Lighting" ||
+    md.cat === "Calendar" ||
+    md.cat === "Torn Paper" ||
+    md.cat === "Background" ||
+    md.cat === "Typography"
       ? "solid"
       : P.bgGrad || "solid";
   const bgAngle = extremeDiverse && batchIdx >= 0 ? (batchIdx * 47) % 360 : Math.floor(Math.random() * 360);
@@ -30099,6 +34466,8 @@ export function genCand(
     md.cat === "Poster" ||
     md.cat === "Lighting" ||
     md.cat === "Calendar" ||
+    md.cat === "Torn Paper" ||
+    md.cat === "Background" ||
     md.cat === "Typography"
       ? "none"
       : P.bd || "none";
@@ -30113,6 +34482,7 @@ export function genCand(
     md.cat !== "Poster" &&
     md.cat !== "Lighting" &&
     md.cat !== "Calendar" &&
+    md.cat !== "Torn Paper" &&
     md.cat !== "Typography";
   const mxList: PatternState["mx"][] = extremeDiverse
     ? ["none", "mirror", "rot", "double", "none", "mirror"]
@@ -31221,6 +35591,8 @@ export function buildIllustratorSVG(
     modeCat === "Texture" ||
     modeCat === "Poster" ||
     modeCat === "Calendar" ||
+    modeCat === "Torn Paper" ||
+    modeCat === "Shadow" ||
     modeCat === "Typography" ||
     modeCat === "Brush" ||
     modeCat === "Lighting";
@@ -31240,11 +35612,18 @@ export function buildIllustratorSVG(
   const svgRoot = doc.documentElement;
 
   const isPosterMode = Boolean(
-    P.mode && (P.mode.startsWith("poster_") || P.mode.startsWith("cal_") || P.mode.startsWith("typo_"))
+    P.mode &&
+      (P.mode.startsWith("poster_") ||
+        P.mode.startsWith("cal_") ||
+        P.mode.startsWith("torn_") ||
+        P.mode.startsWith("typo_"))
   );
   const isLightingMode = Boolean(P.mode && P.mode.startsWith("light_"));
+  const isShadowMode = Boolean(P.mode && P.mode.startsWith("shadow_"));
   const omitSvgBg =
-    isLightingMode || (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
+    isLightingMode ||
+    isShadowMode ||
+    (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
 
   // Detect the true board background color from the rendered SVG (especially critical for Poster sets
   // where Ref 23/24 use #FFFFFF, Ref 22 uses #09090b, Ref 33 uses #e7e2d8, or Plain BG/Gradient modes
@@ -32307,10 +36686,19 @@ export function buildIllustratorEPS10(
   const doc = parser.parseFromString(flatSvg, "image/svg+xml");
   const root = doc.documentElement;
 
-  const isPosterMode = Boolean(P.mode && (P.mode.startsWith("poster_") || P.mode.startsWith("cal_")));
+  const isPosterMode = Boolean(
+    P.mode &&
+      (P.mode.startsWith("poster_") ||
+        P.mode.startsWith("cal_") ||
+        P.mode.startsWith("torn_") ||
+        P.mode.startsWith("typo_"))
+  );
   const isLightingMode = Boolean(P.mode && P.mode.startsWith("light_"));
+  const isShadowMode = Boolean(P.mode && P.mode.startsWith("shadow_"));
   const omitBg =
-    isLightingMode || (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
+    isLightingMode ||
+    isShadowMode ||
+    (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
 
   // Determine true baseBgHex from the actual ARTBOARD_BG_1 rect in flatSvg so Poster & Plain BG
   // designs with their own board background (like #FFFFFF on Ref 23/24) blend against their true background!
@@ -33750,6 +38138,7 @@ export function buildMicrostockSeoIdentity(row: {
 
   const isPoster = cleanCat === "Poster" || (row.modeId && row.modeId.startsWith("poster_"));
   const isCalendar = cleanCat === "Calendar" || (row.modeId && row.modeId.startsWith("cal_"));
+  const isTornPaper = cleanCat === "Torn Paper" || (row.modeId && row.modeId.startsWith("torn_"));
   const isTypography = cleanCat === "Typography" || (row.modeId && row.modeId.startsWith("typo_"));
   const isBrush = cleanCat === "Brush" || (row.modeId && row.modeId.startsWith("brush_"));
   const isLighting = cleanCat === "Lighting" || (row.modeId && row.modeId.startsWith("light_"));
@@ -33765,7 +38154,37 @@ export function buildMicrostockSeoIdentity(row: {
   let subjectPhrase = "";
   let catCoreKw: string[] = [];
 
-  if (isTypography) {
+  if (isTornPaper) {
+    const tornDesc =
+      row.pcs === "1"
+        ? "Realistic Torn Paper Scrap Banner & Fibrous Deckle Edge Template"
+        : `${pcsNum}-Piece Torn Paper Scraps, Ripped Notebook Sheets & Sticky Notes Set`;
+    subjectPhrase = `${adj} ${cleanModeName} ${tornDesc} with ${accentInfo.label} Paper & White Pulp Rim`;
+    catCoreKw = [
+      "torn paper",
+      "ripped paper",
+      "paper scrap",
+      "torn paper edge",
+      "paper strip",
+      "notebook paper",
+      "squared grid paper",
+      "lined paper",
+      "sticky note",
+      "paper banner",
+      "ragged edge",
+      "deckle edge",
+      "paper hole",
+      "ripped sheet",
+      "paper texture",
+      "school notebook",
+      "memo note",
+      "paper divider",
+      "crumpled paper",
+      "stationery element",
+      "isolated paper scrap",
+      "editable vector torn paper",
+    ];
+  } else if (isTypography) {
     const layoutDesc =
       row.pcs === "1"
         ? "Hand-Lettered Calligraphy Brush Script Hero Typography Quote"

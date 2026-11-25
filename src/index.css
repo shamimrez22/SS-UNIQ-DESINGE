@@ -1036,7 +1036,7 @@ label.sw input:checked + i::after {
   flex: 1;
   position: relative;
   min-height: 0;
-  margin: 14px;
+  margin: 8px;
   border-radius: 12px;
   border: 1px solid var(--bd);
   background-color: var(--vp);
