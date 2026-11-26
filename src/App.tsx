@@ -287,8 +287,7 @@ export default function App() {
     };
   }, []);
 
-  // Debounced save state (NOTE: Testing/previewing on canvas NEVER burns a design into the Zero-Duplicate Ledger!
-  // Only actual exported / downloaded / batch-saved files are locked into the permanent ledger.)
+  // Debounced save state (900ms debounce so rapid clicks never block the main thread with localStorage writes)
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
@@ -296,35 +295,53 @@ export default function App() {
       } catch {
         // ignore
       }
-    }, 350);
+    }, 900);
     return () => clearTimeout(timer);
   }, [P, MP]);
 
-  // History
+  const curModeParams = MP[P.mode];
+
+  // Lightweight History (stores only active mode params ~250B instead of all 750 modes ~150KB, debounced 160ms)
   useEffect(() => {
     if (lockHist.current) {
       lockHist.current = false;
       return;
     }
-    const snap = JSON.stringify({ P, MP });
-    setHist((prev) => {
-      if (hIdx >= 0 && prev[hIdx] === snap) return prev;
-      const next = prev.slice(0, hIdx + 1);
-      next.push(snap);
-      if (next.length > 60) next.shift();
-      setHIdx(next.length - 1);
-      return next;
-    });
+    const timer = setTimeout(() => {
+      const snap = JSON.stringify({ P, modeId: P.mode, modeQ: curModeParams || {} });
+      setHist((prev) => {
+        if (hIdx >= 0 && prev[hIdx] === snap) return prev;
+        const next = prev.slice(0, hIdx + 1);
+        next.push(snap);
+        if (next.length > 50) next.shift();
+        setHIdx(next.length - 1);
+        return next;
+      });
+    }, 160);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [P, MP]);
+  }, [P, curModeParams]);
+
+  // O(1) Mode Lookup Maps (eliminates O(N^2) modes.find and modes.indexOf across 750+ modes)
+  const modeById = useMemo(() => {
+    const map = new Map<string, PatternMode>();
+    for (let i = 0; i < modes.length; i++) map.set(modes[i].id, modes[i]);
+    return map;
+  }, [modes]);
+
+  const modeIdxById = useMemo(() => {
+    const map = new Map<string, number>();
+    for (let i = 0; i < modes.length; i++) map.set(modes[i].id, i);
+    return map;
+  }, [modes]);
 
   const curMode = useMemo(() => {
-    return modes.find((m) => m.id === P.mode) || modes[0];
-  }, [modes, P.mode]);
+    return modeById.get(P.mode) || modes[0];
+  }, [modeById, modes, P.mode]);
 
   const curModeIdx = useMemo(() => {
-    return modes.findIndex((m) => m.id === curMode.id);
-  }, [modes, curMode]);
+    return modeIdxById.get(curMode.id) ?? 0;
+  }, [modeIdxById, curMode]);
 
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -338,7 +355,7 @@ export default function App() {
       renderW: number = T,
       renderH: number = T
     ) => {
-      const mObj = modes.find((x) => x.id === stateP.mode) || modes[0];
+      const mObj = modeById.get(stateP.mode) || modes[0];
       const shadowTransp =
         mObj.cat === "Shadow" &&
         String(stateMP[mObj.id]?.bgMode ?? "transparent") === "transparent";
@@ -433,13 +450,13 @@ export default function App() {
         ""
       )}${gr}</svg>`;
     },
-    [modes]
+    [modeById, modes]
   );
 
   const curSVG = useMemo(() => {
     const shadowTransp =
       curMode.cat === "Shadow" &&
-      String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
+      String(curModeParams?.bgMode ?? "transparent") === "transparent";
     const omitBg =
       curMode.cat === "Poster" ||
       curMode.cat === "Calendar" ||
@@ -449,8 +466,8 @@ export default function App() {
         : curMode.cat === "Shadow"
         ? shadowTransp
         : Boolean(P.transp || curMode.cat === "Brush" || curMode.cat === "Lighting");
-    return buildSVGFor(P, MP, omitBg, P.grid);
-  }, [P, MP, curMode.cat, curMode.id, buildSVGFor]);
+    return buildSVGFor(P, { [curMode.id]: curModeParams || {} }, omitBg, P.grid);
+  }, [P, curModeParams, curMode.cat, curMode.id, buildSVGFor]);
 
   // Use lightweight 50-byte Blob URL instead of megabyte encodeURIComponent data URI for instant paint
   const curBlobUrl = useMemo(() => {
@@ -464,53 +481,10 @@ export default function App() {
     };
   }, [curBlobUrl]);
 
-  // Thumbnail cache
-  const thumbs = useMemo(() => {
-    const map: Record<string, string> = {};
-    modes.forEach((m, idx) => {
-      try {
-        const L = m.look || {};
-        const cols = (L.cols || ["#10b981", "#06b6d4", "#f59e0b", "#ec4899", "#8b5cf6"]).slice();
-        while (cols.length < 5) cols.push(cols[cols.length - 1]);
-        const isBrushOrLight = m.cat === "Brush" || m.cat === "Lighting";
-        const isShadow = m.cat === "Shadow";
-        const cState: PatternState = {
-          ...DEF_STATE,
-          mode: m.id,
-          seed: 11 + idx * 97,
-          bg: isShadow ? "#ffffff" : L.bg || "#0c192c",
-          bg2: mixCol(L.bg || "#0c192c", cols[0], 0.35),
-          bgGrad: "solid",
-          bgAngle: 135,
-          ink: L.ink || "#f8fafc",
-          c0: cols[0],
-          c1: cols[1],
-          c2: cols[2],
-          c3: cols[3],
-          c4: cols[4],
-          ncol: L.ncol || Math.min(5, (L.cols || cols).length),
-          style: L.style || "both",
-          sw: L.sw || 3,
-          bd: "none",
-          mx: "none",
-          transp: isBrushOrLight,
-          safeEdge: false,
-        };
-        const q: Record<string, any> = {};
-        m.params.forEach((p) => {
-          q[p.k] = p.def;
-        });
-        if (isShadow) {
-          q.bgMode = "white";
-        }
-        const svg = buildSVGFor(cState, { [m.id]: q }, isBrushOrLight, false);
-        map[m.id] = svgData(svg);
-      } catch {
-        // ignore
-      }
-    });
-    return map;
-  }, [modes, buildSVGFor]);
+  // Lazy non-blocking thumbnail cache (generates ONLY visible gallery cards in small async idle slices so startup takes 0ms!)
+  const thumbCacheRef = useRef<Record<string, string>>({});
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  const [vaultLimit, setVaultLimit] = useState<number>(24);
 
   // Select a pattern mode
   const selectMode = useCallback(
@@ -554,8 +528,8 @@ export default function App() {
             : "4:3"
           : isShadow
           ? defShadowArch === "linear_fade_overlay" ||
-            defShadowArch === "circle_disc_base" ||
-            defShadowArch === "window_blind_gobo"
+            defShadowArch === "circular_disc_base" ||
+            defShadowArch === "diagonal_gobo_soft"
             ? "1:1"
             : "3:2"
           : isLighting
@@ -1222,12 +1196,12 @@ export default function App() {
       if (!m) return;
       const defArch = String(m.params.find((p) => p.k === "archType")?.def || "oval_contact");
       const defPcs = String(m.params.find((p) => p.k === "pcs")?.def || "1");
-      const defTone = String(m.params.find((p) => p.k === "shadowTone")?.def || "pure_noir");
+      const defTone = String(m.params.find((p) => p.k === "shadowTone")?.def || "pure_black");
       const defBgMode = String(m.params.find((p) => p.k === "bgMode")?.def || "transparent");
       const targetRatio: CanvasRatio =
         defArch === "linear_fade_overlay" ||
-        defArch === "circle_disc_base" ||
-        defArch === "window_blind_gobo"
+        defArch === "circular_disc_base" ||
+        defArch === "diagonal_gobo_soft"
           ? "1:1"
           : "3:2";
       const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
@@ -1296,7 +1270,7 @@ export default function App() {
           : String(
               curQ.shadowTone ||
                 targetSh.params.find((p) => p.k === "shadowTone")?.def ||
-                "pure_noir"
+                "pure_black"
             );
       const nextBg =
         paramKey === "bgMode"
@@ -1308,8 +1282,8 @@ export default function App() {
             );
       const targetRatio: CanvasRatio =
         nextArch === "linear_fade_overlay" ||
-        nextArch === "circle_disc_base" ||
-        nextArch === "window_blind_gobo"
+        nextArch === "circular_disc_base" ||
+        nextArch === "diagonal_gobo_soft"
           ? "1:1"
           : "3:2";
       const d = getRatioDims(Math.max(5200, +P.px || 5200), targetRatio);
@@ -1579,7 +1553,11 @@ export default function App() {
     lockHist.current = true;
     setHIdx(nextIdx);
     setP(snap.P);
-    setMP(snap.MP);
+    if (snap.modeId && snap.modeQ) {
+      setMP((prev) => ({ ...prev, [snap.modeId]: snap.modeQ }));
+    } else if (snap.MP) {
+      setMP(snap.MP);
+    }
   }, [hIdx, hist]);
 
   const redo = useCallback(() => {
@@ -1589,7 +1567,11 @@ export default function App() {
     lockHist.current = true;
     setHIdx(nextIdx);
     setP(snap.P);
-    setMP(snap.MP);
+    if (snap.modeId && snap.modeQ) {
+      setMP((prev) => ({ ...prev, [snap.modeId]: snap.modeQ }));
+    } else if (snap.MP) {
+      setMP(snap.MP);
+    }
   }, [hIdx, hist]);
 
   // Generate 100% unique candidate instantaneously & IMMEDIATELY BURN IT into the permanent localStorage ledger (Hard 1-Time Rule: tested once = NEVER generated again!)
@@ -2226,15 +2208,15 @@ export default function App() {
             curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1"
           );
           const effTone = String(
-            curQ.shadowTone || targetMode.params.find((p) => p.k === "shadowTone")?.def || "pure_noir"
+            curQ.shadowTone || targetMode.params.find((p) => p.k === "shadowTone")?.def || "pure_black"
           );
           const effBgMode = String(
             curQ.bgMode || targetMode.params.find((p) => p.k === "bgMode")?.def || "transparent"
           );
           const shRatio: CanvasRatio =
             effArch === "linear_fade_overlay" ||
-            effArch === "circle_disc_base" ||
-            effArch === "window_blind_gobo"
+            effArch === "circular_disc_base" ||
+            effArch === "diagonal_gobo_soft"
               ? "1:1"
               : "3:2";
           const shDims = getRatioDims(Math.max(5200, +res.testP.px || 5200), shRatio);
@@ -3446,10 +3428,10 @@ export default function App() {
     });
   };
 
-  // Categories (Prioritize Torn Paper, Calendar, Lighting, Poster, Background & Brush at the front of the category bar)
+  // Categories (Prioritize Torn Paper, Shadow, Calendar, Lighting, Poster, Background & Brush at the front of the category bar)
   const categories = useMemo(() => {
     const rawCats = [...new Set(modes.map((m) => m.cat))];
-    const priority = ["Torn Paper", "Calendar", "Poster", "Lighting", "Background", "Plain BG", "Brush", "Fabric"];
+    const priority = ["Torn Paper", "Shadow", "Calendar", "Poster", "Lighting", "Background", "Plain BG", "Brush", "Fabric"];
     const first = priority.filter((c) => rawCats.includes(c));
     const rest = rawCats.filter((c) => !priority.includes(c));
     return ["All", "★ Favourites", ...first, ...rest];
@@ -3468,6 +3450,90 @@ export default function App() {
       return matchCat && matchQ;
     });
   }, [modes, cat, search, favs]);
+
+  // Reset pagination window to 24 whenever category or search filter changes
+  useEffect(() => {
+    setVaultLimit(24);
+  }, [cat, search]);
+
+  const visibleVaultModes = useMemo(() => {
+    return filteredModes.slice(0, vaultLimit);
+  }, [filteredModes, vaultLimit]);
+
+  // Asynchronously generate thumbnails ONLY for currently visible cards in small 2-card non-blocking chunks
+  useEffect(() => {
+    const missing = visibleVaultModes.filter((m) => !thumbCacheRef.current[m.id]);
+    if (missing.length === 0) return;
+    let cancelled = false;
+    let cursor = 0;
+
+    const processNextChunk = () => {
+      if (cancelled) return;
+      const batchUpdates: Record<string, string> = {};
+      const chunkEnd = Math.min(cursor + 2, missing.length);
+      for (; cursor < chunkEnd; cursor++) {
+        const m = missing[cursor];
+        if (thumbCacheRef.current[m.id]) continue;
+        try {
+          const idx = modeIdxById.get(m.id) ?? 0;
+          const L = m.look || {};
+          const cols = (L.cols || ["#10b981", "#06b6d4", "#f59e0b", "#ec4899", "#8b5cf6"]).slice();
+          while (cols.length < 5) cols.push(cols[cols.length - 1]);
+          const isBrushOrLight = m.cat === "Brush" || m.cat === "Lighting";
+          const isShadow = m.cat === "Shadow";
+          const cState: PatternState = {
+            ...DEF_STATE,
+            mode: m.id,
+            seed: 11 + idx * 97,
+            bg: isShadow ? "#ffffff" : L.bg || "#0c192c",
+            bg2: mixCol(L.bg || "#0c192c", cols[0], 0.35),
+            bgGrad: "solid",
+            bgAngle: 135,
+            ink: L.ink || "#f8fafc",
+            c0: cols[0],
+            c1: cols[1],
+            c2: cols[2],
+            c3: cols[3],
+            c4: cols[4],
+            ncol: L.ncol || Math.min(5, (L.cols || cols).length),
+            style: L.style || "both",
+            sw: L.sw || 3,
+            bd: "none",
+            mx: "none",
+            transp: isBrushOrLight,
+            safeEdge: false,
+          };
+          const q: Record<string, any> = {};
+          m.params.forEach((p) => {
+            q[p.k] = p.def;
+          });
+          if (isShadow) {
+            q.bgMode = "white";
+          }
+          const svg = buildSVGFor(cState, { [m.id]: q }, isBrushOrLight, false, 240, 240);
+          const blobUrl = URL.createObjectURL(
+            new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
+          );
+          thumbCacheRef.current[m.id] = blobUrl;
+          batchUpdates[m.id] = blobUrl;
+        } catch {
+          // ignore
+        }
+      }
+      if (!cancelled && Object.keys(batchUpdates).length > 0) {
+        setThumbs((prev) => ({ ...prev, ...batchUpdates }));
+      }
+      if (!cancelled && cursor < missing.length) {
+        timerId = window.setTimeout(processNextChunk, 18);
+      }
+    };
+
+    let timerId = window.setTimeout(processNextChunk, 12);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [visibleVaultModes, buildSVGFor, modeIdxById]);
 
   // Viewport frame dimensions respecting Artboard Aspect Ratio (outDims.w / outDims.h) with EXACT integer tile division (ZERO SIDE-CUT!)
   const frameStyle = useMemo(() => {
@@ -6483,13 +6549,13 @@ export default function App() {
                 <option value="linear_fade_overlay">LINEAR FADE (REF 2)</option>
                 <option value="angled_perspective_cast">ANGLED CAST (REF 3)</option>
                 <option value="floating_wide_bar">FLOATING BAR (REF 4)</option>
-                <option value="curved_paper_arch">CURVED PAPER LIFT</option>
-                <option value="dual_core_ambient">DUAL CORE PEDESTAL</option>
-                <option value="circle_disc_base">ROUND DISC BASE</option>
-                <option value="pinched_center_bow">PINCHED CENTER BOW</option>
+                <option value="curved_page_arch">CURVED PAPER LIFT</option>
+                <option value="double_contact_pedestal">DUAL CORE PEDESTAL</option>
+                <option value="circular_disc_base">ROUND DISC BASE</option>
+                <option value="pinched_bow_shadow">PINCHED CENTER BOW</option>
                 <option value="card_bottom_lip">FLOATING CARD LIP</option>
-                <option value="soft_stage_horizon">STAGE FLOOR HORIZON</option>
-                <option value="window_blind_gobo">WINDOW BLIND GOBO</option>
+                <option value="studio_horizon_vignette">STAGE FLOOR HORIZON</option>
+                <option value="diagonal_gobo_soft">WINDOW BLIND GOBO</option>
                 <option value="multi_shadow_kit">MULTI SHADOW KIT</option>
               </select>
               <select
@@ -6528,9 +6594,9 @@ export default function App() {
                     ? String(
                         curParams.shadowTone ||
                           curMode.params.find((p) => p.k === "shadowTone")?.def ||
-                          "pure_noir"
+                          "pure_black"
                       )
-                    : "pure_noir"
+                    : "pure_black"
                 }
                 onChange={(e) => switchShadowParam("shadowTone", e.target.value)}
                 style={{
@@ -6544,13 +6610,14 @@ export default function App() {
                   background: "var(--pn)",
                   color: "var(--tx)",
                 }}
-                title="SHADOW TONE (PURE NOIR BLACK, COOL SLATE, WARM UMBER, DEEP INDIGO, CHARCOAL)"
+                title="SHADOW TONE (PURE BLACK, CHARCOAL INK, WARM UMBRA, COOL SLATE, DEEP ESPRESSO, NAVY VOID)"
               >
-                <option value="pure_noir">PURE BLACK</option>
+                <option value="pure_black">PURE BLACK</option>
+                <option value="charcoal_ink">CHARCOAL INK</option>
+                <option value="warm_umbra">WARM UMBRA</option>
                 <option value="cool_slate">COOL SLATE</option>
-                <option value="warm_umber">WARM UMBER</option>
-                <option value="deep_indigo">DEEP INDIGO</option>
-                <option value="neutral_charcoal">CHARCOAL</option>
+                <option value="deep_espresso">DEEP ESPRESSO</option>
+                <option value="navy_void">NAVY VOID</option>
               </select>
               <select
                 value={
@@ -6679,7 +6746,18 @@ export default function App() {
             </div>
           </div>
 
-          <div className="vault-grid">
+          <div
+            className="vault-grid"
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              if (
+                filteredModes.length > vaultLimit &&
+                el.scrollTop + el.clientHeight >= el.scrollHeight - 180
+              ) {
+                setVaultLimit((prev) => Math.min(filteredModes.length, prev + 24));
+              }
+            }}
+          >
             {filteredModes.length === 0 ? (
               <div className="empty" style={{ gridColumn: "1 / -1" }}>
                 NO PATTERNS FOUND.
@@ -6687,56 +6765,76 @@ export default function App() {
                 TRY ANOTHER CATEGORY OR SEARCH KEYWORD.
               </div>
             ) : (
-              filteredModes.map((m) => {
-                const idx = modes.indexOf(m);
-                const isFav = favs.has(m.id);
-                const isActive = m.id === P.mode;
-                const u = thumbs[m.id] || "";
-                return (
-                  <div
-                    key={m.id}
-                    className={`pcard ${isActive ? "on" : ""}`}
-                    onClick={() => selectMode(m)}
-                  >
+              <>
+                {visibleVaultModes.map((m) => {
+                  const idx = modeIdxById.get(m.id) ?? 0;
+                  const isFav = favs.has(m.id);
+                  const isActive = m.id === P.mode;
+                  const u = thumbs[m.id] || "";
+                  return (
                     <div
-                      className={`th ${
-                        m.cat === "Brush" || m.cat === "Lighting" ? "checker" : ""
-                      }`}
-                      style={{
-                        backgroundColor:
-                          m.cat === "Brush" || m.cat === "Lighting" ? "#ffffff" : undefined,
-                        backgroundImage: u
-                          ? m.cat === "Brush" || m.cat === "Lighting"
-                            ? `url("${u}"), conic-gradient(#e5e7eb 90deg, #ffffff 90deg 180deg, #e5e7eb 180deg 270deg, #ffffff 270deg)`
-                            : `url("${u}")`
-                          : undefined,
-                        backgroundSize:
-                          m.cat === "Brush" || m.cat === "Lighting"
-                            ? "100% 100%, 14px 14px"
-                            : undefined,
-                        backgroundRepeat:
-                          m.cat === "Brush" || m.cat === "Lighting"
-                            ? "no-repeat, repeat"
-                            : undefined,
-                      }}
-                    />
-                    <span className="no">#{pad2(idx + 1)}</span>
-                    {m.isCustom && <span className="cn">CUSTOM</span>}
-                    <button
-                      type="button"
-                      className={`fv ${isFav ? "on" : ""}`}
-                      title="FAVOURITE PATTERN"
-                      onClick={(e) => toggleFav(m.id, e)}
+                      key={m.id}
+                      className={`pcard ${isActive ? "on" : ""}`}
+                      onClick={() => selectMode(m)}
                     >
-                      {isFav ? "★" : "☆"}
-                    </button>
-                    <div className="meta">
-                      <div className="title">{m.name}</div>
-                      <div className="cat">{m.cat}</div>
+                      <div
+                        className={`th ${
+                          m.cat === "Brush" || m.cat === "Lighting" ? "checker" : ""
+                        }`}
+                        style={{
+                          backgroundColor:
+                            m.cat === "Brush" || m.cat === "Lighting" ? "#ffffff" : undefined,
+                          backgroundImage: u
+                            ? m.cat === "Brush" || m.cat === "Lighting"
+                              ? `url("${u}"), conic-gradient(#e5e7eb 90deg, #ffffff 90deg 180deg, #e5e7eb 180deg 270deg, #ffffff 270deg)`
+                              : `url("${u}")`
+                            : undefined,
+                          backgroundSize:
+                            m.cat === "Brush" || m.cat === "Lighting"
+                              ? "100% 100%, 14px 14px"
+                              : undefined,
+                          backgroundRepeat:
+                            m.cat === "Brush" || m.cat === "Lighting"
+                              ? "no-repeat, repeat"
+                              : undefined,
+                        }}
+                      />
+                      <span className="no">#{pad2(idx + 1)}</span>
+                      {m.isCustom && <span className="cn">CUSTOM</span>}
+                      <button
+                        type="button"
+                        className={`fv ${isFav ? "on" : ""}`}
+                        title="FAVOURITE PATTERN"
+                        onClick={(e) => toggleFav(m.id, e)}
+                      >
+                        {isFav ? "★" : "☆"}
+                      </button>
+                      <div className="meta">
+                        <div className="title">{m.name}</div>
+                        <div className="cat">{m.cat}</div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+                {filteredModes.length > vaultLimit && (
+                  <button
+                    type="button"
+                    className="btn pri"
+                    style={{
+                      gridColumn: "1 / -1",
+                      minHeight: "34px",
+                      fontSize: "10.5px",
+                      fontWeight: 800,
+                      margin: "6px 0 10px",
+                    }}
+                    onClick={() =>
+                      setVaultLimit((prev) => Math.min(filteredModes.length, prev + 36))
+                    }
+                  >
+                    ⬇ SHOW MORE DESIGNS ({visibleVaultModes.length} / {filteredModes.length})
+                  </button>
+                )}
+              </>
             )}
           </div>
         </aside>

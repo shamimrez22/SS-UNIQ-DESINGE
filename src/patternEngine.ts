@@ -33165,8 +33165,8 @@ function emitGaussianSmoothShadowShape(
   const cosA = Math.cos(rad);
   const sinA = Math.sin(rad);
 
-  const layers = 92;
-  const verts = 144;
+  const layers = 64;
+  const verts = 96;
   const densityNorm = Math.max(0.25, Math.min(1.15, densityPct / 85));
   const softNorm = Math.max(0.45, Math.min(1.25, softnessPct / 85));
 
@@ -33197,13 +33197,13 @@ function emitGaussianSmoothShadowShape(
     const locCx = coreShiftX * pull;
     const locCy = coreShiftY * pull;
 
-    // Differential layer opacity following a smooth Gaussian derivative profile
-    let diffOp = (0.0085 + 0.0195 * Math.pow(Math.sin(t * Math.PI), 0.95)) * densityNorm;
+    // Differential layer opacity following a smooth Gaussian derivative profile (scaled for 64 layers)
+    let diffOp = (0.0122 + 0.028 * Math.pow(Math.sin(t * Math.PI), 0.95)) * densityNorm;
     if (shapeProfile === "dual_pedestal" && t > 0.62) {
       // Extra dense contact core for 3D product pedestal
       diffOp *= 1.35;
     }
-    diffOp = Math.max(0.003, Math.min(0.038, diffOp));
+    diffOp = Math.max(0.004, Math.min(0.052, diffOp));
 
     const pts: [number, number][] = [];
     for (let v = 0; v < verts; v++) {
@@ -33254,7 +33254,7 @@ function emitGaussianSmoothShadowShape(
     }
 
     const ptsStr = pts.map((p) => `${sf2(p[0])},${sf2(p[1])}`).join(" ");
-    parts.push(`<polygon points="${ptsStr}" fill="${shadowHex}" fill-opacity="${sf2(diffOp)}"/>`);
+    parts.push(`<polygon points="${ptsStr}" fill="${shadowHex}" fill-opacity="${diffOp.toFixed(4)}"/>`);
   }
 }
 
@@ -35801,7 +35801,7 @@ export function buildIllustratorSVG(
     }
     const totOp = op * fop;
     if (totOp < 0.995) {
-      s += ` opacity="${+totOp.toFixed(3)}"`;
+      s += ` opacity="${+totOp.toFixed(4)}"`;
     }
     return s;
   };
@@ -36951,6 +36951,12 @@ export function buildIllustratorEPS10(
   lines.push("/lj { setlinejoin } bd");
   lines.push("/gs { gsave } bd");
   lines.push("/gr { grestore } bd");
+  lines.push(
+    "/sa { /pvA exch def /pdfmark where { pop [ /ca pvA /CA pvA /BM /Normal /SetTransparency pdfmark } if } bd"
+  );
+  lines.push(
+    "/smul { /pvA exch def /pdfmark where { pop [ /ca pvA /CA pvA /BM /Multiply /SetTransparency pdfmark } if } bd"
+  );
   lines.push("end");
   lines.push("%%EndProlog");
   lines.push("%%BeginSetup");
@@ -37034,6 +37040,9 @@ export function buildIllustratorEPS10(
     );
   };
 
+  let shadowTransmittance = 1.0;
+  let prevShadowBboxW = Infinity;
+
   const emitElement = (el: Element) => {
     const tag = el.tagName.toLowerCase();
     if (tag === "defs" || tag === "parsererror") return;
@@ -37061,6 +37070,7 @@ export function buildIllustratorEPS10(
         const rw = parseFloat(el.getAttribute("width") || String(safeOutW)) || safeOutW;
         const rh = parseFloat(el.getAttribute("height") || String(safeOutH)) || safeOutH;
         if (rw <= 0 || rh <= 0) return;
+
         const rectOps = [
           `${psX(rx)} ${psY(ry + rh)} m`,
           `${psX(rx + rw)} ${psY(ry + rh)} l`,
@@ -37069,6 +37079,7 @@ export function buildIllustratorEPS10(
           "cp",
         ];
         const localBg = getLocalBackdropHex(rx + rw * 0.5);
+        if (isShadowMode) lines.push("1 smul");
         emitSmoothGradientFill(
           rectOps,
           gSpec,
@@ -37077,6 +37088,7 @@ export function buildIllustratorEPS10(
           op,
           false
         );
+        if (isShadowMode) lines.push("1 sa");
         return;
       }
     }
@@ -37284,9 +37296,22 @@ export function buildIllustratorEPS10(
         }
       }
     } else if (rawFill !== "none" && !rawFill.startsWith("url(")) {
-      const [rr, gg, bb] = hexToPsRgb(rawFill, elemBgHex, op);
       const fillOp = frule === "evenodd" ? "ef" : "f";
-      pushWrappedOps(`${rr} ${gg} ${bb} rg np`, pathOps, fillOp);
+      if (isShadowMode && op < 0.995) {
+        // Each 92-layer Gaussian shadow stack shrinks monotonically in bbox.w from outer ring to inner core.
+        // When bbox.w jumps up, a new shadow element in a multi-shadow kit has started -> reset transmittance!
+        if (bbox.w > prevShadowBboxW * 1.15) {
+          shadowTransmittance = 1.0;
+        }
+        prevShadowBboxW = bbox.w;
+        shadowTransmittance *= 1 - op;
+        const cumOp = clamp01(1 - shadowTransmittance);
+        const [rr, gg, bb] = hexToPsRgb(rawFill, "#FFFFFF", cumOp);
+        pushWrappedOps(`gs 1 smul ${rr} ${gg} ${bb} rg np`, pathOps, `${fillOp} gr`);
+      } else {
+        const [rr, gg, bb] = hexToPsRgb(rawFill, elemBgHex, op);
+        pushWrappedOps(`${rr} ${gg} ${bb} rg np`, pathOps, fillOp);
+      }
     }
 
     let resolvedStroke = rawStroke;
