@@ -44,6 +44,7 @@ import {
   getLifetimeUniqueTotal,
   buildIllustratorSVG,
   buildIllustratorEPS10,
+  buildIllustratorAI,
   applyStudioMicroGrain,
   ensureJpgOver5MB,
   ensurePngMicrostockReady,
@@ -2606,6 +2607,62 @@ export default function App() {
     );
   }, [expRep, buildSVGFor, P, MP, curMode, outDims]);
 
+  // Direct Native Adobe Illustrator .AI (PDF 1.4 True Live-Alpha Transparency Vector — ZERO White Halo!)
+  const exportAI = useCallback(() => {
+    const rep = expRep();
+    const isPoster =
+      curMode.cat === "Poster" ||
+      curMode.cat === "Calendar" ||
+      curMode.cat === "Typography" ||
+      curMode.cat === "Torn Paper";
+    const isLighting = curMode.cat === "Lighting";
+    const isShadow = curMode.cat === "Shadow";
+    const shadowTransp =
+      isShadow && String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
+    const omitBg = isPoster
+      ? false
+      : isShadow
+      ? shadowTransp
+      : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+    const exportP = isPoster
+      ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
+      : { ...P, transp: omitBg };
+    const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+    const aiContent = buildIllustratorAI(
+      cleanTileSvg,
+      exportP,
+      rep,
+      outDims.w,
+      outDims.h
+    );
+    const blob = new Blob([aiContent], { type: "application/illustrator" });
+    const seoMeta = buildMicrostockSeoIdentity({
+      modeId: curMode.id,
+      modeName: curMode.name,
+      cat: curMode.cat,
+      seed: P.seed,
+      ratio: P.ratio || "1:1",
+      bgGrad: P.bgGrad,
+      bd: P.bd,
+      w: outDims.w,
+      h: outDims.h,
+      pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+      bgHex: exportP.bg,
+      c0Hex: exportP.c0,
+      style: exportP.style,
+      idx: 0,
+    });
+    const fname = `${seoMeta.fileSlug}.ai`;
+    downloadBlob(blob, fname);
+    inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
+    const h = computeDesignHash(P, MP[P.mode] || {});
+    const total = registerDesignHash(h);
+    setUniqCount(total);
+    setExportStatus(
+      `EXPORTED & LOCKED ILLUSTRATOR .AI #${total} (${outDims.w}×${outDims.h} PX · 100% TRUE LIVE TRANSPARENT ALPHA · ZERO WHITE HALO)`
+    );
+  }, [expRep, buildSVGFor, P, MP, curMode, outDims]);
+
   // High-Res JPG (Guaranteed 5.8 MB – 9.5 MB, 30+ MP, 300 DPI) & PNG Export
   const exportRaster = useCallback(
     async (fmt: "jpeg" | "png") => {
@@ -2680,7 +2737,8 @@ export default function App() {
         ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
         : { ...P, transp: omitBg };
       const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
-      const eps10Content = buildIllustratorEPS10(cleanTileSvg, exportP, rep, W, H);
+      const flatSvg = buildIllustratorSVG(cleanTileSvg, exportP, rep, W, H);
+      const eps10Content = buildIllustratorEPS10(cleanTileSvg, exportP, rep, W, H, flatSvg);
       const epsBlob = new Blob([eps10Content], { type: "application/postscript;charset=utf-8" });
       const seoMeta = buildMicrostockSeoIdentity({
         modeId: curMode.id,
@@ -2701,7 +2759,11 @@ export default function App() {
       const baseName = seoMeta.fileSlug;
       const jpgName = `${baseName}.jpg`;
       const epsName = `${baseName}.eps`;
-      const csvSingle = buildMicrostockCSV([
+      const zipFiles: { path: string; blob: Blob }[] = [
+        { path: jpgName, blob: jpgBlob },
+        { path: epsName, blob: epsBlob },
+      ];
+      const metaRows: MicrostockMetaRow[] = [
         {
           filename: epsName,
           title: seoMeta.title,
@@ -2732,13 +2794,70 @@ export default function App() {
           h: H,
           idx: 0,
         },
-      ]);
+      ];
+      if (isShadow) {
+        const aiContent = buildIllustratorAI(cleanTileSvg, exportP, rep, W, H, flatSvg);
+        const aiBlob = new Blob([aiContent], { type: "application/illustrator" });
+        const svgBlob = new Blob([flatSvg], { type: "image/svg+xml;charset=utf-8" });
+        const { blob: pngBlob } = await renderHighResRasterBlob(P, MP, "png");
+        const aiName = `${baseName}.ai`;
+        const svgName = `${baseName}.svg`;
+        const pngName = `${baseName}.png`;
+        zipFiles.unshift({ path: aiName, blob: aiBlob });
+        zipFiles.push({ path: svgName, blob: svgBlob });
+        zipFiles.push({ path: pngName, blob: pngBlob });
+        metaRows.unshift({
+          filename: aiName,
+          title: seoMeta.title,
+          keywords: seoMeta.keywords,
+          modeId: curMode.id,
+          modeName: curMode.name,
+          cat: curMode.cat,
+          seed: P.seed,
+          ratio: P.ratio || "1:1",
+          bgGrad: P.bgGrad,
+          bd: P.bd,
+          w: W,
+          h: H,
+          idx: 0,
+        });
+        metaRows.push(
+          {
+            filename: svgName,
+            title: seoMeta.title,
+            keywords: seoMeta.keywords,
+            modeId: curMode.id,
+            modeName: curMode.name,
+            cat: curMode.cat,
+            seed: P.seed,
+            ratio: P.ratio || "1:1",
+            bgGrad: P.bgGrad,
+            bd: P.bd,
+            w: W,
+            h: H,
+            idx: 0,
+          },
+          {
+            filename: pngName,
+            title: seoMeta.title,
+            keywords: seoMeta.keywords,
+            modeId: curMode.id,
+            modeName: curMode.name,
+            cat: curMode.cat,
+            seed: P.seed,
+            ratio: P.ratio || "1:1",
+            bgGrad: P.bgGrad,
+            bd: P.bd,
+            w: W,
+            h: H,
+            idx: 0,
+          }
+        );
+      }
+      const csvSingle = buildMicrostockCSV(metaRows);
       const csvBlob = new Blob([csvSingle], { type: "text/csv;charset=utf-8" });
-      const zipBlob = await createZipArchiveBlob([
-        { path: jpgName, blob: jpgBlob },
-        { path: epsName, blob: epsBlob },
-        { path: "MICROSTOCK_UPLOAD_METADATA.csv", blob: csvBlob },
-      ]);
+      zipFiles.push({ path: "MICROSTOCK_UPLOAD_METADATA.csv", blob: csvBlob });
+      const zipBlob = await createZipArchiveBlob(zipFiles);
       downloadBlob(zipBlob, `${baseName}.zip`);
       const verified = await inspectMicrostockFileBinary(jpgBlob, jpgName);
       setLastVerifiedFile(verified);
@@ -2746,7 +2865,9 @@ export default function App() {
       const total = registerDesignHash(h);
       setUniqCount(total);
       setExportStatus(
-        `DOWNLOADED ZIP PACK #${total} (${W}×${H} PX · ${verified.megapixels} MP · ${verified.sizeMb} MB JPG + EPS 10) — UPLOAD THIS .ZIP TO CHATGPT / FREEPIK!`
+        isShadow
+          ? `DOWNLOADED TRANSPARENT SHADOW ZIP PACK #${total} (${W}×${H} PX · LIVE-ALPHA .AI + .SVG + .PNG + .EPS + .JPG)`
+          : `DOWNLOADED ZIP PACK #${total} (${W}×${H} PX · ${verified.megapixels} MP · ${verified.sizeMb} MB JPG + EPS 10) — UPLOAD THIS .ZIP TO FREEPIK / MICROSTOCK!`
       );
     } finally {
       busyRef.current = false;
@@ -3200,6 +3321,55 @@ export default function App() {
 
             csvRows.push({
               filename: svgFilename,
+              title: seoMeta.title,
+              keywords: seoMeta.keywords,
+              modeId: targetMode.id,
+              modeName: targetMode.name,
+              cat: targetMode.cat,
+              seed: workingP.seed,
+              ratio: workingP.ratio || "1:1",
+              bgGrad: workingP.bgGrad,
+              bd: workingP.bd,
+              w: dims.w,
+              h: dims.h,
+              pcs: String(curQForMeta.pcs || ""),
+              bgHex: workingP.bg,
+              c0Hex: workingP.c0,
+              style: workingP.style,
+              idx,
+            });
+          }
+
+          // For Shadow designs, also emit Native Adobe Illustrator .AI (PDF 1.4 True Live-Alpha Transparency — ZERO White Halo!)
+          if (targetMode.cat === "Shadow" && (needEps || needSvg)) {
+            const fullAi = buildIllustratorAI(
+              cleanTileForVec,
+              { ...workingP, transp: omitBg },
+              rep,
+              dims.w,
+              dims.h,
+              sharedFlatSvg
+            );
+            const aiBlob = new Blob([fullAi], { type: "application/illustrator" });
+            const aiFilename = `${identicalBaseName}.ai`;
+
+            if (dirHandle) {
+              const fh = await dirHandle.getFileHandle(aiFilename, { create: true });
+              const wr = await fh.createWritable();
+              await wr.write(aiBlob);
+              await wr.close();
+            } else {
+              const meta = await computeBlobCrc32AndSize(aiBlob);
+              zipEntries.push({
+                path: aiFilename,
+                blob: aiBlob,
+                crc: meta.crc,
+                size: meta.size,
+              });
+            }
+
+            csvRows.push({
+              filename: aiFilename,
               title: seoMeta.title,
               keywords: seoMeta.keywords,
               modeId: targetMode.id,
@@ -3900,50 +4070,112 @@ export default function App() {
         {/* DIRECT EXPORT & TOOLS DECK (100% FIXED POSITION, NEVER JUMPS OR OVERFLOWS) */}
         <div className="header-right">
           <div className="export-pill-deck">
-            <button
-              className="btn pri"
-              onClick={exportEPS10}
-              title="DIRECT DOWNLOAD ADOBE ILLUSTRATOR EPS 10 (.EPS) FOR INSTANT MICROSTOCK UPLOAD (E)"
-              style={{
-                background: "linear-gradient(135deg, #059669, #10b981)",
-                borderColor: "#10b981",
-              }}
-            >
-              ⬇ EPS 10
-            </button>
-            <button
-              className="btn pri"
-              onClick={exportSVG}
-              title="DOWNLOAD ADOBE ILLUSTRATOR AUTO-ARTBOARD VECTOR SVG (S)"
-            >
-              ⬇ SVG
-            </button>
-            <button
-              className="btn"
-              onClick={() => exportRaster("jpeg")}
-              title="DOWNLOAD ULTRA-HD 30+ MP (5.8–9.5MB · 300 DPI) MICROSTOCK JPG (J)"
-              style={{ borderColor: "#f59e0b", color: "#fbbf24" }}
-            >
-              ⬇ JPG (5–10MB)
-            </button>
-            <button
-              className="btn pri"
-              onClick={exportSingleMicrostockZip}
-              title="DOWNLOAD .ZIP (JPG + EPS 10) — UPLOAD THIS .ZIP TO CHATGPT OR FREEPIK SO CHATGPT DOES NOT DOWNSCALE JPG TO 2048×1152!"
-              style={{
-                background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-                borderColor: "#38bdf8",
-              }}
-            >
-              ⬇ ZIP (JPG+EPS)
-            </button>
-            <button
-              className="btn"
-              onClick={() => exportRaster("png")}
-              title="DOWNLOAD HIGH-RES 30+ MP PNG"
-            >
-              PNG
-            </button>
+            {curMode.cat === "Shadow" ? (
+              <>
+                <button
+                  className="btn pri"
+                  onClick={exportAI}
+                  title="DOWNLOAD NATIVE ADOBE ILLUSTRATOR .AI (100% TRUE LIVE TRANSPARENT ALPHA · ZERO WHITE HALO ON ANY BACKGROUND)"
+                  style={{
+                    background: "linear-gradient(135deg, #059669, #10b981)",
+                    borderColor: "#10b981",
+                  }}
+                >
+                  ⬇ AI (TRANSPARENT)
+                </button>
+                <button
+                  className="btn pri"
+                  onClick={exportSVG}
+                  title="DOWNLOAD ADOBE ILLUSTRATOR VECTOR .SVG (100% LIVE TRANSPARENT ALPHA · ZERO WHITE HALO)"
+                >
+                  ⬇ SVG (TRANSPARENT)
+                </button>
+                <button
+                  className="btn"
+                  onClick={exportEPS10}
+                  title="DOWNLOAD LEGACY POSTSCRIPT EPS 10 (.EPS)"
+                >
+                  ⬇ EPS 10
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => exportRaster("png")}
+                  title="DOWNLOAD ULTRA-HD 30+ MP TRANSPARENT PNG"
+                  style={{ borderColor: "#38bdf8", color: "#38bdf8" }}
+                >
+                  ⬇ PNG (TRANSPARENT)
+                </button>
+                <button
+                  className="btn pri"
+                  onClick={exportSingleMicrostockZip}
+                  title="DOWNLOAD FULL TRANSPARENT SHADOW .ZIP (.AI + .SVG + .PNG + .EPS + .JPG)"
+                  style={{
+                    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
+                    borderColor: "#38bdf8",
+                  }}
+                >
+                  ⬇ ZIP (AI+SVG+PNG)
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="btn pri"
+                  onClick={exportEPS10}
+                  title="DIRECT DOWNLOAD ADOBE ILLUSTRATOR EPS 10 (.EPS) FOR INSTANT MICROSTOCK UPLOAD (E)"
+                  style={{
+                    background: "linear-gradient(135deg, #059669, #10b981)",
+                    borderColor: "#10b981",
+                  }}
+                >
+                  ⬇ EPS 10
+                </button>
+                <button
+                  className="btn pri"
+                  onClick={exportAI}
+                  title="DOWNLOAD NATIVE ADOBE ILLUSTRATOR .AI (PDF 1.4 TRUE LIVE ALPHA TRANSPARENCY · ZERO WHITE HALO)"
+                  style={{
+                    background: "linear-gradient(135deg, #0f766e, #14b8a6)",
+                    borderColor: "#14b8a6",
+                  }}
+                >
+                  ⬇ AI (TRANSPARENT)
+                </button>
+                <button
+                  className="btn pri"
+                  onClick={exportSVG}
+                  title="DOWNLOAD ADOBE ILLUSTRATOR AUTO-ARTBOARD VECTOR SVG (S)"
+                >
+                  ⬇ SVG
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => exportRaster("jpeg")}
+                  title="DOWNLOAD ULTRA-HD 30+ MP (5.8–9.5MB · 300 DPI) MICROSTOCK JPG (J)"
+                  style={{ borderColor: "#f59e0b", color: "#fbbf24" }}
+                >
+                  ⬇ JPG (5–10MB)
+                </button>
+                <button
+                  className="btn pri"
+                  onClick={exportSingleMicrostockZip}
+                  title="DOWNLOAD .ZIP (JPG + EPS 10) FOR INSTANT MICROSTOCK UPLOAD"
+                  style={{
+                    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
+                    borderColor: "#38bdf8",
+                  }}
+                >
+                  ⬇ ZIP (JPG+EPS)
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => exportRaster("png")}
+                  title="DOWNLOAD HIGH-RES 30+ MP PNG"
+                >
+                  PNG
+                </button>
+              </>
+            )}
             <button
               className="btn"
               onClick={() => verifyInputRef.current?.click()}
@@ -5761,6 +5993,19 @@ export default function App() {
                   </div>
                   <button
                     className="btn pri"
+                    style={{
+                      width: "100%",
+                      marginTop: "8px",
+                      justifyContent: "center",
+                      background: "linear-gradient(135deg, #059669, #10b981)",
+                      borderColor: "#10b981",
+                    }}
+                    onClick={exportAI}
+                  >
+                    ⬇ DOWNLOAD ILLUSTRATOR .AI (100% LIVE TRANSPARENT · {outDims.w}×{outDims.h} PX)
+                  </button>
+                  <button
+                    className="btn pri"
                     style={{ width: "100%", marginTop: "8px", justifyContent: "center" }}
                     onClick={exportSVG}
                   >
@@ -5772,8 +6017,8 @@ export default function App() {
                       width: "100%",
                       marginTop: "8px",
                       justifyContent: "center",
-                      background: "linear-gradient(135deg, #059669, #10b981)",
-                      borderColor: "#10b981",
+                      background: "linear-gradient(135deg, #0f766e, #14b8a6)",
+                      borderColor: "#14b8a6",
                     }}
                     onClick={exportEPS10}
                   >
@@ -6668,6 +6913,36 @@ export default function App() {
                 title="EVERY CLICK GENERATES A 100% UNIQUE ULTRA-SMOOTH TRANSPARENT VECTOR SHADOW (ZERO BANDING · ZERO CRACKS)"
               >
                 🎲 NEW SHADOW
+              </button>
+              <button
+                type="button"
+                className="btn pri"
+                style={{
+                  minHeight: "24px",
+                  padding: "2px 8px",
+                  fontSize: "9.5px",
+                  background: "linear-gradient(135deg, #059669, #10b981)",
+                  borderColor: "#10b981",
+                }}
+                onClick={exportAI}
+                title="DOWNLOAD NATIVE ADOBE ILLUSTRATOR .AI (100% TRUE LIVE TRANSPARENT ALPHA · ZERO WHITE HALO ON ANY BACKGROUND)"
+              >
+                ⬇ AI (TRANSPARENT)
+              </button>
+              <button
+                type="button"
+                className="btn"
+                style={{
+                  minHeight: "24px",
+                  padding: "2px 7px",
+                  fontSize: "9.5px",
+                  borderColor: "#38bdf8",
+                  color: "#38bdf8",
+                }}
+                onClick={exportSVG}
+                title="DOWNLOAD ILLUSTRATOR VECTOR .SVG (100% TRUE LIVE TRANSPARENT ALPHA)"
+              >
+                ⬇ SVG
               </button>
             </div>
           </div>

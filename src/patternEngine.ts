@@ -23408,6 +23408,56 @@ function drawCalendarHeaderArt(
   }
 }
 
+// Exact vector text width measurement (mirrors drawPosterVectorTextString 1:1)
+function measurePosterVectorTextWidth(
+  text: string,
+  charH: number,
+  aspect: number,
+  weight: "regular" | "bold" | "wide"
+): number {
+  const str = text.toUpperCase();
+  const scY = charH / 14;
+  const scX = (scY / Math.max(0.42, aspect)) * (weight === "bold" ? 1.06 : 0.96);
+  const tracking = weight === "wide" ? 7.2 : weight === "bold" ? 2.4 : 3.2;
+  const charAdv = (ch: string) => {
+    if (ch === " ") return weight === "wide" ? 9.5 : 5.8;
+    if (ch === "I" || ch === "|" || ch === "!" || ch === "." || ch === ":" || ch === ",") return 4.6;
+    if (ch === "M" || ch === "W") return 10.4;
+    return 9.4;
+  };
+  let totalUnits = 0;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    totalUnits += charAdv(ch) + (ch === " " ? 0 : tracking);
+  }
+  if (str.length > 0 && str[str.length - 1] !== " ") totalUnits -= tracking;
+  return totalUnits * scX;
+}
+
+function fitPosterTextHeight(
+  text: string,
+  desiredH: number,
+  maxW: number,
+  aspect: number,
+  weight: "regular" | "bold" | "wide"
+): number {
+  const w = measurePosterVectorTextWidth(text, desiredH, aspect, weight);
+  if (w <= maxW || w <= 0.01) return desiredH;
+  return Math.max(5, desiredH * (maxW / w));
+}
+
+function ensureCalTextReadable(fgHex: string, bgHex: string, minLumDiff = 82): string {
+  const bgL = lumH(bgHex);
+  const fgL = lumH(fgHex);
+  if (Math.abs(fgL - bgL) >= minLumDiff) return fgHex;
+  if (bgL > 135) {
+    const darkened = mixCol(fgHex, "#0f172a", 0.72);
+    return Math.abs(lumH(darkened) - bgL) >= minLumDiff ? darkened : "#0f172a";
+  }
+  const lightened = mixCol(fgHex, "#ffffff", 0.76);
+  return Math.abs(lumH(lightened) - bgL) >= minLumDiff ? lightened : "#ffffff";
+}
+
 // 16 Distinct Commercial Microstock Hero Top-Header & Sheet Corner Designs
 // Includes the 4 exact user reference sample styles (styles 0, 1, 2, 3) plus 12 more ultra-unique headers!
 function drawCalendarSheetHeroTopHeader(
@@ -23453,25 +23503,25 @@ function drawCalendarSheetHeroTopHeader(
   const s = ((styleIdx % 16) + 16) % 16;
 
   if (s === 0) {
-    // SAMPLE 1 (image_b440cdb6.png): Sweeping Top-Left & Bottom-Right Curved Corner Wave Ribbons
-    // + Giant Centered Coral-Red Year + Wide-Tracked "C A L E N D A R" Subtitle
+    // SAMPLE 1: Sweeping Top-Left & Bottom-Right Curved Corner Wave Ribbons
+    // Keep top-left corner waves strictly within left 34% so centered year has 100% clear breathing room!
     const tlOuter: [number, number][] = [[sheetX, sheetY]];
     for (let k = 0; k <= 32; k++) {
       const t = k / 32;
-      const px = sheetX + sheetW * 0.56 * (1 - t);
-      const py = sheetY + topBannerH * 0.96 * Math.pow(t, 1.45);
+      const px = sheetX + sheetW * 0.34 * (1 - t);
+      const py = sheetY + topBannerH * 0.94 * Math.pow(t, 1.45);
       tlOuter.push([px, py]);
     }
-    clipBanner(tlOuter, accent2); // Golden amber inner wave
+    clipBanner(tlOuter, accent2);
 
     const tlInner: [number, number][] = [[sheetX, sheetY]];
     for (let k = 0; k <= 32; k++) {
       const t = k / 32;
-      const px = sheetX + sheetW * 0.42 * (1 - t);
-      const py = sheetY + topBannerH * 0.68 * Math.pow(t, 1.55);
+      const px = sheetX + sheetW * 0.25 * (1 - t);
+      const py = sheetY + topBannerH * 0.66 * Math.pow(t, 1.55);
       tlInner.push([px, py]);
     }
-    clipBanner(tlInner, accent1); // Deep orange-red outer corner wave
+    clipBanner(tlInner, accent1);
 
     // Matching Bottom-Right Corner Dual Wave Ribbons strictly inside bottom margin
     const brOuter: [number, number][] = [[sheetX + sheetW, sheetY + sheetH]];
@@ -23492,44 +23542,43 @@ function drawCalendarSheetHeroTopHeader(
     }
     clipSheet(brInner, accent1);
 
-    // Giant Centered Coral-Red Year + Wide-Tracked C A L E N D A R
-    const yrH = topBannerH * 0.52;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.5, sheetW * 0.44, aspect, "bold");
+    const yrCol = ensureCalTextReadable(accent1, cardBg, 85);
     parts.push(
       drawPosterVectorTextString(
         yearStr,
         cx,
-        sheetY + topBannerH * 0.17,
+        sheetY + topBannerH * 0.16 + (topBannerH * 0.5 - yrH) * 0.5,
         yrH,
         aspect,
         "bold",
-        accent1,
+        yrCol,
         "center"
       )
     );
-    const subH = topBannerH * 0.095;
+    const subStr = "C   A   L   E   N   D   A   R";
+    const subH = fitPosterTextHeight(subStr, topBannerH * 0.095, sheetW * 0.46, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
-        "C   A   L   E   N   D   A   R",
+        subStr,
         cx,
         sheetY + topBannerH * 0.79,
         subH,
         aspect,
         "bold",
-        textCol,
+        ensureCalTextReadable(textCol, cardBg, 95),
         "center"
       )
     );
   } else if (s === 1) {
-    // SAMPLE 2 (image_1d87db8c.png): Full-Width 3D Overlapping Crimson/Ruby Wave Top Banner
-    // + Giant Crisp White Centered Year
-    const baseCol = lumH(headerBg) < 160 ? headerBg : "#7f0909";
+    // SAMPLE 2: Full-Width 3D Overlapping Crimson/Ruby Wave Top Banner + Giant Crisp White Centered Year
+    const baseCol = lumH(headerBg) < 105 ? headerBg : mixCol(headerBg, "#450a0a", 0.72);
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
         topBannerH
       )}" fill="${baseCol}"/>`
     );
 
-    // 4 overlapping sweeping 3D translucent/layered crimson & scarlet wave ribbons
     const w1: [number, number][] = [[sheetX, sheetY]];
     for (let k = 0; k <= 32; k++) {
       const t = k / 32;
@@ -23539,7 +23588,7 @@ function drawCalendarSheetHeroTopHeader(
       ]);
     }
     w1.push([sheetX + sheetW, sheetY]);
-    clipBanner(w1, mixCol(baseCol, accent1, 0.55));
+    clipBanner(w1, mixCol(baseCol, accent1, 0.42));
 
     const w2: [number, number][] = [[sheetX, sheetY + topBannerH]];
     for (let k = 0; k <= 32; k++) {
@@ -23550,7 +23599,7 @@ function drawCalendarSheetHeroTopHeader(
       ]);
     }
     w2.push([sheetX + sheetW, sheetY + topBannerH]);
-    clipBanner(w2, mixCol(baseCol, "#ff1e1e", 0.45));
+    clipBanner(w2, mixCol(baseCol, "#b91c1c", 0.45));
 
     const w3: [number, number][] = [[sheetX, sheetY + topBannerH]];
     for (let k = 0; k <= 32; k++) {
@@ -23563,13 +23612,12 @@ function drawCalendarSheetHeroTopHeader(
     w3.push([sheetX + sheetW, sheetY + topBannerH]);
     clipBanner(w3, mixCol(baseCol, "#2b0202", 0.52));
 
-    // Giant Crisp White Centered Year
-    const yrH = topBannerH * 0.56;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.54, sheetW * 0.76, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         yearStr,
         cx,
-        sheetY + (topBannerH - yrH) * 0.46,
+        sheetY + (topBannerH - yrH) * 0.48,
         yrH,
         aspect,
         "bold",
@@ -23578,11 +23626,11 @@ function drawCalendarSheetHeroTopHeader(
       )
     );
   } else if (s === 2) {
-    // SAMPLE 3 (image_4bc79b84.png): Giant Top Year with Faded Vertical Mirror Reflection directly below baseline
-    const yrH = topBannerH * 0.54;
+    // SAMPLE 3: Giant Top Year with Faded Vertical Mirror Reflection directly below baseline
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.52, sheetW * 0.76, aspect, "bold");
+    const yrW = measurePosterVectorTextWidth(yearStr, yrH, aspect, "bold");
     const yrY = sheetY + topBannerH * 0.12;
-    const yrCol = accent1;
-    // Multi-slice vertical mirror fade effect for 100% vector EPS compatibility
+    const yrCol = ensureCalTextReadable(accent1, cardBg, 85);
     const reflectBaseCol = mixCol(cardBg, yrCol, 0.24);
     parts.push(
       drawMirroredPosterVectorTextString(
@@ -23590,27 +23638,26 @@ function drawCalendarSheetHeroTopHeader(
         cx,
         yrY + yrH + 3,
         yrH,
-        yrH * 0.58,
+        yrH * 0.56,
         aspect,
         "bold",
         reflectBaseCol,
         "center"
       )
     );
-    // Cover lower half of reflection with soft stepped strips of cardBg so it fades smoothly into white
     const fadeTop = yrY + yrH + 3 + yrH * 0.16;
     const fadeH = yrH * 0.44;
+    const fadeW = Math.min(sheetW - 24, Math.max(sheetW * 0.56, yrW + 32));
     for (let st = 0; st < 6; st++) {
       const sy = fadeTop + (st / 6) * fadeH;
       const sh = fadeH / 6 + 0.8;
       const op = 0.22 + (st / 5) * 0.78;
       parts.push(
-        `<rect x="${f1(cx - sheetW * 0.28)}" y="${f1(sy)}" width="${f1(
-          sheetW * 0.56
-        )}" height="${f1(sh)}" fill="${cardBg}" fill-opacity="${f1(op)}"/>`
+        `<rect x="${f1(cx - fadeW * 0.5)}" y="${f1(sy)}" width="${f1(fadeW)}" height="${f1(
+          sh
+        )}" fill="${cardBg}" fill-opacity="${f1(op)}"/>`
       );
     }
-    // Crisp primary giant year on top
     parts.push(
       drawPosterVectorTextString(
         yearStr,
@@ -23624,15 +23671,16 @@ function drawCalendarSheetHeroTopHeader(
       )
     );
   } else if (s === 3) {
-    // SAMPLE 4 (image_7fb5e8d3.png): Giant Centered Emerald/Accent Year with Multi-Layer 3D Diagonal Extruded Drop Shadow
-    const yrH = topBannerH * 0.56;
-    const yrY = sheetY + topBannerH * 0.18;
+    // SAMPLE 4: Giant Centered Accent Year with Multi-Layer 3D Diagonal Extruded Drop Shadow
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.54, sheetW * 0.74, aspect, "bold");
+    const yrY = sheetY + (topBannerH - yrH) * 0.44;
+    const yrCol = ensureCalTextReadable(accent1, cardBg, 85);
     const shadowSteps = 8;
     for (let st = shadowSteps; st >= 1; st--) {
-      const dx = st * 1.65;
-      const dy = st * 1.45;
+      const dx = st * 1.55;
+      const dy = st * 1.35;
       const t = st / shadowSteps;
-      const sCol = mixCol(cardBg, accent1, 0.28 * (1 - t * 0.65));
+      const sCol = mixCol(cardBg, yrCol, 0.28 * (1 - t * 0.65));
       parts.push(
         drawPosterVectorTextString(
           yearStr,
@@ -23654,50 +23702,54 @@ function drawCalendarSheetHeroTopHeader(
         yrH,
         aspect,
         "bold",
-        accent1,
+        yrCol,
         "center"
       )
     );
   } else if (s === 4) {
     // STYLE 5: Bauhaus Geometric Split Arch, Rising Sun Circle & Bold Left Year Block
+    // Keep right graphic block strictly inside right 36% so left text NEVER collides with arch!
+    const banBg = lumH(headerBg) < 120 ? headerBg : "#1e293b";
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
         topBannerH
-      )}" fill="${headerBg}"/>`
+      )}" fill="${banBg}"/>`
     );
-    const rightW = sheetW * 0.42;
+    const rightW = sheetW * 0.34;
     parts.push(
       `<rect x="${f1(sheetX + sheetW - rightW)}" y="${f1(sheetY)}" width="${f1(
         rightW
       )}" height="${f1(topBannerH)}" fill="${accent1}"/>`
     );
-    const rArch = topBannerH * 0.82;
+    const rArch = Math.min(topBannerH * 0.58, sheetW * 0.12);
+    const archCx = sheetX + sheetW - rightW * 0.72;
     const arch: [number, number][] = [];
     for (let k = 0; k <= 28; k++) {
       const a = (k / 28) * Math.PI;
       arch.push([
-        sheetX + sheetW - rightW + Math.cos(a) * rArch,
+        archCx + Math.cos(a) * rArch,
         sheetY + topBannerH - Math.sin(a) * rArch,
       ]);
     }
     clipBanner(arch, accent2);
 
-    const rSun = topBannerH * 0.34;
+    const rSun = Math.min(topBannerH * 0.28, sheetW * 0.06);
     const sun: [number, number][] = [];
     for (let k = 0; k < 28; k++) {
       const a = (k / 28) * Math.PI * 2;
       sun.push([
-        sheetX + sheetW * 0.82 + Math.cos(a) * rSun,
-        sheetY + topBannerH * 0.45 + Math.sin(a) * rSun,
+        sheetX + sheetW * 0.87 + Math.cos(a) * rSun,
+        sheetY + topBannerH * 0.38 + Math.sin(a) * rSun,
       ]);
     }
     clipBanner(sun, accent3);
 
-    const yrH = topBannerH * 0.52;
+    const leftSafeW = sheetW * 0.52;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.48, leftSafeW, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         yearStr,
-        sheetX + 34,
+        sheetX + 32,
         sheetY + topBannerH * 0.14,
         yrH,
         aspect,
@@ -23706,20 +23758,21 @@ function drawCalendarSheetHeroTopHeader(
         "left"
       )
     );
+    const subH = fitPosterTextHeight(subTitleStr, topBannerH * 0.1, leftSafeW, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         subTitleStr,
-        sheetX + 36,
+        sheetX + 34,
         sheetY + topBannerH * 0.74,
-        topBannerH * 0.11,
+        subH,
         aspect,
         "bold",
-        accent2,
+        ensureCalTextReadable(accent2, banBg, 95),
         "left"
       )
     );
   } else if (s === 5) {
-    // STYLE 6: Luxury 24K Gold & Obsidian Noir Geometric Diamond Crest Header + Double Gold Flanking Lines
+    // STYLE 6: Luxury 24K Gold & Obsidian Noir Geometric Crest Header + Dynamic Flanking Wing Bars
     const darkBg = lumH(headerBg) < 80 ? headerBg : "#0b0f17";
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
@@ -23728,7 +23781,6 @@ function drawCalendarSheetHeroTopHeader(
     );
     const gold1 = "#f59e0b";
     const gold2 = "#fde047";
-    // Outer & inner gold rules
     parts.push(
       `<rect x="${f1(sheetX + 14)}" y="${f1(sheetY + 12)}" width="${f1(
         sheetW - 28
@@ -23739,19 +23791,24 @@ function drawCalendarSheetHeroTopHeader(
         sheetW - 40
       )}" height="${f1(topBannerH - 36)}" fill="none" stroke="${gold2}" stroke-width="0.9"/>`
     );
-    // Flanking gold Wing Bars
-    const wingW = sheetW * 0.18;
-    parts.push(
-      `<rect x="${f1(sheetX + 46)}" y="${f1(sheetY + topBannerH * 0.46)}" width="${f1(
-        wingW
-      )}" height="2.5" fill="${gold1}"/>`
-    );
-    parts.push(
-      `<rect x="${f1(sheetX + sheetW - 46 - wingW)}" y="${f1(
-        sheetY + topBannerH * 0.46
-      )}" width="${f1(wingW)}" height="2.5" fill="${gold1}"/>`
-    );
-    const yrH = topBannerH * 0.48;
+
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.46, sheetW * 0.48, aspect, "bold");
+    const yrW = measurePosterVectorTextWidth(yearStr, yrH, aspect, "bold");
+    const leftWingEnd = cx - yrW * 0.5 - 26;
+    const leftWingStart = sheetX + 42;
+    if (leftWingEnd > leftWingStart + 20) {
+      const wingW = leftWingEnd - leftWingStart;
+      parts.push(
+        `<rect x="${f1(leftWingStart)}" y="${f1(sheetY + topBannerH * 0.42)}" width="${f1(
+          wingW
+        )}" height="2.5" fill="${gold1}"/>`
+      );
+      parts.push(
+        `<rect x="${f1(cx + yrW * 0.5 + 26)}" y="${f1(sheetY + topBannerH * 0.42)}" width="${f1(
+          wingW
+        )}" height="2.5" fill="${gold1}"/>`
+      );
+    }
     parts.push(
       drawPosterVectorTextString(
         yearStr,
@@ -23764,12 +23821,14 @@ function drawCalendarSheetHeroTopHeader(
         "center"
       )
     );
+    const subStr = "C  A  L  E  N  D  A  R";
+    const subH = fitPosterTextHeight(subStr, topBannerH * 0.1, sheetW * 0.54, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
-        "C  A  L  E  N  D  A  R",
+        subStr,
         cx,
         sheetY + topBannerH * 0.72,
-        topBannerH * 0.1,
+        subH,
         aspect,
         "bold",
         gold1,
@@ -23777,44 +23836,45 @@ function drawCalendarSheetHeroTopHeader(
       )
     );
   } else if (s === 6) {
-    // STYLE 7: Origami Folded Geometric Corner Polygons & Center Year Capsule
+    // STYLE 7: Origami Folded Geometric Corner Polygons & Wide Center Year Stage
+    // Strictly keep corner polygons within outer 21% on each side so center 58% is 100% clear!
     clipBanner(
       [
         [sheetX, sheetY],
-        [sheetX + sheetW * 0.28, sheetY],
-        [sheetX + sheetW * 0.14, sheetY + topBannerH],
+        [sheetX + sheetW * 0.15, sheetY],
+        [sheetX + sheetW * 0.08, sheetY + topBannerH],
         [sheetX, sheetY + topBannerH],
       ],
       accent1
     );
     clipBanner(
       [
-        [sheetX + sheetW * 0.28, sheetY],
-        [sheetX + sheetW * 0.38, sheetY],
-        [sheetX + sheetW * 0.22, sheetY + topBannerH],
-        [sheetX + sheetW * 0.14, sheetY + topBannerH],
+        [sheetX + sheetW * 0.15, sheetY],
+        [sheetX + sheetW * 0.21, sheetY],
+        [sheetX + sheetW * 0.13, sheetY + topBannerH],
+        [sheetX + sheetW * 0.08, sheetY + topBannerH],
       ],
       accent2
     );
     clipBanner(
       [
         [sheetX + sheetW, sheetY],
-        [sheetX + sheetW * 0.72, sheetY],
-        [sheetX + sheetW * 0.86, sheetY + topBannerH],
+        [sheetX + sheetW * 0.85, sheetY],
+        [sheetX + sheetW * 0.92, sheetY + topBannerH],
         [sheetX + sheetW, sheetY + topBannerH],
       ],
       accent3
     );
     clipBanner(
       [
-        [sheetX + sheetW * 0.72, sheetY],
-        [sheetX + sheetW * 0.62, sheetY],
-        [sheetX + sheetW * 0.78, sheetY + topBannerH],
-        [sheetX + sheetW * 0.86, sheetY + topBannerH],
+        [sheetX + sheetW * 0.85, sheetY],
+        [sheetX + sheetW * 0.79, sheetY],
+        [sheetX + sheetW * 0.87, sheetY + topBannerH],
+        [sheetX + sheetW * 0.92, sheetY + topBannerH],
       ],
       accent2
     );
-    const yrH = topBannerH * 0.52;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.5, sheetW * 0.46, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         yearStr,
@@ -23823,45 +23883,49 @@ function drawCalendarSheetHeroTopHeader(
         yrH,
         aspect,
         "bold",
-        headerBg,
+        ensureCalTextReadable(headerBg, cardBg, 95),
         "center"
       )
     );
+    const subStr = "A N N U A L   C A L E N D A R";
+    const subH = fitPosterTextHeight(subStr, topBannerH * 0.105, sheetW * 0.5, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
-        "A N N U A L   C A L E N D A R",
+        subStr,
         cx,
         sheetY + topBannerH * 0.75,
-        topBannerH * 0.105,
+        subH,
         aspect,
         "bold",
-        accent1,
+        ensureCalTextReadable(accent1, cardBg, 85),
         "center"
       )
     );
   } else if (s === 7) {
-    // STYLE 8: Botanical Terracotta Sun Arch, Rolling Sage Hills & Center Year
+    // STYLE 8: Botanical Soft Sun Arch, Side Hills & High-Contrast Centered Year + Ribbon Badge
+    const banBg = mixCol(cardBg, accent3, 0.16);
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
         topBannerH
-      )}" fill="${mixCol(cardBg, accent3, 0.18)}"/>`
+      )}" fill="${banBg}"/>`
     );
-    // Rising Sun Semicircle behind year
-    const sunR = topBannerH * 0.76;
+    // Softly tinted sun arch behind year so dark/light text always reads effortlessly
+    const sunR = topBannerH * 0.72;
     const sunPts: [number, number][] = [];
     for (let k = 0; k <= 32; k++) {
       const a = (k / 32) * Math.PI;
       sunPts.push([cx + Math.cos(a) * sunR, sheetY + topBannerH - Math.sin(a) * sunR]);
     }
-    clipBanner(sunPts, accent2);
+    const sunFill = mixCol(cardBg, accent2, 0.3);
+    clipBanner(sunPts, sunFill);
 
-    // Rolling Left & Right Hills
+    // Rolling Left & Right Botanical Hills strictly along left/right flanks
     const hillL: [number, number][] = [[sheetX, sheetY + topBannerH]];
     for (let k = 0; k <= 24; k++) {
       const t = k / 24;
       hillL.push([
-        sheetX + sheetW * 0.55 * t,
-        sheetY + topBannerH * (0.48 + 0.52 * Math.cos(t * Math.PI * 0.5)),
+        sheetX + sheetW * 0.34 * t,
+        sheetY + topBannerH * (0.58 + 0.42 * Math.cos(t * Math.PI * 0.5)),
       ]);
     }
     clipBanner(hillL, accent1);
@@ -23870,31 +23934,44 @@ function drawCalendarSheetHeroTopHeader(
     for (let k = 0; k <= 24; k++) {
       const t = k / 24;
       hillR.push([
-        sheetX + sheetW - sheetW * 0.55 * t,
-        sheetY + topBannerH * (0.52 + 0.48 * Math.cos(t * Math.PI * 0.5)),
+        sheetX + sheetW - sheetW * 0.34 * t,
+        sheetY + topBannerH * (0.6 + 0.4 * Math.cos(t * Math.PI * 0.5)),
       ]);
     }
     clipBanner(hillR, accent3);
 
-    const yrH = topBannerH * 0.52;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.48, sheetW * 0.52, aspect, "bold");
+    const yrCol = ensureCalTextReadable(headerBg, sunFill, 100);
     parts.push(
       drawPosterVectorTextString(
         yearStr,
         cx,
-        sheetY + topBannerH * 0.16,
+        sheetY + topBannerH * 0.14,
         yrH,
         aspect,
         "bold",
-        headerBg,
+        yrCol,
         "center"
       )
     );
+    // Crisp dark pill behind "CALENDAR" subtitle so white text ALWAYS has 100% contrast
+    const subStr = "C  A  L  E  N  D  A  R";
+    const subH = fitPosterTextHeight(subStr, topBannerH * 0.095, sheetW * 0.4, aspect, "bold");
+    const subW = measurePosterVectorTextWidth(subStr, subH, aspect, "bold");
+    const subPillW = subW + 34;
+    const subPillH = subH + 12;
+    const subPillBg = lumH(headerBg) < 115 ? headerBg : "#1f3d36";
+    parts.push(
+      `<rect x="${f1(cx - subPillW * 0.5)}" y="${f1(sheetY + topBannerH * 0.72)}" width="${f1(
+        subPillW
+      )}" height="${f1(subPillH)}" fill="${subPillBg}"/>`
+    );
     parts.push(
       drawPosterVectorTextString(
-        "C  A  L  E  N  D  A  R",
+        subStr,
         cx,
-        sheetY + topBannerH * 0.76,
-        topBannerH * 0.105,
+        sheetY + topBannerH * 0.72 + (subPillH - subH) * 0.5,
+        subH,
         aspect,
         "bold",
         "#ffffff",
@@ -23903,31 +23980,33 @@ function drawCalendarSheetHeroTopHeader(
     );
   } else if (s === 8) {
     // STYLE 9: Retro 70s 5-Band Sunset Curve Banner + Vintage Drop-Shadow Year
+    const banBg = lumH(headerBg) < 115 ? headerBg : "#1e293b";
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
         topBannerH
-      )}" fill="${headerBg}"/>`
+      )}" fill="${banBg}"/>`
     );
+    // Keep 5 diagonal sunset stripes strictly in right 44% so left text NEVER touches them!
     const bandCols = [accent1, accent2, "#f6d365", accent3, "#2b5b84"];
     for (let b = 0; b < 5; b++) {
-      const bx0 = sheetX + sheetW * (0.52 + b * 0.075);
+      const bx0 = sheetX + sheetW * (0.64 + b * 0.072);
       clipBanner(
         [
           [bx0, sheetY],
-          [bx0 + sheetW * 0.068, sheetY],
-          [bx0 - sheetW * 0.08, sheetY + topBannerH],
-          [bx0 - sheetW * 0.148, sheetY + topBannerH],
+          [bx0 + sheetW * 0.064, sheetY],
+          [bx0 - sheetW * 0.055, sheetY + topBannerH],
+          [bx0 - sheetW * 0.119, sheetY + topBannerH],
         ],
         bandCols[b]
       );
     }
-    const yrH = topBannerH * 0.54;
-    // Retro offset shadow
+    const leftSafeW = sheetW * 0.46;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.5, leftSafeW, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         yearStr,
-        sheetX + 44,
-        sheetY + topBannerH * 0.19,
+        sheetX + 40,
+        sheetY + topBannerH * 0.18,
         yrH,
         aspect,
         "bold",
@@ -23938,7 +24017,7 @@ function drawCalendarSheetHeroTopHeader(
     parts.push(
       drawPosterVectorTextString(
         yearStr,
-        sheetX + 38,
+        sheetX + 35,
         sheetY + topBannerH * 0.14,
         yrH,
         aspect,
@@ -23947,15 +24026,17 @@ function drawCalendarSheetHeroTopHeader(
         "left"
       )
     );
+    const subStr = "C A L E N D A R   E D I T I O N";
+    const subH = fitPosterTextHeight(subStr, topBannerH * 0.1, leftSafeW, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
-        "C A L E N D A R   E D I T I O N",
-        sheetX + 40,
-        sheetY + topBannerH * 0.75,
-        topBannerH * 0.105,
+        subStr,
+        sheetX + 36,
+        sheetY + topBannerH * 0.74,
+        subH,
         aspect,
         "bold",
-        accent2,
+        ensureCalTextReadable(accent2, banBg, 95),
         "left"
       )
     );
@@ -23967,7 +24048,6 @@ function drawCalendarSheetHeroTopHeader(
         topBannerH
       )}" fill="${hudBg}"/>`
     );
-    // Chamfered neon HUD polygon border
     const pad = 12;
     const cut = 22;
     const x0 = sheetX + pad;
@@ -23979,30 +24059,31 @@ function drawCalendarSheetHeroTopHeader(
     )} ${f1(x1)},${f1(y1 - cut)} ${f1(x1 - cut)},${f1(y1)} ${f1(x0 + cut)},${f1(y1)} ${f1(
       x0
     )},${f1(y1 - cut)} ${f1(x0)},${f1(y0 + cut)}`;
+    const neon1 = ensureCalTextReadable(accent1, hudBg, 105);
+    const neon2 = ensureCalTextReadable(accent2, hudBg, 105);
     parts.push(
-      `<polygon points="${hudPts}" fill="none" stroke="${accent1}" stroke-width="2.2"/>`
+      `<polygon points="${hudPts}" fill="none" stroke="${neon1}" stroke-width="2.2"/>`
     );
-    // Glowing corner tech bars
     parts.push(
       `<rect x="${f1(x0 + cut + 12)}" y="${f1(y0 + 6)}" width="${f1(
         sheetW * 0.16
-      )}" height="4" fill="${accent2}"/>`
+      )}" height="4" fill="${neon2}"/>`
     );
     parts.push(
       `<rect x="${f1(x1 - cut - 12 - sheetW * 0.16)}" y="${f1(
         y1 - 10
-      )}" width="${f1(sheetW * 0.16)}" height="4" fill="${accent2}"/>`
+      )}" width="${f1(sheetW * 0.16)}" height="4" fill="${neon2}"/>`
     );
-    const yrH = topBannerH * 0.5;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.48, sheetW * 0.62, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         yearStr,
         cx + 3.5,
-        sheetY + topBannerH * 0.19,
+        sheetY + topBannerH * 0.18,
         yrH,
         aspect,
         "bold",
-        accent2,
+        neon2,
         "center"
       )
     );
@@ -24010,20 +24091,22 @@ function drawCalendarSheetHeroTopHeader(
       drawPosterVectorTextString(
         yearStr,
         cx,
-        sheetY + topBannerH * 0.16,
+        sheetY + topBannerH * 0.15,
         yrH,
         aspect,
         "bold",
-        accent1,
+        neon1,
         "center"
       )
     );
+    const subStr = "S Y S T E M   C A L E N D A R";
+    const subH = fitPosterTextHeight(subStr, topBannerH * 0.095, sheetW * 0.64, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
-        "S Y S T E M   C A L E N D A R",
+        subStr,
         cx,
         sheetY + topBannerH * 0.74,
-        topBannerH * 0.095,
+        subH,
         aspect,
         "bold",
         "#ffffff",
@@ -24031,34 +24114,50 @@ function drawCalendarSheetHeroTopHeader(
       )
     );
   } else if (s === 10) {
-    // STYLE 11: Japanese Zen Hinomaru Red Rising Sun Disk & Horizon Rule Header
-    const sunR = topBannerH * 0.44;
+    // STYLE 11: Japanese Zen Hinomaru Crimson Seal Emblem & Horizon Rule Header
+    // Dynamically size the crimson stadium/ellipse badge from exact measured year width
+    // so ALL 4 digits (e.g. "2027") ALWAYS sit 100% INSIDE the red badge with generous margin,
+    // and "CALENDAR" sits cleanly BELOW the badge with ZERO overlap!
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.36, sheetW * 0.36, aspect, "bold");
+    const yrW = measurePosterVectorTextWidth(yearStr, yrH, aspect, "bold");
+    const badgeCy = sheetY + topBannerH * 0.41;
+    const badgeRx = Math.min(sheetW * 0.32, yrW * 0.5 + 36);
+    const badgeRy = Math.min(topBannerH * 0.31, yrH * 0.78);
+
+    // Smooth 48-point crimson stadium/oval seal guaranteed wider than all 4 digits on every aspect ratio
     const sunPts: [number, number][] = [];
-    for (let k = 0; k < 36; k++) {
-      const a = (k / 36) * Math.PI * 2;
+    for (let k = 0; k < 48; k++) {
+      const a = (k / 48) * Math.PI * 2;
       sunPts.push([
-        cx + Math.cos(a) * sunR,
-        sheetY + topBannerH * 0.48 + Math.sin(a) * sunR,
+        cx + Math.cos(a) * badgeRx,
+        badgeCy + Math.sin(a) * badgeRy,
       ]);
     }
     clipBanner(sunPts, "#dc2626");
-    // Thin horizon rules left and right
-    parts.push(
-      `<rect x="${f1(sheetX + 36)}" y="${f1(sheetY + topBannerH * 0.5)}" width="${f1(
-        sheetW * 0.27
-      )}" height="2.2" fill="${textCol}"/>`
-    );
-    parts.push(
-      `<rect x="${f1(sheetX + sheetW - 36 - sheetW * 0.27)}" y="${f1(
-        sheetY + topBannerH * 0.5
-      )}" width="${f1(sheetW * 0.27)}" height="2.2" fill="${textCol}"/>`
-    );
-    const yrH = topBannerH * 0.48;
+
+    // Thin horizon rules strictly outside the crimson emblem
+    const ruleColor = ensureCalTextReadable(textCol, cardBg, 95);
+    const leftRuleX0 = sheetX + 32;
+    const leftRuleX1 = cx - badgeRx - 18;
+    if (leftRuleX1 > leftRuleX0 + 20) {
+      parts.push(
+        `<rect x="${f1(leftRuleX0)}" y="${f1(badgeCy - 1.1)}" width="${f1(
+          leftRuleX1 - leftRuleX0
+        )}" height="2.2" fill="${ruleColor}"/>`
+      );
+      parts.push(
+        `<rect x="${f1(cx + badgeRx + 18)}" y="${f1(badgeCy - 1.1)}" width="${f1(
+          leftRuleX1 - leftRuleX0
+        )}" height="2.2" fill="${ruleColor}"/>`
+      );
+    }
+
+    // Crisp pure-white year 100% centered inside the crimson emblem
     parts.push(
       drawPosterVectorTextString(
         yearStr,
         cx,
-        sheetY + topBannerH * 0.24,
+        badgeCy - yrH * 0.5,
         yrH,
         aspect,
         "bold",
@@ -24066,26 +24165,30 @@ function drawCalendarSheetHeroTopHeader(
         "center"
       )
     );
+
+    // "C  A  L  E  N  D  A  R" cleanly BELOW the crimson badge (zero overlap!)
+    const subStr = "C  A  L  E  N  D  A  R";
+    const subH = fitPosterTextHeight(subStr, topBannerH * 0.095, sheetW * 0.44, aspect, "bold");
+    const subY = Math.min(sheetY + topBannerH - subH - 6, badgeCy + badgeRy + 12);
     parts.push(
       drawPosterVectorTextString(
-        "C  A  L  E  N  D  A  R",
+        subStr,
         cx,
-        sheetY + topBannerH * 0.84,
-        topBannerH * 0.095,
+        subY,
+        subH,
         aspect,
         "bold",
-        textCol,
+        ruleColor,
         "center"
       )
     );
   } else if (s === 11) {
-    // STYLE 12: Memphis 80s Pop Geometric Confetti, Checkered Strip & Brutalist Hard-Shadow Year
+    // STYLE 12: Memphis 80s Pop Geometric Confetti, Checkered Strip & High-Contrast Hard-Shadow Year
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
         topBannerH
       )}" fill="#ffbe0b"/>`
     );
-    // Bottom black & white checkered border strip along topBannerH
     const chkH = 12;
     const chkCols = 24;
     const chkW = sheetW / chkCols;
@@ -24098,42 +24201,30 @@ function drawCalendarSheetHeroTopHeader(
         }"/>`
       );
     }
-    // Geometric pop triangles & circles on left/right
     clipBanner(
       [
-        [sheetX + 32, sheetY + 18],
-        [sheetX + 115, sheetY + 18],
-        [sheetX + 72, sheetY + topBannerH - 24],
+        [sheetX + 28, sheetY + 18],
+        [sheetX + 108, sheetY + 18],
+        [sheetX + 68, sheetY + topBannerH - 24],
       ],
       "#ff3366"
     );
     clipBanner(
       [
-        [sheetX + sheetW - 125, sheetY + topBannerH - 24],
-        [sheetX + sheetW - 35, sheetY + topBannerH - 24],
-        [sheetX + sheetW - 80, sheetY + 18],
+        [sheetX + sheetW - 108, sheetY + topBannerH - 24],
+        [sheetX + sheetW - 28, sheetY + topBannerH - 24],
+        [sheetX + sheetW - 68, sheetY + 18],
       ],
       "#2ec4b6"
     );
-    const yrH = topBannerH * 0.52;
-    // Hard black brutalist drop shadow
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.5, sheetW * 0.54, aspect, "bold");
+    const yrY = sheetY + (topBannerH - chkH - yrH) * 0.5;
+    // Crisp white offset shadow + ultra-high-contrast obsidian black foreground on #ffbe0b yellow!
     parts.push(
       drawPosterVectorTextString(
         yearStr,
-        cx + 5,
-        sheetY + topBannerH * 0.18 + 5,
-        yrH,
-        aspect,
-        "bold",
-        "#111827",
-        "center"
-      )
-    );
-    parts.push(
-      drawPosterVectorTextString(
-        yearStr,
-        cx,
-        sheetY + topBannerH * 0.18,
+        cx + 4.5,
+        yrY + 4.5,
         yrH,
         aspect,
         "bold",
@@ -24141,33 +24232,46 @@ function drawCalendarSheetHeroTopHeader(
         "center"
       )
     );
+    parts.push(
+      drawPosterVectorTextString(
+        yearStr,
+        cx,
+        yrY,
+        yrH,
+        aspect,
+        "bold",
+        "#111827",
+        "center"
+      )
+    );
   } else if (s === 12) {
     // STYLE 13: Corporate Executive Multi-Chevron Diagonal Split Banner
+    const banBg = lumH(headerBg) < 120 ? headerBg : "#0f172a";
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
         topBannerH
-      )}" fill="${headerBg}"/>`
+      )}" fill="${banBg}"/>`
     );
-    // 3 Nested Diagonal Chevron Arrows from Right
+    // Start chevrons at 0.58 so left year stays 100% on pure banBg!
     const chCols = [accent1, accent2, accent3];
     for (let i = 0; i < 3; i++) {
-      const xStart = sheetX + sheetW * (0.48 + i * 0.14);
+      const xStart = sheetX + sheetW * (0.58 + i * 0.12);
       clipBanner(
         [
           [xStart, sheetY],
           [sheetX + sheetW, sheetY],
           [sheetX + sheetW, sheetY + topBannerH],
           [xStart, sheetY + topBannerH],
-          [xStart - topBannerH * 0.45, sheetY + topBannerH * 0.5],
+          [xStart - Math.min(topBannerH * 0.36, sheetW * 0.06), sheetY + topBannerH * 0.5],
         ],
         chCols[i]
       );
     }
-    const yrH = topBannerH * 0.54;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.52, sheetW * 0.42, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         yearStr,
-        sheetX + 36,
+        sheetX + 34,
         sheetY + (topBannerH - yrH) * 0.48,
         yrH,
         aspect,
@@ -24176,31 +24280,34 @@ function drawCalendarSheetHeroTopHeader(
         "left"
       )
     );
+    const rightStr = "CALENDAR";
+    const rightH = fitPosterTextHeight(rightStr, topBannerH * 0.18, sheetW * 0.18, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
-        "C A L E N D A R",
-        sheetX + sheetW - 36,
-        sheetY + topBannerH * 0.4,
-        topBannerH * 0.22,
+        rightStr,
+        sheetX + sheetW - 26,
+        sheetY + (topBannerH - rightH) * 0.5,
+        rightH,
         aspect,
         "bold",
-        "#ffffff",
+        lumH(accent3) > 155 ? "#0f172a" : "#ffffff",
         "right"
       )
     );
   } else if (s === 13) {
-    // STYLE 14: Abstract Concentric Circle Ripples & Center Floating Year Capsule
+    // STYLE 14: Abstract Concentric Circle Ripples & Dynamic Center Floating Year Capsule
+    const banBg = lumH(headerBg) < 120 ? headerBg : "#0f172a";
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
         topBannerH
-      )}" fill="${headerBg}"/>`
+      )}" fill="${banBg}"/>`
     );
     const ringCols = [accent1, accent2, accent3];
     for (let side = -1; side <= 1; side += 2) {
-      const rcx = side < 0 ? sheetX + sheetW * 0.12 : sheetX + sheetW * 0.88;
+      const rcx = side < 0 ? sheetX + sheetW * 0.11 : sheetX + sheetW * 0.89;
       const rcy = sheetY + topBannerH * 0.5;
       for (let rIdx = 2; rIdx >= 0; rIdx--) {
-        const rad = topBannerH * (0.35 + rIdx * 0.25);
+        const rad = topBannerH * (0.32 + rIdx * 0.22);
         const cPts: [number, number][] = [];
         for (let k = 0; k < 32; k++) {
           const a = (k / 32) * Math.PI * 2;
@@ -24209,15 +24316,16 @@ function drawCalendarSheetHeroTopHeader(
         clipBanner(cPts, ringCols[rIdx], 0.85);
       }
     }
-    // Center solid dark/card pill behind year
-    const pillW = sheetW * 0.36;
-    const pillH = topBannerH * 0.76;
+    // Dynamically size center capsule to ALWAYS enclose 100% of yearStr with generous padding!
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.46, sheetW * 0.44, aspect, "bold");
+    const yrW = measurePosterVectorTextWidth(yearStr, yrH, aspect, "bold");
+    const pillW = Math.min(sheetW * 0.62, Math.max(sheetW * 0.34, yrW + 58));
+    const pillH = Math.max(topBannerH * 0.72, yrH + 34);
     parts.push(
       `<rect x="${f1(cx - pillW * 0.5)}" y="${f1(
         sheetY + (topBannerH - pillH) * 0.5
-      )}" width="${f1(pillW)}" height="${f1(pillH)}" fill="${headerBg}" stroke="${accent2}" stroke-width="2"/>`
+      )}" width="${f1(pillW)}" height="${f1(pillH)}" fill="${banBg}" stroke="${accent2}" stroke-width="2.2"/>`
     );
-    const yrH = topBannerH * 0.48;
     parts.push(
       drawPosterVectorTextString(
         yearStr,
@@ -24243,8 +24351,7 @@ function drawCalendarSheetHeroTopHeader(
         sheetW - (padX + 7) * 2
       )}" height="${f1(topBannerH - 34)}" fill="none" stroke="${accent2}" stroke-width="1.2"/>`
     );
-    // Left and right solid accent blocks inside frame
-    const blkW = sheetW * 0.16;
+    const blkW = sheetW * 0.14;
     parts.push(
       `<rect x="${f1(sheetX + padX + 12)}" y="${f1(sheetY + 24)}" width="${f1(
         blkW
@@ -24255,7 +24362,7 @@ function drawCalendarSheetHeroTopHeader(
         sheetY + 24
       )}" width="${f1(blkW)}" height="${f1(topBannerH - 44)}" fill="${accent1}"/>`
     );
-    const yrH = topBannerH * 0.46;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.44, sheetW * 0.48, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         yearStr,
@@ -24264,62 +24371,65 @@ function drawCalendarSheetHeroTopHeader(
         yrH,
         aspect,
         "bold",
-        accent1,
+        ensureCalTextReadable(accent1, cardBg, 85),
         "center"
       )
     );
+    const subStr = "C   A   L   E   N   D   A   R";
+    const subH = fitPosterTextHeight(subStr, topBannerH * 0.095, sheetW * 0.48, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
-        "C   A   L   E   N   D   A   R",
+        subStr,
         cx,
         sheetY + topBannerH * 0.72,
-        topBannerH * 0.095,
+        subH,
         aspect,
         "bold",
-        textCol,
+        ensureCalTextReadable(textCol, cardBg, 95),
         "center"
       )
     );
   } else {
     // STYLE 16: Panoramic Geometric Mountain Peaks, Radiant Sun & Sky Banner
+    const banBg = lumH(headerBg) < 120 ? headerBg : "#0f172a";
     parts.push(
       `<rect x="${f1(sheetX)}" y="${f1(sheetY)}" width="${f1(sheetW)}" height="${f1(
         topBannerH
-      )}" fill="${headerBg}"/>`
+      )}" fill="${banBg}"/>`
     );
-    // Sun disk on right sky
-    const sunR = topBannerH * 0.34;
+    const sunR = Math.min(topBannerH * 0.3, sheetW * 0.065);
     const sunPts: [number, number][] = [];
     for (let k = 0; k < 28; k++) {
       const a = (k / 28) * Math.PI * 2;
       sunPts.push([
-        sheetX + sheetW * 0.82 + Math.cos(a) * sunR,
-        sheetY + topBannerH * 0.38 + Math.sin(a) * sunR,
+        sheetX + sheetW * 0.85 + Math.cos(a) * sunR,
+        sheetY + topBannerH * 0.36 + Math.sin(a) * sunR,
       ]);
     }
     clipBanner(sunPts, accent2);
-    // Layered geometric mountain peaks
+    // Keep mountain peaks strictly in right 44% so left year & subtitle never touch mountains!
     clipBanner(
       [
-        [sheetX + sheetW * 0.42, sheetY + topBannerH],
-        [sheetX + sheetW * 0.62, sheetY + topBannerH * 0.22],
-        [sheetX + sheetW * 0.82, sheetY + topBannerH],
+        [sheetX + sheetW * 0.56, sheetY + topBannerH],
+        [sheetX + sheetW * 0.72, sheetY + topBannerH * 0.24],
+        [sheetX + sheetW * 0.88, sheetY + topBannerH],
       ],
       accent1
     );
     clipBanner(
       [
-        [sheetX + sheetW * 0.64, sheetY + topBannerH],
-        [sheetX + sheetW * 0.8, sheetY + topBannerH * 0.32],
-        [sheetX + sheetW * 0.98, sheetY + topBannerH],
+        [sheetX + sheetW * 0.72, sheetY + topBannerH],
+        [sheetX + sheetW * 0.86, sheetY + topBannerH * 0.34],
+        [sheetX + sheetW * 0.99, sheetY + topBannerH],
       ],
       accent3
     );
-    const yrH = topBannerH * 0.54;
+    const leftSafeW = sheetW * 0.48;
+    const yrH = fitPosterTextHeight(yearStr, topBannerH * 0.5, leftSafeW, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         yearStr,
-        sheetX + 36,
+        sheetX + 34,
         sheetY + topBannerH * 0.14,
         yrH,
         aspect,
@@ -24328,15 +24438,16 @@ function drawCalendarSheetHeroTopHeader(
         "left"
       )
     );
+    const subH = fitPosterTextHeight(subTitleStr, topBannerH * 0.1, leftSafeW, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
         subTitleStr,
-        sheetX + 38,
+        sheetX + 36,
         sheetY + topBannerH * 0.74,
-        topBannerH * 0.105,
+        subH,
         aspect,
         "bold",
-        accent2,
+        ensureCalTextReadable(accent2, banBg, 95),
         "left"
       )
     );
@@ -24400,7 +24511,13 @@ function drawSingleMonthCalendarBox(
 
     const headerTextCol = lumH(headerBg) < 135 ? "#ffffff" : "#0f172a";
     const padX = bw * 0.065;
-    const numH = Math.min(headerH * 0.42, bw * aspect * 0.16);
+    const numH = fitPosterTextHeight(
+      mNumStr,
+      Math.min(headerH * 0.42, bw * aspect * 0.16),
+      bw * 0.36,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         mNumStr,
@@ -24409,11 +24526,17 @@ function drawSingleMonthCalendarBox(
         numH,
         aspect,
         "bold",
-        accent2 === headerBg ? "#ffffff" : accent2,
+        ensureCalTextReadable(accent2, headerBg, 85),
         "left"
       )
     );
-    const titleH = Math.min(headerH * 0.22, bw * aspect * 0.085);
+    const titleH = fitPosterTextHeight(
+      mName,
+      Math.min(headerH * 0.22, bw * aspect * 0.085),
+      bw * 0.84,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         mName,
@@ -24426,16 +24549,17 @@ function drawSingleMonthCalendarBox(
         "left"
       )
     );
-    const yrH = titleH * 0.68;
+    const calYrStr = `CALENDAR ${year}`;
+    const yrH = fitPosterTextHeight(calYrStr, titleH * 0.68, bw * 0.48, aspect, "bold");
     parts.push(
       drawPosterVectorTextString(
-        `CALENDAR ${year}`,
+        calYrStr,
         bx + bw - padX,
         by + headerH * 0.2,
         yrH,
         aspect,
         "bold",
-        "#ffffff",
+        headerTextCol,
         "right"
       )
     );
@@ -24517,7 +24641,7 @@ function drawSingleMonthCalendarBox(
             badgeW
           )}" height="${f1(badgeH)}" fill="${accent1}"/>`
         );
-        numCol = "#ffffff";
+        numCol = lumH(accent1) > 158 ? "#0f172a" : "#ffffff";
       }
 
       parts.push(
@@ -24607,8 +24731,14 @@ function drawSingleMonthCalendarBox(
 
   if (tableMode === 0) {
     // SAMPLE 1 TABLE: Open borderless layout, centered blue/accent month name, light gray weekday bar
-    const titleCol = accent3 || "#2563eb";
-    const titleH = Math.min(headerH * 0.56, bw * aspect * 0.078);
+    const titleCol = ensureCalTextReadable(accent3 || "#2563eb", cardBg, 85);
+    const titleH = fitPosterTextHeight(
+      mName,
+      Math.min(headerH * 0.54, bw * aspect * 0.078),
+      gridW * 0.94,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         mName,
@@ -24629,7 +24759,13 @@ function drawSingleMonthCalendarBox(
         bh
       )}" fill="${cardBg}" stroke="${cardStroke}" stroke-width="1.5"/>`
     );
-    const titleH = Math.min(headerH * 0.52, bw * aspect * 0.074);
+    const titleH = fitPosterTextHeight(
+      mName,
+      Math.min(headerH * 0.52, bw * aspect * 0.074),
+      gridW * 0.94,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         mName,
@@ -24650,7 +24786,13 @@ function drawSingleMonthCalendarBox(
         headerH * 0.92
       )}" fill="${mBarCol}"/>`
     );
-    const titleH = Math.min(headerH * 0.5, bw * aspect * 0.075);
+    const titleH = fitPosterTextHeight(
+      mName,
+      Math.min(headerH * 0.5, bw * aspect * 0.075),
+      gridW * 0.88,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         mName,
@@ -24659,7 +24801,7 @@ function drawSingleMonthCalendarBox(
         titleH,
         aspect,
         "bold",
-        "#ffffff",
+        lumH(mBarCol) > 165 ? "#0f172a" : "#ffffff",
         "center"
       )
     );
@@ -24671,7 +24813,13 @@ function drawSingleMonthCalendarBox(
         headerH
       )}" fill="${barCol}"/>`
     );
-    const titleH = Math.min(headerH * 0.54, bw * aspect * 0.078);
+    const titleH = fitPosterTextHeight(
+      mName,
+      Math.min(headerH * 0.52, bw * aspect * 0.078),
+      bw * 0.88,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         mName,
@@ -24680,12 +24828,12 @@ function drawSingleMonthCalendarBox(
         titleH,
         aspect,
         "bold",
-        "#ffffff",
+        lumH(barCol) > 165 ? "#0f172a" : "#ffffff",
         "center"
       )
     );
   } else if (tableMode === 4) {
-    // BRUTALIST / RETRO POP CARD: Hard offset drop shadow + dark header bar with right month number badge
+    // BRUTALIST / RETRO POP CARD: Hard offset drop shadow + colored header bar with right month number badge
     parts.push(
       `<rect x="${f1(bx + 4)}" y="${f1(by + 4)}" width="${f1(bw)}" height="${f1(
         bh
@@ -24697,12 +24845,19 @@ function drawSingleMonthCalendarBox(
       )}" fill="${cardBg}" stroke="${headerBg}" stroke-width="1.6"/>`
     );
     const barCol = RAINBOW_12_MONTH_COLORS[(safeM + variant) % 12];
+    const barTextCol = lumH(barCol) > 165 ? "#0f172a" : "#ffffff";
     parts.push(
       `<rect x="${f1(bx)}" y="${f1(by)}" width="${f1(bw)}" height="${f1(
         headerH
       )}" fill="${barCol}"/>`
     );
-    const titleH = Math.min(headerH * 0.5, bw * aspect * 0.074);
+    const titleH = fitPosterTextHeight(
+      `${mName}  ${mNumStr}`,
+      Math.min(headerH * 0.5, bw * aspect * 0.074),
+      bw * 0.86,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         mName,
@@ -24711,7 +24866,7 @@ function drawSingleMonthCalendarBox(
         titleH,
         aspect,
         "bold",
-        "#ffffff",
+        barTextCol,
         "left"
       )
     );
@@ -24723,13 +24878,19 @@ function drawSingleMonthCalendarBox(
         titleH,
         aspect,
         "bold",
-        "#ffffff",
+        barTextCol,
         "right"
       )
     );
   } else {
     // EDITORIAL SWISS DOUBLE-RULED HEADER: "01" in accent1 on left, Month Name on right, thick underline
-    const titleH = Math.min(headerH * 0.52, bw * aspect * 0.074);
+    const titleH = fitPosterTextHeight(
+      `${mNumStr}  ${mName}`,
+      Math.min(headerH * 0.52, bw * aspect * 0.074),
+      gridW * 0.96,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         mNumStr,
@@ -24738,7 +24899,7 @@ function drawSingleMonthCalendarBox(
         titleH,
         aspect,
         "bold",
-        accent1,
+        ensureCalTextReadable(accent1, cardBg, 85),
         "left"
       )
     );
@@ -24750,7 +24911,7 @@ function drawSingleMonthCalendarBox(
         titleH,
         aspect,
         "bold",
-        textCol,
+        ensureCalTextReadable(textCol, cardBg, 95),
         "right"
       )
     );
@@ -24959,39 +25120,43 @@ function drawWeeklyPlannerBoard(
   );
 
   const headerTextCol = lumH(headerBg) < 135 ? "#ffffff" : "#0f172a";
+  const wpTitleH = fitPosterTextHeight("WEEKLY PLANNER", 36, bw * 0.6, aspect, "bold");
   parts.push(
     drawPosterVectorTextString(
       "WEEKLY PLANNER",
       bx + 36,
       by + 34,
-      36,
+      wpTitleH,
       aspect,
       "bold",
       headerTextCol,
       "left"
     )
   );
+  const wpSubStr = `${mName} ${year}  |  SCHEDULE & PRIORITIES`;
+  const wpSubH = fitPosterTextHeight(wpSubStr, 16, bw * 0.62, aspect, "bold");
   parts.push(
     drawPosterVectorTextString(
-      `${mName} ${year}  |  SCHEDULE & PRIORITIES`,
+      wpSubStr,
       bx + 36,
       by + 88,
-      16,
+      wpSubH,
       aspect,
       "bold",
-      accent2 === headerBg ? "#ffffff" : accent2,
+      ensureCalTextReadable(accent2, headerBg, 90),
       "left"
     )
   );
+  const wpYrH = fitPosterTextHeight(String(year), 44, bw * 0.26, aspect, "bold");
   parts.push(
     drawPosterVectorTextString(
       String(year),
       bx + bw - 36,
       by + 44,
-      44,
+      wpYrH,
       aspect,
       "bold",
-      "#ffffff",
+      headerTextCol,
       "right"
     )
   );
@@ -25044,19 +25209,27 @@ function drawWeeklyPlannerBoard(
 
     const barH = 38;
     const barCol = isNotes ? accent1 : isWknd ? weekendCol : headerBg;
+    const barFgCol = lumH(barCol) > 165 ? "#0f172a" : "#ffffff";
     parts.push(
       `<rect x="${f1(cx0)}" y="${f1(cy0)}" width="${f1(cellW)}" height="${f1(barH)}" fill="${barCol}"/>`
     );
 
+    const boxTitleH = fitPosterTextHeight(
+      boxTitles[i],
+      13.5,
+      isNotes ? cellW - 24 : cellW - 56,
+      aspect,
+      "bold"
+    );
     parts.push(
       drawPosterVectorTextString(
         boxTitles[i],
         cx0 + 12,
-        cy0 + 12,
-        13.5,
+        cy0 + (barH - boxTitleH) * 0.5,
+        boxTitleH,
         aspect,
         "bold",
-        "#ffffff",
+        barFgCol,
         "left"
       )
     );
@@ -25069,7 +25242,7 @@ function drawWeeklyPlannerBoard(
           15,
           aspect,
           "bold",
-          "#ffffff",
+          barFgCol,
           "right"
         )
       );
@@ -37360,6 +37533,650 @@ export function buildIllustratorEPS10(
 }
 
 /* =====================================================================
+   NATIVE ADOBE ILLUSTRATOR .AI (PDF 1.4 LIVE ALPHA TRANSPARENCY VECTOR)
+   ISO 32000-1 / PDF 1.4 — 100% True Live Alpha Opacity (/ExtGState /ca /CA)
+   - ZERO white pre-blending (#FFFFFF is NEVER mixed into shadow shapes!)
+   - ZERO white halo on dark gray, black, colored, or photo backgrounds in Illustrator!
+   - Native editable vector paths, Bézier curves, smooth shadings & live opacity sliders!
+   ===================================================================== */
+export function buildIllustratorAI(
+  singleTileSVG: string,
+  P: PatternState,
+  rep: number,
+  outW: number,
+  outH: number,
+  preFlattenedIllustratorSvg?: string
+): string {
+  const safeOutW = Math.max(100, Math.round(Number.isFinite(outW) ? outW : 6000));
+  const safeOutH = Math.max(100, Math.round(Number.isFinite(outH) ? outH : 6000));
+
+  const flatSvg =
+    preFlattenedIllustratorSvg || buildIllustratorSVG(singleTileSVG, P, rep, safeOutW, safeOutH);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(flatSvg, "image/svg+xml");
+  const root = doc.documentElement;
+
+  const isPosterMode = Boolean(
+    P.mode &&
+      (P.mode.startsWith("poster_") ||
+        P.mode.startsWith("cal_") ||
+        P.mode.startsWith("torn_") ||
+        P.mode.startsWith("typo_"))
+  );
+  const isLightingMode = Boolean(P.mode && P.mode.startsWith("light_"));
+  const isShadowMode = Boolean(P.mode && P.mode.startsWith("shadow_"));
+  const omitBg =
+    isLightingMode ||
+    isShadowMode ||
+    (!isPosterMode && Boolean(P.transp || (P.mode && P.mode.startsWith("brush_"))));
+
+  const baseBgHex = isLightingMode
+    ? "#000000"
+    : omitBg
+    ? "#FFFFFF"
+    : normalizeIllustratorColor(P.bg, isPosterMode ? "#000000" : "#FFFFFF");
+
+  interface PdfGradSpec {
+    type: "linear" | "radial";
+    units: "userSpaceOnUse" | "objectBoundingBox";
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    cx: number;
+    cy: number;
+    r: number;
+    stops: { off: number; col: string; sop: number }[];
+  }
+  const gradMap: Record<string, PdfGradSpec> = {};
+
+  const parseGradCoord = (val: string | null, defVal: number, isBBox: boolean): number => {
+    if (!val) return defVal;
+    const t = val.trim();
+    if (t.endsWith("%")) {
+      const pct = parseFloat(t) / 100;
+      return Number.isFinite(pct) ? (isBBox ? pct : pct * defVal * 2) : defVal;
+    }
+    const n = parseFloat(t);
+    return Number.isFinite(n) ? n : defVal;
+  };
+
+  const defsNode = root && root.tagName.toLowerCase() !== "parsererror" ? root.querySelector("defs") : null;
+  if (defsNode) {
+    Array.from(defsNode.children).forEach((el) => {
+      const tag = el.tagName.toLowerCase();
+      const id = el.getAttribute("id") || "";
+      if (!id || (tag !== "lineargradient" && tag !== "radialgradient")) return;
+      const isBBox = el.getAttribute("gradientUnits") !== "userSpaceOnUse";
+      const stops: { off: number; col: string; sop: number }[] = [];
+      Array.from(el.querySelectorAll("stop")).forEach((st) => {
+        const rawOff = st.getAttribute("offset") || "0";
+        const parsedOff = rawOff.endsWith("%") ? parseFloat(rawOff) / 100 : parseFloat(rawOff);
+        const off = Number.isFinite(parsedOff) ? clamp01(parsedOff) : 0;
+        const col = normalizeIllustratorColor(st.getAttribute("stop-color"), baseBgHex);
+        const rawSop = st.getAttribute("stop-opacity");
+        const parsedSop = rawSop !== null ? parseFloat(rawSop) : 1;
+        const sop = Number.isFinite(parsedSop) ? clamp01(parsedSop) : 1;
+        stops.push({ off, col, sop });
+      });
+      if (!stops.length) stops.push({ off: 0, col: baseBgHex, sop: 1 }, { off: 1, col: baseBgHex, sop: 1 });
+      stops.sort((a, b) => a.off - b.off);
+      gradMap[id] = {
+        type: tag === "lineargradient" ? "linear" : "radial",
+        units: isBBox ? "objectBoundingBox" : "userSpaceOnUse",
+        x1: isBBox ? parseGradCoord(el.getAttribute("x1"), 0, true) : parseFloat(el.getAttribute("x1") || "0") || 0,
+        y1: isBBox ? parseGradCoord(el.getAttribute("y1"), 0, true) : parseFloat(el.getAttribute("y1") || "0") || 0,
+        x2: isBBox ? parseGradCoord(el.getAttribute("x2"), 1, true) : parseFloat(el.getAttribute("x2") || String(safeOutW)) || safeOutW,
+        y2: isBBox ? parseGradCoord(el.getAttribute("y2"), 1, true) : parseFloat(el.getAttribute("y2") || String(safeOutH)) || safeOutH,
+        cx: isBBox ? parseGradCoord(el.getAttribute("cx"), 0.5, true) : parseFloat(el.getAttribute("cx") || String(safeOutW / 2)) || safeOutW / 2,
+        cy: isBBox ? parseGradCoord(el.getAttribute("cy"), 0.5, true) : parseFloat(el.getAttribute("cy") || String(safeOutH / 2)) || safeOutH / 2,
+        r: isBBox ? parseGradCoord(el.getAttribute("r"), 0.5, true) : parseFloat(el.getAttribute("r") || String(Math.max(safeOutW, safeOutH) * 0.7)) || Math.max(safeOutW, safeOutH) * 0.7,
+        stops,
+      };
+    });
+  }
+
+  const sampleGradOpacity = (stops: { off: number; col: string; sop: number }[], t: number): number => {
+    if (stops.length === 1) return stops[0].sop;
+    const u = clamp01(t);
+    for (let i = 0; i < stops.length - 1; i++) {
+      const a = stops[i];
+      const b = stops[i + 1];
+      if (u >= a.off && u <= b.off) {
+        const span = Math.max(0.0001, b.off - a.off);
+        return a.sop + (b.sop - a.sop) * ((u - a.off) / span);
+      }
+    }
+    return stops[stops.length - 1].sop;
+  };
+
+  const sampleGradPureHex = (stops: { off: number; col: string; sop: number }[], t: number): string => {
+    if (stops.length === 1) return stops[0].col;
+    const u = clamp01(t);
+    for (let i = 0; i < stops.length - 1; i++) {
+      const a = stops[i];
+      const b = stops[i + 1];
+      if (u >= a.off && u <= b.off) {
+        const span = Math.max(0.0001, b.off - a.off);
+        return mixCol(a.col, b.col, (u - a.off) / span);
+      }
+    }
+    return stops[stops.length - 1].col;
+  };
+
+  const KAPPA = 0.5522847498;
+  const pxF = (x: number) => f2(x);
+  const pyF = (y: number) => f2(safeOutH - y);
+
+  // Extended Graphics State registry (/ExtGState) for 100% true live alpha opacity in Illustrator!
+  const gsKeyToName = new Map<string, string>();
+  const gsDefs: string[] = [];
+  let gsCounter = 0;
+  const getAlphaGs = (alpha: number, blendMode: "Normal" | "Multiply" = "Normal"): string => {
+    const aStr = clamp01(alpha).toFixed(4);
+    const key = `${blendMode}_${aStr}`;
+    let name = gsKeyToName.get(key);
+    if (!name) {
+      name = `GS${gsCounter++}`;
+      gsKeyToName.set(key, name);
+      gsDefs.push(
+        `/${name} << /Type /ExtGState /ca ${aStr} /CA ${aStr} /BM /${blendMode} /AIS false >>`
+      );
+    }
+    return name;
+  };
+
+  // Shading dictionary registry for opaque linear/radial smooth gradients
+  const shadingDefs: string[] = [];
+  let shCounter = 0;
+
+  const buildPdfShadingFn = (stops: { off: number; col: string; sop: number }[]): string => {
+    const rgbStop = (st: { col: string }) => {
+      const [rr, gg, bb] = hexToPsRgb(st.col, "#000000", 1);
+      return `${rr} ${gg} ${bb}`;
+    };
+    const clean: { off: number; col: string; sop: number }[] = [];
+    for (let i = 0; i < stops.length; i++) {
+      const off = clamp01(stops[i].off);
+      if (clean.length > 0 && off <= clean[clean.length - 1].off + 0.001) {
+        if (i === stops.length - 1) clean[clean.length - 1] = { ...stops[i], off: 1 };
+        continue;
+      }
+      clean.push({ ...stops[i], off });
+    }
+    if (clean.length === 0) clean.push({ off: 0, col: "#000000", sop: 1 }, { off: 1, col: "#000000", sop: 1 });
+    else if (clean.length === 1) clean.push({ ...clean[0], off: 1 });
+    clean[0].off = 0;
+    clean[clean.length - 1].off = 1;
+    if (clean.length === 2) {
+      return `<< /FunctionType 2 /Domain [0 1] /C0 [${rgbStop(clean[0])}] /C1 [${rgbStop(clean[1])}] /N 1 >>`;
+    }
+    const subFuncs: string[] = [];
+    const bounds: string[] = [];
+    const encode: string[] = [];
+    for (let i = 0; i < clean.length - 1; i++) {
+      subFuncs.push(
+        `<< /FunctionType 2 /Domain [0 1] /C0 [${rgbStop(clean[i])}] /C1 [${rgbStop(clean[i + 1])}] /N 1 >>`
+      );
+      encode.push("0 1");
+      if (i > 0) bounds.push(clean[i].off.toFixed(4));
+    }
+    return `<< /FunctionType 3 /Domain [0 1] /Functions [${subFuncs.join(" ")}] /Bounds [${bounds.join(
+      " "
+    )}] /Encode [${encode.join(" ")}] >>`;
+  };
+
+  const streamOps: string[] = [];
+
+  const emitPdfShadingFill = (
+    pathOps: string[],
+    gSpec: PdfGradSpec,
+    bbox: { x: number; y: number; w: number; h: number },
+    elemOp: number,
+    useEoClip: boolean
+  ) => {
+    const shName = `SH${shCounter++}`;
+    const fnStr = buildPdfShadingFn(gSpec.stops);
+    if (gSpec.type === "linear") {
+      const lx1 = gSpec.units === "objectBoundingBox" ? bbox.x + gSpec.x1 * bbox.w : gSpec.x1;
+      const ly1 = gSpec.units === "objectBoundingBox" ? bbox.y + gSpec.y1 * bbox.h : gSpec.y1;
+      const lx2 = gSpec.units === "objectBoundingBox" ? bbox.x + gSpec.x2 * bbox.w : gSpec.x2;
+      const ly2 = gSpec.units === "objectBoundingBox" ? bbox.y + gSpec.y2 * bbox.h : gSpec.y2;
+      shadingDefs.push(
+        `/${shName} << /ShadingType 2 /ColorSpace /DeviceRGB /Coords [${pxF(lx1)} ${pyF(ly1)} ${pxF(
+          lx2
+        )} ${pyF(ly2)}] /Function ${fnStr} /Extend [true true] >>`
+      );
+    } else {
+      const rcx = gSpec.units === "objectBoundingBox" ? bbox.x + gSpec.cx * bbox.w : gSpec.cx;
+      const rcy = gSpec.units === "objectBoundingBox" ? bbox.y + gSpec.cy * bbox.h : gSpec.cy;
+      const rr = gSpec.units === "objectBoundingBox" ? gSpec.r * Math.max(bbox.w, bbox.h) : gSpec.r;
+      shadingDefs.push(
+        `/${shName} << /ShadingType 3 /ColorSpace /DeviceRGB /Coords [${pxF(rcx)} ${pyF(
+          rcy
+        )} 0 ${pxF(rcx)} ${pyF(rcy)} ${f2(Math.max(1, rr))}] /Function ${fnStr} /Extend [true true] >>`
+      );
+    }
+    const gsPrefix = elemOp < 0.995 ? `/${getAlphaGs(elemOp)} gs ` : "";
+    streamOps.push(`q ${gsPrefix}${pathOps.join(" ")} ${useEoClip ? "W*" : "W"} n /${shName} sh Q`);
+  };
+
+  const emitNode = (el: Element) => {
+    const tag = el.tagName.toLowerCase();
+    if (tag === "defs" || tag === "parsererror") return;
+    if (tag === "g") {
+      Array.from(el.children).forEach(emitNode);
+      return;
+    }
+
+    const rawFill = (el.getAttribute("fill") || "none").trim();
+    const rawStroke = (el.getAttribute("stroke") || "none").trim();
+    const parsedSw = parseFloat(el.getAttribute("stroke-width") || "0");
+    const sw = Number.isFinite(parsedSw) ? Math.max(0, parsedSw) : 0;
+    const parsedOp = parseFloat(el.getAttribute("opacity") || "1");
+    const op = Number.isFinite(parsedOp) ? clamp01(parsedOp) : 1;
+    const parsedFillOp = parseFloat(el.getAttribute("fill-opacity") || "1");
+    const fillAlpha = clamp01(op * (Number.isFinite(parsedFillOp) ? clamp01(parsedFillOp) : 1));
+    const parsedStrokeOp = parseFloat(el.getAttribute("stroke-opacity") || "1");
+    const strokeAlpha = clamp01(
+      op * (Number.isFinite(parsedStrokeOp) ? clamp01(parsedStrokeOp) : 1)
+    );
+    const frule = el.getAttribute("fill-rule") || "";
+
+    // 1. Translucent Linear Fade Gradient Rects (Shadow Ref 2 / Studio Horizon Vignette)
+    // Emit 84 smooth cumulative TRUE LIVE ALPHA PDF vector bands (pure shadow RGB + /ExtGState /ca -> ZERO WHITE HALO!)
+    if (tag === "rect" && rawFill.startsWith("url(#")) {
+      const closeIdx = rawFill.indexOf(")");
+      const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
+      const gSpec = gradMap[gid];
+      if (gSpec) {
+        const rx = parseFloat(el.getAttribute("x") || "0") || 0;
+        const ry = parseFloat(el.getAttribute("y") || "0") || 0;
+        const rw = parseFloat(el.getAttribute("width") || String(safeOutW)) || safeOutW;
+        const rh = parseFloat(el.getAttribute("height") || String(safeOutH)) || safeOutH;
+        if (rw <= 0 || rh <= 0) return;
+
+        const hasTranslucentStop = gSpec.type === "linear" && gSpec.stops.some((st) => st.sop < 0.95);
+        if (hasTranslucentStop) {
+          const lx1 = gSpec.units === "objectBoundingBox" ? rx + gSpec.x1 * rw : gSpec.x1;
+          const ly1 = gSpec.units === "objectBoundingBox" ? ry + gSpec.y1 * rh : gSpec.y1;
+          const lx2 = gSpec.units === "objectBoundingBox" ? rx + gSpec.x2 * rw : gSpec.x2;
+          const ly2 = gSpec.units === "objectBoundingBox" ? ry + gSpec.y2 * rh : gSpec.y2;
+          const dx = lx2 - lx1;
+          const dy = ly2 - ly1;
+          const isDiag = Math.abs(dx) > 1 && Math.abs(dy) > 1;
+          const pureCol = gSpec.stops[0]?.col || "#050507";
+          const [pr, pg, pb] = hexToPsRgb(pureCol, "#000000", 1);
+
+          const steps = 84;
+          const tVals: number[] = [];
+          let peakIdx = 0;
+          let peakVal = -1;
+          for (let s = 0; s <= steps; s++) {
+            const v = clamp01(sampleGradOpacity(gSpec.stops, s / steps) * op);
+            tVals.push(v);
+            if (v > peakVal) {
+              peakVal = v;
+              peakIdx = s;
+            }
+          }
+
+          const emitBandRect = (bx: number, by: number, bw: number, bh: number, alpha: number) => {
+            if (alpha <= 0.0005 || bw <= 0.1 || bh <= 0.1) return;
+            const gsName = getAlphaGs(alpha, "Normal");
+            streamOps.push(
+              `q /${gsName} gs ${pr} ${pg} ${pb} rg ${pxF(bx)} ${pyF(by + bh)} ${pxF(bw)} ${f2(bh)} re f Q`
+            );
+          };
+
+          if (isDiag) {
+            const len2 = dx * dx + dy * dy;
+            for (let s = steps - 1; s >= 0; s--) {
+              const tCur = tVals[s];
+              const tNext = tVals[s + 1];
+              if (tCur <= tNext + 0.0004) continue;
+              const diffAlpha = clamp01(1 - (1 - tCur) / Math.max(0.001, 1 - tNext));
+              const frac = (s + 0.5) / steps;
+              const px0 = lx1 + dx * frac;
+              const py0 = ly1 + dy * frac;
+              const corners: [number, number][] = [
+                [rx, ry],
+                [rx + rw, ry],
+                [rx + rw, ry + rh],
+                [rx, ry + rh],
+              ];
+              const clipped: [number, number][] = [];
+              const signed = (p: [number, number]) => ((p[0] - px0) * dx + (p[1] - py0) * dy) / Math.max(1, len2);
+              for (let ci = 0; ci < corners.length; ci++) {
+                const A = corners[ci];
+                const B = corners[(ci + 1) % corners.length];
+                const sA = signed(A);
+                const sB = signed(B);
+                if (sA <= 0) clipped.push(A);
+                if ((sA < 0 && sB > 0) || (sA > 0 && sB < 0)) {
+                  const u = sA / (sA - sB);
+                  clipped.push([A[0] + (B[0] - A[0]) * u, A[1] + (B[1] - A[1]) * u]);
+                }
+              }
+              if (clipped.length >= 3) {
+                const gsName = getAlphaGs(diffAlpha, "Normal");
+                const pOps = [`${pxF(clipped[0][0])} ${pyF(clipped[0][1])} m`];
+                for (let k = 1; k < clipped.length; k++) {
+                  pOps.push(`${pxF(clipped[k][0])} ${pyF(clipped[k][1])} l`);
+                }
+                pOps.push("h f");
+                streamOps.push(`q /${gsName} gs ${pr} ${pg} ${pb} rg ${pOps.join(" ")} Q`);
+              }
+            }
+            return;
+          }
+
+          const isDualEdges = tVals[0] > 0.15 && tVals[steps] > 0.15 && tVals[Math.floor(steps / 2)] < 0.05;
+          if (isDualEdges) {
+            const mid = Math.floor(steps / 2);
+            for (let s = mid - 1; s >= 0; s--) {
+              const tCur = tVals[s];
+              const tNext = tVals[s + 1];
+              if (tCur <= tNext + 0.0004) continue;
+              const diffAlpha = clamp01(1 - (1 - tCur) / Math.max(0.001, 1 - tNext));
+              const yEdge = ly1 + dy * ((s + 0.5) / steps);
+              emitBandRect(rx, Math.min(ly1, yEdge), rw, Math.abs(yEdge - ly1), diffAlpha);
+            }
+            for (let s = mid + 1; s <= steps; s++) {
+              const tCur = tVals[s];
+              const tPrev = tVals[s - 1];
+              if (tCur <= tPrev + 0.0004) continue;
+              const diffAlpha = clamp01(1 - (1 - tCur) / Math.max(0.001, 1 - tPrev));
+              const yEdge = ly1 + dy * ((s - 0.5) / steps);
+              emitBandRect(rx, Math.min(ly2, yEdge), rw, Math.abs(ly2 - yEdge), diffAlpha);
+            }
+          } else if (peakIdx > 2 && peakIdx < steps - 2) {
+            const levels = 64;
+            for (let lv = 1; lv <= levels; lv++) {
+              const thresh = (lv / levels) * peakVal;
+              const prevThresh = ((lv - 1) / levels) * peakVal;
+              const diffAlpha = clamp01(1 - (1 - thresh) / Math.max(0.001, 1 - prevThresh));
+              let lo = peakIdx;
+              let hi = peakIdx;
+              while (lo > 0 && tVals[lo - 1] >= thresh) lo--;
+              while (hi < steps && tVals[hi + 1] >= thresh) hi++;
+              const yA = ly1 + dy * (lo / steps);
+              const yB = ly1 + dy * (hi / steps);
+              emitBandRect(rx, Math.min(yA, yB), rw, Math.abs(yB - yA), diffAlpha);
+            }
+          } else {
+            for (let s = steps - 1; s >= 0; s--) {
+              const tCur = tVals[s];
+              const tNext = tVals[s + 1];
+              if (tCur <= tNext + 0.0004) continue;
+              const diffAlpha = clamp01(1 - (1 - tCur) / Math.max(0.001, 1 - tNext));
+              const yEdge = ly1 + dy * ((s + 0.5) / steps);
+              emitBandRect(rx, Math.min(ly1, yEdge), rw, Math.abs(yEdge - ly1), diffAlpha);
+            }
+          }
+          return;
+        }
+
+        const rectOps = [`${pxF(rx)} ${pyF(ry + rh)} ${pxF(rw)} ${f2(rh)} re`];
+        emitPdfShadingFill(rectOps, gSpec, { x: rx, y: ry, w: rw, h: rh }, op, false);
+        return;
+      }
+    }
+
+    // 2. Radial gradient circles/ellipses with live alpha rings when translucent
+    if ((tag === "circle" || tag === "ellipse") && rawFill.startsWith("url(#")) {
+      const closeIdx = rawFill.indexOf(")");
+      const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
+      const gSpec = gradMap[gid];
+      if (gSpec) {
+        const cx = parseFloat(el.getAttribute("cx") || "0") || 0;
+        const cy = parseFloat(el.getAttribute("cy") || "0") || 0;
+        const rx0 =
+          tag === "circle"
+            ? parseFloat(el.getAttribute("r") || "0") || 0
+            : parseFloat(el.getAttribute("rx") || "0") || 0;
+        const ry0 =
+          tag === "circle"
+            ? parseFloat(el.getAttribute("r") || "0") || 0
+            : parseFloat(el.getAttribute("ry") || "0") || 0;
+        if (rx0 <= 0 || ry0 <= 0) return;
+        const hasTranslucentStop = gSpec.stops.some((st) => st.sop < 0.9);
+        if (!hasTranslucentStop && Math.abs(rx0 - ry0) < 1.5) {
+          const ox = rx0 * KAPPA;
+          const oy = ry0 * KAPPA;
+          const cOps = [
+            `${pxF(cx + rx0)} ${pyF(cy)} m`,
+            `${pxF(cx + rx0)} ${pyF(cy + oy)} ${pxF(cx + ox)} ${pyF(cy + ry0)} ${pxF(cx)} ${pyF(cy + ry0)} c`,
+            `${pxF(cx - ox)} ${pyF(cy + ry0)} ${pxF(cx - rx0)} ${pyF(cy + oy)} ${pxF(cx - rx0)} ${pyF(cy)} c`,
+            `${pxF(cx - rx0)} ${pyF(cy - oy)} ${pxF(cx - ox)} ${pyF(cy - ry0)} ${pxF(cx)} ${pyF(cy - ry0)} c`,
+            `${pxF(cx + ox)} ${pyF(cy - ry0)} ${pxF(cx + rx0)} ${pyF(cy - oy)} ${pxF(cx + rx0)} ${pyF(cy)} c`,
+            "h",
+          ];
+          emitPdfShadingFill(
+            cOps,
+            { ...gSpec, type: "radial", units: "objectBoundingBox", cx: 0.5, cy: 0.5, r: 0.5 },
+            { x: cx - rx0, y: cy - ry0, w: rx0 * 2, h: ry0 * 2 },
+            op,
+            false
+          );
+          return;
+        }
+        const rings = 32;
+        for (let rk = rings; rk >= 1; rk--) {
+          const frac = rk / rings;
+          const sopVal = sampleGradOpacity(gSpec.stops, frac) * op;
+          if (sopVal <= 0.008) continue;
+          const [rr, gg, bb] = hexToPsRgb(sampleGradPureHex(gSpec.stops, frac), "#000000", 1);
+          const gsName = getAlphaGs(Math.min(1, sopVal * 0.22), "Normal");
+          const rx = rx0 * frac;
+          const ry = ry0 * frac;
+          const ox = rx * KAPPA;
+          const oy = ry * KAPPA;
+          const ringOps = [
+            `${pxF(cx + rx)} ${pyF(cy)} m`,
+            `${pxF(cx + rx)} ${pyF(cy + oy)} ${pxF(cx + ox)} ${pyF(cy + ry)} ${pxF(cx)} ${pyF(cy + ry)} c`,
+            `${pxF(cx - ox)} ${pyF(cy + ry)} ${pxF(cx - rx)} ${pyF(cy + oy)} ${pxF(cx - rx)} ${pyF(cy)} c`,
+            `${pxF(cx - rx)} ${pyF(cy - oy)} ${pxF(cx - ox)} ${pyF(cy - ry)} ${pxF(cx)} ${pyF(cy - ry)} c`,
+            `${pxF(cx + ox)} ${pyF(cy - ry)} ${pxF(cx + rx)} ${pyF(cy - oy)} ${pxF(cx + rx)} ${pyF(cy)} c`,
+            "h f",
+          ];
+          streamOps.push(`q /${gsName} gs ${rr} ${gg} ${bb} rg ${ringOps.join(" ")} Q`);
+        }
+        return;
+      }
+    }
+
+    // 3. Build PDF path operators for rect, circle, ellipse, polygon, polyline, line, path
+    let pathOps: string[] = [];
+    let bbox = { x: 0, y: 0, w: safeOutW, h: safeOutH };
+    if (tag === "rect") {
+      const x = parseFloat(el.getAttribute("x") || "0") || 0;
+      const y = parseFloat(el.getAttribute("y") || "0") || 0;
+      const w = parseFloat(el.getAttribute("width") || "0") || 0;
+      const h = parseFloat(el.getAttribute("height") || "0") || 0;
+      if (w <= 0 || h <= 0) return;
+      bbox = { x, y, w, h };
+      pathOps = [`${pxF(x)} ${pyF(y + h)} ${pxF(w)} ${f2(h)} re`];
+    } else if (tag === "circle" || tag === "ellipse") {
+      const cx = parseFloat(el.getAttribute("cx") || "0") || 0;
+      const cy = parseFloat(el.getAttribute("cy") || "0") || 0;
+      const rx =
+        tag === "circle"
+          ? parseFloat(el.getAttribute("r") || "0") || 0
+          : parseFloat(el.getAttribute("rx") || "0") || 0;
+      const ry =
+        tag === "circle"
+          ? parseFloat(el.getAttribute("r") || "0") || 0
+          : parseFloat(el.getAttribute("ry") || "0") || 0;
+      if (rx <= 0 || ry <= 0) return;
+      bbox = { x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 };
+      const ox = rx * KAPPA;
+      const oy = ry * KAPPA;
+      pathOps = [
+        `${pxF(cx + rx)} ${pyF(cy)} m`,
+        `${pxF(cx + rx)} ${pyF(cy + oy)} ${pxF(cx + ox)} ${pyF(cy + ry)} ${pxF(cx)} ${pyF(cy + ry)} c`,
+        `${pxF(cx - ox)} ${pyF(cy + ry)} ${pxF(cx - rx)} ${pyF(cy + oy)} ${pxF(cx - rx)} ${pyF(cy)} c`,
+        `${pxF(cx - rx)} ${pyF(cy - oy)} ${pxF(cx - ox)} ${pyF(cy - ry)} ${pxF(cx)} ${pyF(cy - ry)} c`,
+        `${pxF(cx + ox)} ${pyF(cy - ry)} ${pxF(cx + rx)} ${pyF(cy - oy)} ${pxF(cx + rx)} ${pyF(cy)} c`,
+        "h",
+      ];
+    } else if (tag === "polygon" || tag === "polyline") {
+      const rawPts = (el.getAttribute("points") || "").match(/[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi);
+      const pts: [number, number][] = [];
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      if (rawPts) {
+        for (let i = 0; i + 1 < rawPts.length; i += 2) {
+          const px = parseFloat(rawPts[i]);
+          const py = parseFloat(rawPts[i + 1]);
+          if (Number.isFinite(px) && Number.isFinite(py)) {
+            pts.push([px, py]);
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
+          }
+        }
+      }
+      if (pts.length < 2) return;
+      bbox = { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
+      pathOps = [`${pxF(pts[0][0])} ${pyF(pts[0][1])} m`];
+      for (let i = 1; i < pts.length; i++) {
+        pathOps.push(`${pxF(pts[i][0])} ${pyF(pts[i][1])} l`);
+      }
+      if (tag === "polygon") pathOps.push("h");
+    } else if (tag === "line") {
+      const x1 = parseFloat(el.getAttribute("x1") || "0") || 0;
+      const y1 = parseFloat(el.getAttribute("y1") || "0") || 0;
+      const x2 = parseFloat(el.getAttribute("x2") || "0") || 0;
+      const y2 = parseFloat(el.getAttribute("y2") || "0") || 0;
+      pathOps = [`${pxF(x1)} ${pyF(y1)} m`, `${pxF(x2)} ${pyF(y2)} l`];
+    } else if (tag === "path") {
+      const d = el.getAttribute("d") || "";
+      if (!d) return;
+      const ns = (d.match(/[-+]?(?:\d+\.?\d*|\.\d+)/g) || []).map(Number);
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      for (let q = 0; q + 1 < ns.length; q += 2) {
+        if (Number.isFinite(ns[q]) && Number.isFinite(ns[q + 1])) {
+          if (ns[q] < minX) minX = ns[q];
+          if (ns[q] > maxX) maxX = ns[q];
+          if (ns[q + 1] < minY) minY = ns[q + 1];
+          if (ns[q + 1] > maxY) maxY = ns[q + 1];
+        }
+      }
+      if (Number.isFinite(minX) && Number.isFinite(maxX)) {
+        bbox = { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
+      }
+      pathOps = svgPathToPostScriptOps(d, safeOutH).map((tok) => (tok === "cp" ? "h" : tok));
+    }
+
+    if (!pathOps.length) return;
+
+    // Fill with 100% TRUE LIVE ALPHA OPACITY (NO white pre-blending!)
+    if (rawFill.startsWith("url(#") && (tag === "path" || tag === "polygon")) {
+      const closeIdx = rawFill.indexOf(")");
+      const gid = closeIdx > 5 ? rawFill.slice(5, closeIdx).trim() : "";
+      const gSpec = gradMap[gid];
+      if (gSpec) {
+        const hasTranslucentStop = gSpec.stops.some((st) => st.sop < 0.85);
+        if (hasTranslucentStop) {
+          const midCol = sampleGradPureHex(gSpec.stops, 0.45);
+          const midOp = sampleGradOpacity(gSpec.stops, 0.45) * op;
+          const [rr, gg, bb] = hexToPsRgb(midCol, "#000000", 1);
+          const gsName = getAlphaGs(midOp, "Normal");
+          const fillOp = frule === "evenodd" ? "f*" : "f";
+          streamOps.push(`q /${gsName} gs ${rr} ${gg} ${bb} rg ${pathOps.join(" ")} ${fillOp} Q`);
+        } else {
+          emitPdfShadingFill(pathOps, gSpec, bbox, op, frule === "evenodd");
+        }
+      }
+    } else if (rawFill !== "none" && !rawFill.startsWith("url(")) {
+      const [rr, gg, bb] = hexToPsRgb(rawFill, "#000000", 1);
+      const fillOp = frule === "evenodd" ? "f*" : "f";
+      if (fillAlpha < 0.995) {
+        const gsName = getAlphaGs(fillAlpha, "Normal");
+        streamOps.push(`q /${gsName} gs ${rr} ${gg} ${bb} rg ${pathOps.join(" ")} ${fillOp} Q`);
+      } else {
+        streamOps.push(`${rr} ${gg} ${bb} rg ${pathOps.join(" ")} ${fillOp}`);
+      }
+    }
+
+    let resolvedStroke = rawStroke;
+    if (rawStroke.startsWith("url(#")) {
+      const closeIdx = rawStroke.indexOf(")");
+      const gid = closeIdx > 5 ? rawStroke.slice(5, closeIdx).trim() : "";
+      const gSpec = gradMap[gid];
+      resolvedStroke = gSpec ? sampleGradPureHex(gSpec.stops, 0.5) : "none";
+    }
+    if (resolvedStroke !== "none" && !resolvedStroke.startsWith("url(") && sw > 0.05) {
+      const [rr, gg, bb] = hexToPsRgb(resolvedStroke, "#000000", 1);
+      if (strokeAlpha < 0.995) {
+        const gsName = getAlphaGs(strokeAlpha, "Normal");
+        streamOps.push(
+          `q /${gsName} gs ${rr} ${gg} ${bb} RG ${f2(sw)} w 1 J 1 j ${pathOps.join(" ")} S Q`
+        );
+      } else {
+        streamOps.push(`${rr} ${gg} ${bb} RG ${f2(sw)} w 1 J 1 j ${pathOps.join(" ")} S`);
+      }
+    }
+  };
+
+  if (root && root.tagName.toLowerCase() !== "parsererror") {
+    Array.from(root.children).forEach(emitNode);
+  }
+
+  const contentStream = streamOps.join("\n") + "\n";
+
+  // Assemble strictly conforming pure-ASCII PDF 1.4 (.ai) with byte-exact xref offsets
+  const parts: string[] = [];
+  let byteOffset = 0;
+  const pushStr = (s: string) => {
+    parts.push(s);
+    byteOffset += s.length;
+  };
+
+  pushStr("%PDF-1.4\n%PTVL-AI-VECTOR\n");
+
+  const objOffsets: number[] = [0];
+  const pushObj = (num: number, body: string) => {
+    objOffsets[num] = byteOffset;
+    pushStr(`${num} 0 obj\n${body}\nendobj\n`);
+  };
+
+  pushObj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  pushObj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  pushObj(
+    3,
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${safeOutW} ${safeOutH}] /CropBox [0 0 ${safeOutW} ${safeOutH}] /ArtBox [0 0 ${safeOutW} ${safeOutH}] /TrimBox [0 0 ${safeOutW} ${safeOutH}] /Group << /Type /Group /S /Transparency /CS /DeviceRGB >> /Resources 4 0 R /Contents 5 0 R >>`
+  );
+
+  const resDictParts: string[] = [];
+  if (gsDefs.length > 0) {
+    resDictParts.push(`/ExtGState << ${gsDefs.join(" ")} >>`);
+  }
+  if (shadingDefs.length > 0) {
+    resDictParts.push(`/Shading << ${shadingDefs.join(" ")} >>`);
+  }
+  pushObj(4, `<< ${resDictParts.join(" ")} >>`);
+
+  pushObj(5, `<< /Length ${contentStream.length} >>\nstream\n${contentStream}endstream`);
+
+  const xrefOffset = byteOffset;
+  pushStr(`xref\n0 6\n0000000000 65535 f \n`);
+  for (let i = 1; i <= 5; i++) {
+    pushStr(`${String(objOffsets[i]).padStart(10, "0")} 00000 n \n`);
+  }
+  pushStr(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`);
+
+  return parts.join("");
+}
+
+/* =====================================================================
    FABRIC / TEXTURE IMAGE TO PROCEDURAL VECTOR PATTERN CONVERTER
    Analyzes any uploaded Fabric / Texture / Photo and builds a 100% Vector,
    Separable, Recolorable Adobe Illustrator Procedural Pattern Generator
@@ -37711,10 +38528,17 @@ export async function inspectMicrostockFileBinary(
     realH = dv.getUint32(20, false);
     dpi = 300;
   }
-  // 3. Check EPS / SVG text headers
+  // 3. Check AI (PDF 1.4) / EPS / SVG text headers
   else {
     const headText = new TextDecoder().decode(u8.subarray(0, Math.min(u8.length, 4096)));
-    if (headText.includes("%!PS-Adobe")) {
+    if (headText.startsWith("%PDF-")) {
+      format = "AI / PDF 1.4 (LIVE ALPHA VECTOR)";
+      const m = headText.match(/\/MediaBox\s*\[\s*0\s+0\s+(\d+)\s+(\d+)\s*\]/);
+      if (m) {
+        realW = parseInt(m[1], 10);
+        realH = parseInt(m[2], 10);
+      }
+    } else if (headText.includes("%!PS-Adobe")) {
       format = "EPS 10 (VECTOR)";
       const m = headText.match(/%%BoundingBox:\s*0\s+0\s+(\d+)\s+(\d+)/);
       if (m) {
