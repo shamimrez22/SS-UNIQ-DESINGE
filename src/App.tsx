@@ -2613,10 +2613,12 @@ export default function App() {
       w: outDims.w,
       h: outDims.h,
       pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+      year: String(MP[curMode.id]?.year || ""),
       bgHex: exportP.bg,
       c0Hex: exportP.c0,
       style: exportP.style,
       idx: 0,
+      isBatch: false,
     });
     const fname = `${seoMeta.fileSlug}.svg`;
     downloadBlob(blob, fname);
@@ -2686,10 +2688,12 @@ export default function App() {
       w: outDims.w,
       h: outDims.h,
       pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+      year: String(MP[curMode.id]?.year || ""),
       bgHex: exportP.bg,
       c0Hex: exportP.c0,
       style: exportP.style,
       idx: 0,
+      isBatch: false,
     });
     const fname = `${seoMeta.fileSlug}.eps`;
     downloadBlob(blob, fname);
@@ -2759,10 +2763,12 @@ export default function App() {
       w: outDims.w,
       h: outDims.h,
       pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+      year: String(MP[curMode.id]?.year || ""),
       bgHex: exportP.bg,
       c0Hex: exportP.c0,
       style: exportP.style,
       idx: 0,
+      isBatch: false,
     });
     const fname = `${seoMeta.fileSlug}.ai`;
     downloadBlob(blob, fname);
@@ -2828,10 +2834,12 @@ export default function App() {
           w: W,
           h: H,
           pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
-          bgHex: P.bg,
-          c0Hex: P.c0,
-          style: P.style,
+          year: String(MP[curMode.id]?.year || ""),
+          bgHex: exportP.bg,
+          c0Hex: exportP.c0,
+          style: exportP.style,
           idx: 0,
+          isBatch: false,
         });
         const fname = `${seoMeta.fileSlug}.${fmtKey}`;
         downloadBlob(finalBlob, fname);
@@ -2902,10 +2910,12 @@ export default function App() {
         w: W,
         h: H,
         pcs: String(MP[curMode.id]?.viewMode || MP[curMode.id]?.pcs || ""),
+        year: String(MP[curMode.id]?.year || ""),
         bgHex: exportP.bg,
         c0Hex: exportP.c0,
         style: exportP.style,
         idx: 0,
+        isBatch: false,
       });
       const baseName = seoMeta.fileSlug;
       const jpgName = `${baseName}.jpg`;
@@ -3430,12 +3440,14 @@ export default function App() {
             w: dims.w,
             h: dims.h,
             pcs: String(curQForMeta.viewMode || curQForMeta.pcs || ""),
+            year: String(curQForMeta.year || ""),
             bgHex: workingP.bg,
             c0Hex: workingP.c0,
             style: workingP.style,
             idx,
+            isBatch: true,
           });
-          // Strictly <= 58 chars ASCII filename (prevents Windows 260-char MAX_PATH "File not found." in Adobe Illustrator)
+          // Clean short identical base filename for paired .eps / .jpg / .ai / .svg files (e.g. "2027 calendar 01.eps" & "2027 calendar 01.jpg")
           const identicalBaseName = seoMeta.fileSlug;
 
           const cleanTileForVec =

@@ -39421,10 +39421,12 @@ export function buildMicrostockSeoIdentity(row: {
   w: number;
   h: number;
   pcs?: string;
+  year?: string;
   bgHex?: string;
   c0Hex?: string;
   style?: string;
   idx?: number;
+  isBatch?: boolean;
 }): { title: string; fileSlug: string; keywords: string; category: string } {
   const cleanModeName = row.modeName
     .replace(/\([^)]*\)/g, " ")
@@ -39728,14 +39730,38 @@ export function buildMicrostockSeoIdentity(row: {
     .replace(/\s+/g, " ")
     .trim();
 
-  // Windows & Adobe Illustrator MAX_PATH-Safe File Name (strictly <= 58 chars incl. serialCode, pure [A-Za-z0-9_-])
-  // Prevents Windows 260-char MAX_PATH overflow ("File not found." error in Adobe Illustrator!)
-  const shortCore = `${cleanModeName} ${accentInfo.label}`
-    .replace(/[^a-zA-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 44)
-    .replace(/_+$/g, "");
-  const fileSlug = `${shortCore || "Vector_Design"}_${serialCode}`;
+  // Ultra-clean short filename — strictly identical across paired .eps / .jpg / .ai / .svg / .png formats!
+  // Single export: e.g. "2027 calendar.eps", "2027 calendar.jpg"
+  // Batch export : e.g. "2027 calendar 01.eps", "2027 calendar 01.jpg" (short 2-digit index prevents overwrites in ZIP/folder)
+  const yearMatch =
+    (row.year && /^(20\d{2})$/.test(String(row.year).trim()) ? String(row.year).trim() : "") ||
+    (row.modeName.match(/\b(20\d{2})\b/)?.[1] ?? "") ||
+    "2027";
+  let shortSubject = "seamless pattern";
+  if (isCalendar) {
+    shortSubject = `${yearMatch} calendar`;
+  } else if (isShadow) {
+    shortSubject = "transparent shadow";
+  } else if (isTornPaper) {
+    shortSubject = "torn paper";
+  } else if (isPoster) {
+    shortSubject = "wall poster";
+  } else if (isTypography) {
+    shortSubject = "calligraphy lettering";
+  } else if (isBrush) {
+    shortSubject = "brush stroke";
+  } else if (isLighting) {
+    shortSubject = "light effect";
+  } else if (cleanCat === "Gradient") {
+    shortSubject = "gradient background";
+  } else if (cleanCat === "Texture") {
+    shortSubject = "texture background";
+  } else if (isBgCat) {
+    shortSubject = "abstract background";
+  }
+  const fileSlug = row.isBatch
+    ? `${shortSubject} ${String((row.idx ?? 0) + 1).padStart(2, "0")}`
+    : shortSubject;
 
   const modeWords = cleanModeName
     .toLowerCase()
