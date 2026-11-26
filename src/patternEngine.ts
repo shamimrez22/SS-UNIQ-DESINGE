@@ -12459,6 +12459,156 @@ const VECTOR_OUTLINE_GLYPHS: Record<string, [number, number][][]> = {
   ],
 };
 
+const SMOOTH_CURVED_GLYPHS = new Set([
+  "0",
+  "2",
+  "3",
+  "5",
+  "6",
+  "8",
+  "9",
+  "B",
+  "C",
+  "D",
+  "G",
+  "J",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "U",
+  "&",
+  "(",
+  ")",
+  ",",
+]);
+
+// Convert a closed vector glyph ring into OpenType-grade smooth Cubic Bézier curves (C)
+// while keeping sharp corners (terminals, crotches, 90° joints) & long straight stems 100% crisp!
+function buildSmoothGlyphContourPath(
+  ring: [number, number][],
+  isCurvedGlyph: boolean,
+  mapX: (gx: number) => number,
+  mapY: (gy: number) => number
+): string {
+  const n = ring.length;
+  if (n < 3) return "";
+
+  if (!isCurvedGlyph) {
+    let d = "";
+    for (let p = 0; p < n; p++) {
+      d += (p === 0 ? "M" : "L") + `${f2(mapX(ring[p][0]))} ${f2(mapY(ring[p][1]))}`;
+    }
+    return d + "Z";
+  }
+
+  // Compute unit edge vectors and lengths in glyph coordinate space (aspect-invariant)
+  const edgeDx: number[] = new Array(n);
+  const edgeDy: number[] = new Array(n);
+  const edgeLen: number[] = new Array(n);
+  const edgeUx: number[] = new Array(n);
+  const edgeUy: number[] = new Array(n);
+  const isLongAxisStem: boolean[] = new Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const a = ring[i];
+    const b = ring[(i + 1) % n];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy);
+    edgeDx[i] = dx;
+    edgeDy[i] = dy;
+    edgeLen[i] = len;
+    edgeUx[i] = len > 1e-4 ? dx / len : 1;
+    edgeUy[i] = len > 1e-4 ? dy / len : 0;
+    // Long horizontal or vertical straight stems (e.g. vertical sides of 0, 6, 9, D, B, P, R, U)
+    isLongAxisStem[i] = len > 3.15 && (Math.abs(dx) < 0.08 || Math.abs(dy) < 0.08);
+  }
+
+  // Classify each vertex as sharp corner vs smooth curve knot + compute exact C1 unit tangent
+  const isSmooth: boolean[] = new Array(n);
+  const tanX: number[] = new Array(n);
+  const tanY: number[] = new Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const prevIdx = (i - 1 + n) % n;
+    const inUx = edgeUx[prevIdx];
+    const inUy = edgeUy[prevIdx];
+    const outUx = edgeUx[i];
+    const outUy = edgeUy[i];
+    const dot = inUx * outUx + inUy * outUy;
+
+    // Sharp corner if turn angle > ~69° (catches 90° stem joins, cut terminals, crotch notches)
+    if (dot < 0.35) {
+      isSmooth[i] = false;
+      tanX[i] = 0;
+      tanY[i] = 0;
+    } else {
+      isSmooth[i] = true;
+      // Pin tangent to long straight axis stem so stems stay laser-straight & transition tangentially!
+      if (isLongAxisStem[prevIdx] && !isLongAxisStem[i]) {
+        tanX[i] = inUx;
+        tanY[i] = inUy;
+      } else if (isLongAxisStem[i] && !isLongAxisStem[prevIdx]) {
+        tanX[i] = outUx;
+        tanY[i] = outUy;
+      } else {
+        const bx = inUx + outUx;
+        const by = inUy + outUy;
+        const bl = Math.hypot(bx, by);
+        tanX[i] = bl > 1e-4 ? bx / bl : outUx;
+        tanY[i] = bl > 1e-4 ? by / bl : outUy;
+      }
+    }
+  }
+
+  let d = `M${f2(mapX(ring[0][0]))} ${f2(mapY(ring[0][1]))}`;
+  for (let i = 0; i < n; i++) {
+    const nextIdx = (i + 1) % n;
+    const a = ring[i];
+    const b = ring[nextIdx];
+    const len = edgeLen[i];
+
+    // Straight line for long axis stems or segments between two sharp corners
+    if (isLongAxisStem[i] || (!isSmooth[i] && !isSmooth[nextIdx]) || len < 1e-3) {
+      d += `L${f2(mapX(b[0]))} ${f2(mapY(b[1]))}`;
+      continue;
+    }
+
+    const ux = edgeUx[i];
+    const uy = edgeUy[i];
+    const handleLen = len * 0.34;
+
+    // Outgoing control point cp1 from vertex A
+    let c1x: number;
+    let c1y: number;
+    if (isSmooth[i] && tanX[i] * ux + tanY[i] * uy > 0.25) {
+      c1x = a[0] + tanX[i] * handleLen;
+      c1y = a[1] + tanY[i] * handleLen;
+    } else {
+      c1x = a[0] + edgeDx[i] * 0.333;
+      c1y = a[1] + edgeDy[i] * 0.333;
+    }
+
+    // Incoming control point cp2 into vertex B
+    let c2x: number;
+    let c2y: number;
+    if (isSmooth[nextIdx] && tanX[nextIdx] * ux + tanY[nextIdx] * uy > 0.25) {
+      c2x = b[0] - tanX[nextIdx] * handleLen;
+      c2y = b[1] - tanY[nextIdx] * handleLen;
+    } else {
+      c2x = b[0] - edgeDx[i] * 0.333;
+      c2y = b[1] - edgeDy[i] * 0.333;
+    }
+
+    d += `C${f2(mapX(c1x))} ${f2(mapY(c1y))} ${f2(mapX(c2x))} ${f2(mapY(c2y))} ${f2(
+      mapX(b[0])
+    )} ${f2(mapY(b[1]))}`;
+  }
+  return d + "Z";
+}
+
 function drawPosterVectorTextString(
   text: string,
   xStart: number,
@@ -12506,18 +12656,17 @@ function drawPosterVectorTextString(
     }
     const loops = VECTOR_OUTLINE_GLYPHS[ch];
     const xOff = ch === "I" || ch === "|" || ch === "!" || ch === "." || ch === ":" || ch === "," ? -2.7 : 0;
+    const isCurved = SMOOTH_CURVED_GLYPHS.has(ch);
 
     if (loops && loops.length > 0) {
       let compoundD = "";
+      const baseCurX = curX;
+      const mapX = (gx: number) => baseCurX + (gx + xOff) * scX;
+      const mapY = (gy: number) => yTop + gy * scY;
       for (let l = 0; l < loops.length; l++) {
         const ring = loops[l];
         if (ring.length < 3) continue;
-        for (let p = 0; p < ring.length; p++) {
-          const px = curX + (ring[p][0] + xOff) * scX;
-          const py = yTop + ring[p][1] * scY;
-          compoundD += (p === 0 ? "M" : "L") + `${f1(px)} ${f1(py)}`;
-        }
-        compoundD += "Z";
+        compoundD += buildSmoothGlyphContourPath(ring, isCurved, mapX, mapY);
       }
       if (compoundD) {
         const ruleAttr = loops.length > 1 ? ` fill-rule="evenodd"` : "";
@@ -12578,18 +12727,17 @@ function drawMirroredPosterVectorTextString(
     }
     const loops = VECTOR_OUTLINE_GLYPHS[ch];
     const xOff = ch === "I" || ch === "|" || ch === "!" || ch === "." || ch === ":" || ch === "," ? -2.7 : 0;
+    const isCurved = SMOOTH_CURVED_GLYPHS.has(ch);
 
     if (loops && loops.length > 0) {
       let compoundD = "";
+      const baseCurX = curX;
+      const mapX = (gx: number) => baseCurX + (gx + xOff) * scX;
+      const mapY = (gy: number) => yTop + (14 - gy) * scReflectY;
       for (let l = 0; l < loops.length; l++) {
         const ring = loops[l];
         if (ring.length < 3) continue;
-        for (let p = 0; p < ring.length; p++) {
-          const px = curX + (ring[p][0] + xOff) * scX;
-          const py = yTop + (14 - ring[p][1]) * scReflectY;
-          compoundD += (p === 0 ? "M" : "L") + `${f1(px)} ${f1(py)}`;
-        }
-        compoundD += "Z";
+        compoundD += buildSmoothGlyphContourPath(ring, isCurved, mapX, mapY);
       }
       if (compoundD) {
         const ruleAttr = loops.length > 1 ? ` fill-rule="evenodd"` : "";
@@ -26070,20 +26218,38 @@ function renderMasterCalendarCollection(
     weekendCol = "#e11d48";
   }
 
-  // Rotate accent harmonies when variant > 0 so every click on UNIQUE GENERATE produces a distinct design!
+  // Rotate accent harmonies when variant > 0 so every click on UNIQUE GENERATE produces a distinct design — with INFINITE non-repeating golden-angle harmonies beyond variant 6!
   if (variant > 0 && colorSet === "default") {
-    const huePal = [
-      ["#f43f2e", "#f59e0b", "#2563eb"], // Sample 1 Coral Red + Amber + Royal Blue
-      ["#dc2626", "#991b1b", "#1d4ed8"], // Sample 2 Crimson Ruby + Cobalt Blue
-      ["#ea580c", "#2a9df4", "#84bd00"], // Sample 3 Vivid Orange + Rainbow
-      ["#0d9f4f", "#10b981", "#047857"], // Sample 4 Emerald Green Table
-      ["#8b5cf6", "#ec4899", "#06b6d4"], // Royal Violet & Magenta
-      ["#0284c7", "#f59e0b", "#10b981"], // Ocean Sapphire & Gold
-    ][variant % 6];
-    accent1 = huePal[0];
-    accent2 = huePal[1];
-    accent3 = huePal[2];
-    weekendCol = "#ef4444";
+    if (variant <= 6) {
+      const huePal = [
+        ["#f43f2e", "#f59e0b", "#2563eb"], // Sample 1 Coral Red + Amber + Royal Blue
+        ["#dc2626", "#991b1b", "#1d4ed8"], // Sample 2 Crimson Ruby + Cobalt Blue
+        ["#ea580c", "#2a9df4", "#84bd00"], // Sample 3 Vivid Orange + Rainbow
+        ["#0d9f4f", "#10b981", "#047857"], // Sample 4 Emerald Green Table
+        ["#8b5cf6", "#ec4899", "#06b6d4"], // Royal Violet & Magenta
+        ["#0284c7", "#f59e0b", "#10b981"], // Ocean Sapphire & Gold
+      ][(variant - 1) % 6];
+      accent1 = huePal[0];
+      accent2 = huePal[1];
+      accent3 = huePal[2];
+      weekendCol = "#ef4444";
+    } else {
+      const seedMix = Math.abs(Number(m.C?.seed || 100000)) + variant * 7919 + modeNum * 131;
+      const baseH = ((seedMix * 0.61803398875) % 1) * 360;
+      const triOffset = 112 + (seedMix % 46);
+      const compOffset = 215 + ((seedMix >> 3) % 55);
+      const sat1 = 72 + (seedMix % 18);
+      const sat2 = 66 + ((seedMix >> 2) % 20);
+      const lit1 = 44 + (seedMix % 12);
+      const lit2 = 46 + ((seedMix >> 4) % 12);
+      accent1 = hsl(baseH, sat1, lit1);
+      accent2 = hsl((baseH + triOffset) % 360, sat2, lit2);
+      accent3 = hsl((baseH + compOffset) % 360, 68, 44);
+      weekendCol = hsl((baseH + 345) % 360, 82, 50);
+      if (styleIdx >= 4 && headerBg && headerBg !== "#ffffff" && headerBg !== "#f8fafc") {
+        headerBg = hsl((baseH + 18) % 360, 42, 16 + (seedMix % 8));
+      }
+    }
   }
 
   const effectiveTheme: CalendarArtTheme =
@@ -34729,69 +34895,227 @@ export async function analyse(svg: string, bg: string) {
 }
 
 /* =====================================================================
-   NON-REPEATING WEYL SEQUENCE & HARD 1-TIME PERMANENT BURN LEDGER
+   NON-REPEATING WEYL SEQUENCE & HARD 1-TIME PERMANENT BURN LEDGER (V3)
    - Period: 2^32 (429+ Crore / 4.29 Billion non-repeating seeds)
-   - HARD RULE: Every design even TESTED or GENERATED once on canvas is
-     immediately and permanently burned into localStorage (both exact hash
-     AND structural similarity hash) so it can NEVER be generated again!
+   - Cryptographic start offset (crypto.getRandomValues) + Synchronous Counter Lock
+   - 3-LAYER ZERO-DUPLICATE SHIELD:
+       1) Exact Parameter Hash (pv_unique_hashes_v1)
+       2) Coarse Structural & Color-Family Hash (pv_hard_struct_hashes_v2)
+       3) Actual Rendered SVG Artwork Fingerprint (pv_artwork_hashes_v1)
+       4) Exported Format Guard (pv_exported_formats_v1) — Hard-blocks re-exporting
+          the exact same artwork in the same format!
+   - UNLIMITED PERMANENT INDEXEDDB MIRROR + localStorage + beforeunload/pagehide Flush
+   - Portable .JSON Backup & Restore for lifetime cross-device copyright protection!
    ===================================================================== */
 const SEED_COUNTER_KEY = "pv_weyl_counter_v1";
 const HASH_REGISTRY_KEY = "pv_unique_hashes_v1";
 const STRUCT_REGISTRY_KEY = "pv_hard_struct_hashes_v2";
 const STRUCT_COUNTER_KEY = "pv_hard_struct_counter_v2";
+const ARTWORK_REGISTRY_KEY = "pv_artwork_hashes_v1";
+const EXPORTED_FORMAT_KEY = "pv_exported_formats_v1";
+
+const IDB_NAME = "PatternVaultBurnLedgerDB";
+const IDB_STORE = "hashes";
+const IDB_VERSION = 1;
+const LS_CACHE_LIMIT = 45000;
 
 let memoryCounter: number | null = null;
 let memoryStructCounter: number | null = null;
 let memoryHashes: Set<string> | null = null;
 let memoryStructHashes: Set<string> | null = null;
+let memoryArtworkHashes: Set<string> | null = null;
+let memoryExportedFormats: Set<string> | null = null;
 
-function loadHashRegistry(): Set<string> {
-  if (memoryHashes) return memoryHashes;
-  memoryHashes = new Set<string>();
+let idbHandle: IDBDatabase | null = null;
+let idbReadyFlag = false;
+let idbHydrationStarted = false;
+const pendingIdbRecords: { k: string; t: "e" | "s" | "a" | "f" }[] = [];
+let idbWriteTimer: ReturnType<typeof setTimeout> | null = null;
+
+function getCryptoUint32(): number {
   try {
-    const raw = localStorage.getItem(HASH_REGISTRY_KEY);
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) arr.forEach((h) => memoryHashes!.add(h));
+    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      return buf[0] >>> 0;
     }
   } catch {
     // ignore
   }
+  return ((Date.now() * 2654435761) ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+}
+
+function loadSetFromLS(key: string): Set<string> {
+  const s = new Set<string>();
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        for (let i = 0; i < arr.length; i++) {
+          if (typeof arr[i] === "string" && arr[i].length > 0) s.add(arr[i]);
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return s;
+}
+
+function loadHashRegistry(): Set<string> {
+  if (!memoryHashes) memoryHashes = loadSetFromLS(HASH_REGISTRY_KEY);
   return memoryHashes;
 }
 
 function loadStructHashRegistry(): Set<string> {
-  if (memoryStructHashes) return memoryStructHashes;
-  memoryStructHashes = new Set<string>();
-  try {
-    const raw = localStorage.getItem(STRUCT_REGISTRY_KEY);
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) arr.forEach((h) => memoryStructHashes!.add(h));
-    }
-  } catch {
-    // ignore
-  }
+  if (!memoryStructHashes) memoryStructHashes = loadSetFromLS(STRUCT_REGISTRY_KEY);
   return memoryStructHashes;
 }
 
-let seedFlushTimer: ReturnType<typeof setTimeout> | null = null;
-let structSaltFlushTimer: ReturnType<typeof setTimeout> | null = null;
+function loadArtworkHashRegistry(): Set<string> {
+  if (!memoryArtworkHashes) memoryArtworkHashes = loadSetFromLS(ARTWORK_REGISTRY_KEY);
+  return memoryArtworkHashes;
+}
+
+function loadExportedFormatRegistry(): Set<string> {
+  if (!memoryExportedFormats) memoryExportedFormats = loadSetFromLS(EXPORTED_FORMAT_KEY);
+  return memoryExportedFormats;
+}
+
+function openBurnLedgerIDB(): Promise<IDBDatabase | null> {
+  if (idbHandle) return Promise.resolve(idbHandle);
+  if (typeof indexedDB === "undefined") return Promise.resolve(null);
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) {
+          db.createObjectStore(IDB_STORE, { keyPath: "k" });
+        }
+      };
+      req.onsuccess = () => {
+        idbHandle = req.result;
+        idbReadyFlag = true;
+        resolve(idbHandle);
+      };
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+function flushPendingRecordsToIDB(): void {
+  if (idbWriteTimer) {
+    clearTimeout(idbWriteTimer);
+    idbWriteTimer = null;
+  }
+  if (pendingIdbRecords.length === 0) return;
+  const batch = pendingIdbRecords.splice(0, pendingIdbRecords.length);
+  openBurnLedgerIDB().then((db) => {
+    if (!db) return;
+    try {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      const store = tx.objectStore(IDB_STORE);
+      for (let i = 0; i < batch.length; i++) {
+        store.put(batch[i]);
+      }
+    } catch {
+      // ignore
+    }
+  });
+}
+
+function queueIdbRecord(prefix: "e" | "s" | "a" | "f", value: string): void {
+  if (!value) return;
+  pendingIdbRecords.push({ k: `${prefix}:${value}`, t: prefix });
+  if (pendingIdbRecords.length >= 64) {
+    flushPendingRecordsToIDB();
+  } else if (!idbWriteTimer) {
+    idbWriteTimer = setTimeout(flushPendingRecordsToIDB, 180);
+  }
+}
+
+export function hydratePermanentBurnLedgerFromIDB(onReady?: (total: number) => void): void {
+  if (idbHydrationStarted) {
+    if (onReady) onReady(getLifetimeUniqueTotal());
+    return;
+  }
+  idbHydrationStarted = true;
+  const eSet = loadHashRegistry();
+  const sSet = loadStructHashRegistry();
+  const aSet = loadArtworkHashRegistry();
+  const fSet = loadExportedFormatRegistry();
+
+  openBurnLedgerIDB().then((db) => {
+    if (!db) {
+      if (onReady) onReady(getLifetimeUniqueTotal());
+      return;
+    }
+    try {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const rows = Array.isArray(req.result) ? req.result : [];
+        for (let i = 0; i < rows.length; i++) {
+          const rec = rows[i];
+          if (!rec || typeof rec.k !== "string") continue;
+          const idx = rec.k.indexOf(":");
+          if (idx <= 0) continue;
+          const tag = rec.k.slice(0, idx);
+          const val = rec.k.slice(idx + 1);
+          if (tag === "e") eSet.add(val);
+          else if (tag === "s") sSet.add(val);
+          else if (tag === "a") aSet.add(val);
+          else if (tag === "f") fSet.add(val);
+        }
+        // Backfill any existing localStorage hashes into IndexedDB so unlimited store stays 100% synced
+        const seedRows: { k: string; t: "e" | "s" | "a" | "f" }[] = [];
+        if (rows.length < eSet.size + sSet.size + aSet.size + fSet.size) {
+          eSet.forEach((v) => seedRows.push({ k: `e:${v}`, t: "e" }));
+          sSet.forEach((v) => seedRows.push({ k: `s:${v}`, t: "s" }));
+          aSet.forEach((v) => seedRows.push({ k: `a:${v}`, t: "a" }));
+          fSet.forEach((v) => seedRows.push({ k: `f:${v}`, t: "f" }));
+          if (seedRows.length > 0) {
+            try {
+              const wtx = db.transaction(IDB_STORE, "readwrite");
+              const wStore = wtx.objectStore(IDB_STORE);
+              for (let i = 0; i < seedRows.length; i++) wStore.put(seedRows[i]);
+            } catch {
+              // ignore
+            }
+          }
+        }
+        if (onReady) onReady(getLifetimeUniqueTotal());
+      };
+      req.onerror = () => {
+        if (onReady) onReady(getLifetimeUniqueTotal());
+      };
+    } catch {
+      if (onReady) onReady(getLifetimeUniqueTotal());
+    }
+  });
+}
+
 let hashRegistryFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let pageUnloadHooksInstalled = false;
+
+function writeSetToLS(key: string, set: Set<string> | null): void {
+  if (!set) return;
+  const arr = Array.from(set);
+  const trimmed = arr.length > LS_CACHE_LIMIT ? arr.slice(arr.length - LS_CACHE_LIMIT) : arr;
+  localStorage.setItem(key, JSON.stringify(trimmed));
+}
 
 export function flushDesignHashRegistriesNow(): void {
-  if (seedFlushTimer) {
-    clearTimeout(seedFlushTimer);
-    seedFlushTimer = null;
-  }
-  if (structSaltFlushTimer) {
-    clearTimeout(structSaltFlushTimer);
-    structSaltFlushTimer = null;
-  }
   if (hashRegistryFlushTimer) {
     clearTimeout(hashRegistryFlushTimer);
     hashRegistryFlushTimer = null;
   }
+  flushPendingRecordsToIDB();
   try {
     if (memoryCounter !== null) {
       localStorage.setItem(SEED_COUNTER_KEY, String(memoryCounter));
@@ -34799,22 +35123,28 @@ export function flushDesignHashRegistriesNow(): void {
     if (memoryStructCounter !== null) {
       localStorage.setItem(STRUCT_COUNTER_KEY, String(memoryStructCounter));
     }
-    if (memoryHashes) {
-      const arr = Array.from(memoryHashes);
-      const trimmed = arr.length > 35000 ? arr.slice(arr.length - 35000) : arr;
-      localStorage.setItem(HASH_REGISTRY_KEY, JSON.stringify(trimmed));
-    }
-    if (memoryStructHashes) {
-      const sArr = Array.from(memoryStructHashes);
-      const sTrimmed = sArr.length > 35000 ? sArr.slice(sArr.length - 35000) : sArr;
-      localStorage.setItem(STRUCT_REGISTRY_KEY, JSON.stringify(sTrimmed));
-    }
+    writeSetToLS(HASH_REGISTRY_KEY, memoryHashes);
+    writeSetToLS(STRUCT_REGISTRY_KEY, memoryStructHashes);
+    writeSetToLS(ARTWORK_REGISTRY_KEY, memoryArtworkHashes);
+    writeSetToLS(EXPORTED_FORMAT_KEY, memoryExportedFormats);
+  } catch {
+    // ignore quota errors — IndexedDB holds unlimited permanent records
+  }
+}
+
+function ensureUnloadFlushInstalled(): void {
+  if (pageUnloadHooksInstalled || typeof window === "undefined") return;
+  pageUnloadHooksInstalled = true;
+  try {
+    window.addEventListener("beforeunload", flushDesignHashRegistriesNow);
+    window.addEventListener("pagehide", flushDesignHashRegistriesNow);
   } catch {
     // ignore
   }
 }
 
 export function nextUniqueStructuralSalt(): number {
+  ensureUnloadFlushInstalled();
   if (memoryStructCounter === null) {
     try {
       const saved = localStorage.getItem(STRUCT_COUNTER_KEY);
@@ -34824,40 +35154,31 @@ export function nextUniqueStructuralSalt(): number {
     }
   }
   memoryStructCounter = (memoryStructCounter + 1) >>> 0;
-  if (!structSaltFlushTimer) {
-    structSaltFlushTimer = setTimeout(() => {
-      structSaltFlushTimer = null;
-      try {
-        if (memoryStructCounter !== null) {
-          localStorage.setItem(STRUCT_COUNTER_KEY, String(memoryStructCounter));
-        }
-      } catch {
-        // ignore
-      }
-    }, 250);
+  // Synchronous counter lock so even an immediate browser refresh NEVER replays a structural salt
+  try {
+    localStorage.setItem(STRUCT_COUNTER_KEY, String(memoryStructCounter));
+  } catch {
+    // ignore
   }
   return memoryStructCounter;
 }
 
 export function nextUniqueSeed(): number {
+  ensureUnloadFlushInstalled();
   if (memoryCounter === null) {
     try {
       const saved = localStorage.getItem(SEED_COUNTER_KEY);
-      memoryCounter = saved ? parseInt(saved, 10) || 1000 : Math.floor(Date.now() % 1000000) + 1000;
+      memoryCounter = saved ? parseInt(saved, 10) || (getCryptoUint32() % 0x7fffffff) + 1000 : (getCryptoUint32() % 0x7fffffff) + 1000;
     } catch {
-      memoryCounter = Math.floor(Date.now() % 1000000) + 1000;
+      memoryCounter = (getCryptoUint32() % 0x7fffffff) + 1000;
     }
   }
   memoryCounter = (memoryCounter + 1) >>> 0;
-  if (!seedFlushTimer) {
-    seedFlushTimer = setTimeout(() => {
-      seedFlushTimer = null;
-      try {
-        if (memoryCounter !== null) localStorage.setItem(SEED_COUNTER_KEY, String(memoryCounter));
-      } catch {
-        // ignore
-      }
-    }, 250);
+  // Synchronous counter lock so browser crash / refresh NEVER replays a seed
+  try {
+    localStorage.setItem(SEED_COUNTER_KEY, String(memoryCounter));
+  } catch {
+    // ignore
   }
   // Bijective 32-bit Weyl / Murmur avalanching permutation (guaranteed 1-to-1 over 4.29 billion values)
   let x = (memoryCounter * 0x9e3779b9) >>> 0;
@@ -34871,6 +35192,28 @@ function quantizeHexBucket(hex: string): string {
   const [r, g, b] = hex2rgb(hex || "#000000");
   // Quantize RGB into coarse 48-step buckets so visually near-identical color + layout combos are hard-blocked!
   return `${Math.floor(r / 48)}.${Math.floor(g / 48)}.${Math.floor(b / 48)}`;
+}
+
+// Actual Rendered SVG Artwork Content Fingerprint (strips volatile random IDs/refs while hashing every vector path, coordinate, color & opacity)
+export function computeSvgArtworkHash(svg: string): string {
+  if (!svg || svg.length < 16) return "";
+  const normalized = svg
+    .replace(/\s+id="[^"]*"/g, "")
+    .replace(/url\(#[^)]*\)/g, "url(#ref)")
+    .replace(/\s+/g, " ")
+    .trim();
+  let h1 = 0x811c9dc5;
+  let h2 = 0x9e3779b9;
+  let h3 = 0x27d4eb2d;
+  for (let i = 0; i < normalized.length; i++) {
+    const c = normalized.charCodeAt(i);
+    h1 ^= c;
+    h1 = Math.imul(h1, 0x01000193) >>> 0;
+    h2 ^= c;
+    h2 = Math.imul(h2, 0x85ebca6b) >>> 0;
+    h3 = Math.imul(h3 ^ (c + (i & 255)), 0x1b873593) >>> 0;
+  }
+  return `art-${h1.toString(36)}-${h2.toString(36)}-${h3.toString(36)}-${normalized.length.toString(36)}`;
 }
 
 export function computeStructuralSimilarityHash(P: PatternState, params: Record<string, any>): string {
@@ -34920,31 +35263,143 @@ export function computeDesignHash(P: PatternState, params: Record<string, any>):
   return h1.toString(36) + "-" + h2.toString(36);
 }
 
-export function isDesignDuplicate(hash: string, structHash?: string): boolean {
-  if (loadHashRegistry().has(hash)) return true;
+export function isDesignDuplicate(hash: string, structHash?: string, artworkHash?: string): boolean {
+  if (hash && loadHashRegistry().has(hash)) return true;
   if (structHash && loadStructHashRegistry().has(structHash)) return true;
+  if (artworkHash && loadArtworkHashRegistry().has(artworkHash)) return true;
   return false;
 }
 
-export function registerDesignHash(hash: string, structHash?: string): number {
+export function registerDesignHash(hash: string, structHash?: string, artworkHash?: string): number {
+  ensureUnloadFlushInstalled();
   const reg = loadHashRegistry();
-  reg.add(hash);
+  if (hash && !reg.has(hash)) {
+    reg.add(hash);
+    queueIdbRecord("e", hash);
+  }
   if (structHash) {
     const sReg = loadStructHashRegistry();
-    sReg.add(structHash);
+    if (!sReg.has(structHash)) {
+      sReg.add(structHash);
+      queueIdbRecord("s", structHash);
+    }
+  }
+  if (artworkHash) {
+    const aReg = loadArtworkHashRegistry();
+    if (!aReg.has(artworkHash)) {
+      aReg.add(artworkHash);
+      queueIdbRecord("a", artworkHash);
+    }
   }
   // Debounce localStorage JSON serialization so batching 200+ designs never blocks the main thread!
   if (!hashRegistryFlushTimer) {
     hashRegistryFlushTimer = setTimeout(() => {
       hashRegistryFlushTimer = null;
       flushDesignHashRegistriesNow();
-    }, 450);
+    }, 300);
   }
-  return reg.size;
+  return Math.max(reg.size, loadArtworkHashRegistry().size);
+}
+
+export function hasExportedFormat(artworkHash: string, fmt: string): boolean {
+  if (!artworkHash || !fmt) return false;
+  return loadExportedFormatRegistry().has(`${artworkHash}::${fmt.toLowerCase()}`);
+}
+
+export function markExportedFormat(artworkHash: string, fmt: string, flushNow = true): void {
+  if (!artworkHash || !fmt) return;
+  ensureUnloadFlushInstalled();
+  const key = `${artworkHash}::${fmt.toLowerCase()}`;
+  const fReg = loadExportedFormatRegistry();
+  if (!fReg.has(key)) {
+    fReg.add(key);
+    queueIdbRecord("f", key);
+  }
+  if (flushNow) {
+    flushDesignHashRegistriesNow();
+  } else if (!hashRegistryFlushTimer) {
+    hashRegistryFlushTimer = setTimeout(() => {
+      hashRegistryFlushTimer = null;
+      flushDesignHashRegistriesNow();
+    }, 300);
+  }
 }
 
 export function getLifetimeUniqueTotal(): number {
-  return loadHashRegistry().size;
+  return Math.max(loadHashRegistry().size, loadArtworkHashRegistry().size);
+}
+
+export function getLedgerStats(): {
+  exactCount: number;
+  structCount: number;
+  artworkCount: number;
+  exportedCount: number;
+  idbReady: boolean;
+} {
+  return {
+    exactCount: loadHashRegistry().size,
+    structCount: loadStructHashRegistry().size,
+    artworkCount: loadArtworkHashRegistry().size,
+    exportedCount: loadExportedFormatRegistry().size,
+    idbReady: idbReadyFlag,
+  };
+}
+
+export function exportBurnLedgerBackupJson(): string {
+  flushDesignHashRegistriesNow();
+  const payload = {
+    app: "PATTERNVAULT_ZERO_DUPLICATE_LEDGER",
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    seedCounter: memoryCounter ?? (parseInt(localStorage.getItem(SEED_COUNTER_KEY) || "1000", 10) || 1000),
+    structCounter: memoryStructCounter ?? (parseInt(localStorage.getItem(STRUCT_COUNTER_KEY) || "1", 10) || 1),
+    exact: Array.from(loadHashRegistry()),
+    struct: Array.from(loadStructHashRegistry()),
+    artwork: Array.from(loadArtworkHashRegistry()),
+    exportedFmt: Array.from(loadExportedFormatRegistry()),
+  };
+  return JSON.stringify(payload);
+}
+
+export function importBurnLedgerBackupJson(jsonText: string): { added: number; total: number } {
+  const parsed = JSON.parse(jsonText);
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("INVALID LEDGER BACKUP JSON");
+  }
+  const eReg = loadHashRegistry();
+  const sReg = loadStructHashRegistry();
+  const aReg = loadArtworkHashRegistry();
+  const fReg = loadExportedFormatRegistry();
+  let added = 0;
+
+  const mergeArr = (arr: unknown, target: Set<string>, tag: "e" | "s" | "a" | "f") => {
+    if (!Array.isArray(arr)) return;
+    for (let i = 0; i < arr.length; i++) {
+      const v = arr[i];
+      if (typeof v === "string" && v.length > 0 && !target.has(v)) {
+        target.add(v);
+        queueIdbRecord(tag, v);
+        added++;
+      }
+    }
+  };
+
+  mergeArr(parsed.exact, eReg, "e");
+  mergeArr(parsed.struct, sReg, "s");
+  mergeArr(parsed.artwork, aReg, "a");
+  mergeArr(parsed.exportedFmt, fReg, "f");
+
+  if (typeof parsed.seedCounter === "number" && Number.isFinite(parsed.seedCounter)) {
+    const cur = memoryCounter ?? (parseInt(localStorage.getItem(SEED_COUNTER_KEY) || "1000", 10) || 1000);
+    memoryCounter = Math.max(cur, Math.floor(parsed.seedCounter)) >>> 0;
+  }
+  if (typeof parsed.structCounter === "number" && Number.isFinite(parsed.structCounter)) {
+    const curS = memoryStructCounter ?? (parseInt(localStorage.getItem(STRUCT_COUNTER_KEY) || "1", 10) || 1);
+    memoryStructCounter = Math.max(curS, Math.floor(parsed.structCounter)) >>> 0;
+  }
+
+  flushDesignHashRegistriesNow();
+  return { added, total: getLifetimeUniqueTotal() };
 }
 
 /* =====================================================================

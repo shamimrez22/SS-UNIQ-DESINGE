@@ -38,10 +38,17 @@ import {
   nextUniqueStructuralSalt,
   computeDesignHash,
   computeStructuralSimilarityHash,
+  computeSvgArtworkHash,
   isDesignDuplicate,
   registerDesignHash,
+  hasExportedFormat,
+  markExportedFormat,
   flushDesignHashRegistriesNow,
   getLifetimeUniqueTotal,
+  getLedgerStats,
+  exportBurnLedgerBackupJson,
+  importBurnLedgerBackupJson,
+  hydratePermanentBurnLedgerFromIDB,
   buildIllustratorSVG,
   buildIllustratorEPS10,
   buildIllustratorAI,
@@ -241,6 +248,14 @@ export default function App() {
   const [exportStatus, setExportStatus] = useState<string>("");
   const sessionSeenRef = useRef<Set<string>>(new Set());
   const busyRef = useRef<boolean>(false);
+  const ledgerImportInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Hydrate unlimited permanent IndexedDB Burn Ledger on startup so ZERO historical designs ever repeat!
+  useEffect(() => {
+    hydratePermanentBurnLedgerFromIDB((total) => {
+      if (total > 0) setUniqCount(total);
+    });
+  }, []);
 
   // Auto-Batch Generator State (Defaults to "current" so batching generates variations of the exact active canvas design!)
   const [batchModalOpen, setBatchModalOpen] = useState<boolean>(false);
@@ -539,9 +554,11 @@ export default function App() {
             : "1:1"
           : prev.ratio || "1:1";
         const d = getRatioDims(Math.max(5000, +prev.px || 5000), targetRatio);
+        const freshSeed = nextUniqueSeed();
         const next: PatternState = {
           ...prev,
           mode: m.id,
+          seed: freshSeed,
           mx: "none",
           bd: isPlainBg ? prev.bd : "none",
           transp:
@@ -600,6 +617,9 @@ export default function App() {
           if (L.style) next.style = L.style;
           if (L.sw) next.sw = L.sw;
         }
+        // HARD ZERO-DUPLICATE GUARD ON MODE RE-SELECT:
+        // If this mode's default state was already burned before, bump variant to an unburned monotonic salt so clicking a Vault card twice NEVER shows a duplicate!
+        const hasVariantParam = m.params.some((p) => p.k === "variant");
         if (isBrush) {
           const defArch = m.params.find((p) => p.k === "arch")?.def;
           if (defArch) {
@@ -608,6 +628,20 @@ export default function App() {
               [m.id]: { ...(prevMP[m.id] || {}), arch: defArch },
             }));
           }
+        } else if (hasVariantParam) {
+          setMP((prevMP) => {
+            const existingQ = prevMP[m.id] || {};
+            const checkH = computeDesignHash(next, existingQ);
+            const checkSt = computeStructuralSimilarityHash(next, existingQ);
+            if (isDesignDuplicate(checkH, checkSt)) {
+              const freshVariant = nextUniqueStructuralSalt();
+              return {
+                ...prevMP,
+                [m.id]: { ...existingQ, variant: freshVariant },
+              };
+            }
+            return prevMP;
+          });
         }
         return next;
       });
@@ -1575,7 +1609,9 @@ export default function App() {
     }
   }, [hIdx, hist]);
 
-  // Generate 100% unique candidate instantaneously & IMMEDIATELY BURN IT into the permanent localStorage ledger (Hard 1-Time Rule: tested once = NEVER generated again!)
+  // Generate 100% unique candidate instantaneously & IMMEDIATELY BURN IT into the 3-Layer Permanent Burn Ledger
+  // (Exact Parameter Hash + Structural Similarity Hash + Actual Rendered SVG Artwork Content Fingerprint)
+  // HARD 1-TIME RULE: Tested or generated ONCE = NEVER generated again (ZERO DUPLICATE BYPASS!)
   const generateUniqueCandidateForMode = useCallback(
     (
       targetMode: PatternMode,
@@ -1589,166 +1625,218 @@ export default function App() {
     ) => {
       const curQ = baseMP[targetMode.id] || {};
       const seenSession = sessionSeenRef.current;
-        const isBrush = targetMode.cat === "Brush";
-        const isPoster = targetMode.cat === "Poster";
-        const isLighting = targetMode.cat === "Lighting";
-        const isCalendar = targetMode.cat === "Calendar";
-        const isTypography = targetMode.cat === "Typography";
-        const isTornPaper = targetMode.cat === "Torn Paper";
-        const isShadow = targetMode.cat === "Shadow";
-        const isFullBgCat =
-          targetMode.cat === "Plain BG" ||
-          targetMode.cat === "Background" ||
-          targetMode.cat === "Gradient" ||
-          targetMode.cat === "Texture";
-        const maxAttempts = extremeDiverse ? 64 : 48;
+      const isBrush = targetMode.cat === "Brush";
+      const isPoster = targetMode.cat === "Poster";
+      const isLighting = targetMode.cat === "Lighting";
+      const isCalendar = targetMode.cat === "Calendar";
+      const isTypography = targetMode.cat === "Typography";
+      const isTornPaper = targetMode.cat === "Torn Paper";
+      const isShadow = targetMode.cat === "Shadow";
+      const isFullBgCat =
+        targetMode.cat === "Plain BG" ||
+        targetMode.cat === "Background" ||
+        targetMode.cat === "Gradient" ||
+        targetMode.cat === "Texture";
+      const maxAttempts = extremeDiverse ? 64 : 48;
 
-        const buildCandidateAt = (attempt: number) => {
-          const stepIdx = batchIdx >= 0 ? batchIdx + attempt * 13 : attempt * 7;
-          const cand = genCand(targetMode, curQ, baseP, withColours, extremeDiverse, stepIdx);
-          const structSalt = nextUniqueStructuralSalt();
-          if (isPoster || isLighting || isCalendar || isTypography) {
-            cand.q = {
-              ...cand.q,
-              variant: ((Math.round(+(curQ.variant ?? 0)) + structSalt + stepIdx) % 48) + 1,
-            };
-          } else if (isTornPaper || isShadow) {
-            cand.q = {
-              ...cand.q,
-              variant: Math.max(1, Math.round(+(curQ.variant ?? 0)) + 1 + attempt),
-            };
+      const computeCandidateArtworkHash = (testP: PatternState, testQ: Record<string, any>): string => {
+        try {
+          const shadowTransp =
+            isShadow && String(testQ.bgMode ?? "transparent") === "transparent";
+          const omitBg =
+            isPoster || isCalendar || isTypography || isTornPaper || isFullBgCat
+              ? false
+              : isShadow
+              ? shadowTransp
+              : Boolean(testP.transp || isBrush || isLighting);
+          const rendered = buildSVGFor(
+            { ...testP, transp: omitBg },
+            { [targetMode.id]: testQ },
+            omitBg,
+            false
+          );
+          return computeSvgArtworkHash(rendered);
+        } catch {
+          return "";
+        }
+      };
+
+      const buildCandidateAt = (attempt: number, deepMutate = false) => {
+        const stepIdx = batchIdx >= 0 ? batchIdx + attempt * 13 : attempt * 7;
+        const cand = genCand(
+          targetMode,
+          curQ,
+          baseP,
+          withColours || deepMutate,
+          extremeDiverse || deepMutate,
+          stepIdx
+        );
+        const structSalt = nextUniqueStructuralSalt();
+        if (deepMutate) {
+          cand.seed = nextUniqueSeed();
+        }
+        // MONOTONIC NON-REPEATING VARIANT (Removed % 48 wraparound so designs NEVER cycle back!)
+        if (isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow) {
+          cand.q = {
+            ...cand.q,
+            variant: Math.max(1, structSalt),
+          };
+        }
+        if (deepMutate) {
+          // Deep golden-angle HSL shift on palette accents so structurally saturated single-mode pools break cleanly into brand-new visual territory
+          const hueShift = ((cand.seed * 0.61803398875 + attempt * 137.508) % 360);
+          cand.cols = [
+            hsl((hueShift + 0) % 360, 74, 48),
+            hsl((hueShift + 118) % 360, 68, 44),
+            hsl((hueShift + 224) % 360, 72, 50),
+            hsl((hueShift + 48) % 360, 64, 54),
+            hsl((hueShift + 292) % 360, 62, 42),
+          ];
+          if (!isPoster && !isCalendar && !isTypography && !isShadow && !isBrush && !isLighting) {
+            cand.bg = hsl((hueShift + 180) % 360, 26, attempt % 2 === 0 ? 14 : 94);
+            cand.bg2 = mixCol(cand.bg, cand.cols[0], 0.35);
           }
-          let bgGrad: BgGradientMode =
-            isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
-              ? "solid"
-              : baseP.bgGrad || "solid";
-          let bd: SurfaceTextureMode =
-            isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
-              ? "none"
-              : baseP.bd || "none";
+        }
 
-          if (!isBrush && !isPoster && !isLighting && !isCalendar && !isTypography && !isTornPaper && !isShadow) {
-            if (bgPref === "gradient") {
-              bgGrad = cand.gradModes[(stepIdx + Math.floor(Math.random() * cand.gradModes.length)) % cand.gradModes.length];
+        let bgGrad: BgGradientMode =
+          isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
+            ? "solid"
+            : baseP.bgGrad || "solid";
+        let bd: SurfaceTextureMode =
+          isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow
+            ? "none"
+            : baseP.bd || "none";
+
+        if (!isBrush && !isPoster && !isLighting && !isCalendar && !isTypography && !isTornPaper && !isShadow) {
+          if (bgPref === "gradient") {
+            bgGrad = cand.gradModes[(stepIdx + Math.floor(Math.random() * cand.gradModes.length)) % cand.gradModes.length];
+            bd = "none";
+          } else if (bgPref === "texture") {
+            bgGrad = "solid";
+            bd = cand.texModes[(stepIdx + Math.floor(Math.random() * cand.texModes.length)) % cand.texModes.length];
+          } else if (bgPref === "mix") {
+            const slot = extremeDiverse ? stepIdx % 10 : Math.floor(Math.random() * 10);
+            if (slot < 4) {
+              bgGrad = cand.gradModes[(stepIdx + attempt) % cand.gradModes.length];
               bd = "none";
-            } else if (bgPref === "texture") {
+            } else if (slot < 7) {
               bgGrad = "solid";
-              bd = cand.texModes[(stepIdx + Math.floor(Math.random() * cand.texModes.length)) % cand.texModes.length];
-            } else if (bgPref === "mix") {
-              const slot = extremeDiverse ? stepIdx % 10 : Math.floor(Math.random() * 10);
-              if (slot < 4) {
-                bgGrad = cand.gradModes[(stepIdx + attempt) % cand.gradModes.length];
-                bd = "none";
-              } else if (slot < 7) {
-                bgGrad = "solid";
-                bd = cand.texModes[(stepIdx + attempt) % cand.texModes.length];
-              } else {
-                bgGrad = "solid";
-                bd = "none";
-              }
+              bd = cand.texModes[(stepIdx + attempt) % cand.texModes.length];
+            } else {
+              bgGrad = "solid";
+              bd = "none";
             }
           }
+        }
 
-          const posterPcsVal = isPoster
-            ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "4")
-            : "";
-          const calViewVal = isCalendar
-            ? String(cand.q.viewMode || curQ.viewMode || targetMode.params.find((p) => p.k === "viewMode")?.def || "12m")
-            : "";
-          const typoPcsVal = isTypography
-            ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1")
-            : "";
-          const posterRatio = isPoster
-            ? getMicrostockPosterRatio(posterPcsVal)
+        const posterPcsVal = isPoster
+          ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "4")
+          : "";
+        const calViewVal = isCalendar
+          ? String(cand.q.viewMode || curQ.viewMode || targetMode.params.find((p) => p.k === "viewMode")?.def || "12m")
+          : "";
+        const typoPcsVal = isTypography
+          ? String(cand.q.pcs || curQ.pcs || targetMode.params.find((p) => p.k === "pcs")?.def || "1")
+          : "";
+        const posterRatio = isPoster
+          ? getMicrostockPosterRatio(posterPcsVal)
+          : isCalendar
+          ? getMicrostockCalendarRatio(calViewVal)
+          : isTypography
+          ? getMicrostockTypographyRatio(typoPcsVal)
+          : baseP.ratio;
+        const posterDims =
+          isPoster || isCalendar || isTypography
+            ? getRatioDims(Math.max(5200, +baseP.px || 5200), posterRatio)
+            : null;
+
+        const testP: PatternState = {
+          ...baseP,
+          mode: targetMode.id,
+          mx:
+            isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
+              ? "none"
+              : cand.mx,
+          seed: cand.seed,
+          bg: isPoster
+            ? baseP.bg || "#000000"
             : isCalendar
-            ? getMicrostockCalendarRatio(calViewVal)
-            : isTypography
-            ? getMicrostockTypographyRatio(typoPcsVal)
-            : baseP.ratio;
-          const posterDims =
-            isPoster || isCalendar || isTypography
-              ? getRatioDims(Math.max(5200, +baseP.px || 5200), posterRatio)
-              : null;
-
-          const testP: PatternState = {
-            ...baseP,
-            mode: targetMode.id,
-            mx:
-              isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
-                ? "none"
-                : cand.mx,
-            seed: cand.seed,
-            bg: isPoster
-              ? baseP.bg || "#000000"
-              : isCalendar
-              ? baseP.bg || cand.bg
-              : isTypography || isShadow
-              ? baseP.bg || targetMode.look?.bg || "#ffffff"
-              : cand.bg,
-            bg2: isPoster ? baseP.bg || "#000000" : cand.bg2,
-            bgGrad,
-            bgAngle: cand.bgAngle,
-            ink: isTypography ? baseP.ink || targetMode.look?.ink || "#111111" : cand.ink,
-            c0: cand.cols[0],
-            c1: cand.cols[1],
-            c2: cand.cols[2],
-            c3: cand.cols[3],
-            c4: cand.cols[4],
-            ncol: cand.ncol,
-            style: cand.style,
-            sw: cand.sw,
-            bd,
-            bdc: cand.bdc,
-            bdn: cand.bdn,
-            bdo: cand.bdo,
-            transp:
-              isBrush || isLighting || isShadow
-                ? true
-                : isPoster || isCalendar || isTypography || isTornPaper || isFullBgCat
-                ? false
-                : baseP.transp,
-            svgStructure:
-              isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
-                ? "unified"
-                : baseP.svgStructure,
-            view:
-              isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
-                ? 1
-                : baseP.view,
-            ratio: isPoster || isCalendar || isTypography ? posterRatio : baseP.ratio,
-            artW: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.w : baseP.artW,
-            artH: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.h : baseP.artH,
-            safeEdge: baseP.safeEdge === true,
-          };
-          const designHash = computeDesignHash(testP, cand.q);
-          const structHash = computeStructuralSimilarityHash(testP, cand.q);
-          // Coarse per-batch anti-similarity signature (mode + dominant palette bucket + style + mx + variant + bg)
-          const coarseSig = `${targetMode.id}|${testP.bg.slice(0, 4)}|${testP.c0.slice(0, 4)}|${testP.style}|${testP.mx}|${testP.bgGrad}|${testP.bd}|${cand.q.variant ?? ""}|${cand.q.arch ?? ""}|${cand.q.viewMode ?? ""}|${cand.q.year ?? ""}|${cand.q.occasion ?? ""}|${cand.q.flourishStyle ?? ""}|${cand.q.phraseIdx ?? ""}`;
-          return { cand, testP, designHash, structHash, coarseSig };
+            ? baseP.bg || cand.bg
+            : isTypography || isShadow
+            ? baseP.bg || targetMode.look?.bg || "#ffffff"
+            : cand.bg,
+          bg2: isPoster ? baseP.bg || "#000000" : cand.bg2,
+          bgGrad,
+          bgAngle: cand.bgAngle,
+          ink: isTypography ? baseP.ink || targetMode.look?.ink || "#111111" : cand.ink,
+          c0: cand.cols[0],
+          c1: cand.cols[1],
+          c2: cand.cols[2],
+          c3: cand.cols[3],
+          c4: cand.cols[4],
+          ncol: cand.ncol,
+          style: cand.style,
+          sw: cand.sw,
+          bd,
+          bdc: cand.bdc,
+          bdn: cand.bdn,
+          bdo: cand.bdo,
+          transp:
+            isBrush || isLighting || isShadow
+              ? true
+              : isPoster || isCalendar || isTypography || isTornPaper || isFullBgCat
+              ? false
+              : baseP.transp,
+          svgStructure:
+            isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
+              ? "unified"
+              : baseP.svgStructure,
+          view:
+            isBrush || isPoster || isLighting || isCalendar || isTypography || isTornPaper || isShadow || isFullBgCat
+              ? 1
+              : baseP.view,
+          ratio: isPoster || isCalendar || isTypography ? posterRatio : baseP.ratio,
+          artW: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.w : baseP.artW,
+          artH: (isPoster || isCalendar || isTypography) && posterDims ? posterDims.h : baseP.artH,
+          safeEdge: baseP.safeEdge === true,
         };
+        const designHash = computeDesignHash(testP, cand.q);
+        const structHash = computeStructuralSimilarityHash(testP, cand.q);
+        const coarseSig = `${targetMode.id}|${testP.bg.slice(0, 4)}|${testP.c0.slice(0, 4)}|${testP.style}|${testP.mx}|${testP.bgGrad}|${testP.bd}|${cand.q.variant ?? ""}|${cand.q.arch ?? ""}|${cand.q.viewMode ?? ""}|${cand.q.year ?? ""}|${cand.q.occasion ?? ""}|${cand.q.flourishStyle ?? ""}|${cand.q.phraseIdx ?? ""}`;
+        return { cand, testP, designHash, structHash, coarseSig };
+      };
 
-      let lastBuilt: ReturnType<typeof buildCandidateAt> | null = null;
-      for (let a = 0; a < maxAttempts; a++) {
-        const built = buildCandidateAt(a);
-        lastBuilt = built;
+      const acceptIfStrictlyUnique = (
+        built: ReturnType<typeof buildCandidateAt>,
+        enforceCoarseSig: boolean
+      ) => {
         if (
           isDesignDuplicate(built.designHash, built.structHash) ||
           seenSession.has(built.designHash) ||
           seenSession.has(built.structHash) ||
-          (batchUsedSigs && batchUsedSigs.has(built.coarseSig))
+          (enforceCoarseSig && batchUsedSigs && batchUsedSigs.has(built.coarseSig))
         ) {
-          continue; // HARD BLOCK: Never allow any previously tested, previewed, or structurally similar design
+          return null;
+        }
+        // LAYER 3 HARD VERIFICATION: Fingerprint actual rendered SVG vector output!
+        const artworkHash = computeCandidateArtworkHash(built.testP, built.cand.q);
+        if (
+          artworkHash &&
+          (isDesignDuplicate("", "", artworkHash) || seenSession.has(artworkHash))
+        ) {
+          return null; // HARD BLOCK: Visually identical vector artwork was already produced!
         }
 
         seenSession.add(built.designHash);
         seenSession.add(built.structHash);
+        if (artworkHash) seenSession.add(artworkHash);
         if (batchUsedSigs) batchUsedSigs.add(built.coarseSig);
-        if (seenSession.size > 12000) {
+        if (seenSession.size > 18000) {
           const first = seenSession.values().next().value;
           if (first) seenSession.delete(first);
         }
-        // HARD 1-TIME PERMANENT BURN: Lock immediately in localStorage even on a single test preview!
-        const total = registerDesignHash(built.designHash, built.structHash);
+        // HARD 1-TIME PERMANENT BURN: Lock all 3 fingerprints immediately in localStorage + unlimited IndexedDB!
+        const total = registerDesignHash(built.designHash, built.structHash, artworkHash);
         setUniqCount(total);
         const testMP = { ...baseMP, [targetMode.id]: built.cand.q };
         return {
@@ -1757,30 +1845,29 @@ export default function App() {
           testMP,
           designHash: built.designHash,
           structHash: built.structHash,
+          artworkHash,
           total,
         };
+      };
+
+      // Phase 1: Standard curated unique search
+      for (let a = 0; a < maxAttempts; a++) {
+        const built = buildCandidateAt(a, false);
+        const ok = acceptIfStrictlyUnique(built, true);
+        if (ok) return ok;
       }
 
-      // Guaranteed non-skip fallback in extreme batch mode when a tiny 1-mode pool hits tight structural saturation
-      if (extremeDiverse && lastBuilt) {
-        seenSession.add(lastBuilt.designHash);
-        seenSession.add(lastBuilt.structHash);
-        if (batchUsedSigs) batchUsedSigs.add(lastBuilt.coarseSig);
-        const total = registerDesignHash(lastBuilt.designHash, lastBuilt.structHash);
-        setUniqCount(total);
-        const testMP = { ...baseMP, [targetMode.id]: lastBuilt.cand.q };
-        return {
-          cand: lastBuilt.cand,
-          testP: lastBuilt.testP,
-          testMP,
-          designHash: lastBuilt.designHash,
-          structHash: lastBuilt.structHash,
-          total,
-        };
+      // Phase 2: Deep Cryptographic Entropy Mutation (ZERO duplicate bypass — MUST pass all 3 layers!)
+      for (let m = 0; m < 24; m++) {
+        const built = buildCandidateAt(maxAttempts + m, true);
+        const ok = acceptIfStrictlyUnique(built, false);
+        if (ok) return ok;
       }
+
+      // HARD SKIP: NEVER emit a duplicate under any circumstance!
       return null;
     },
-    []
+    [buildSVGFor]
   );
 
   // Non-repeating interleaved brush, poster, lighting & calendar decks so every click on UNIQUE GENERATE produces a brand-new structural design
@@ -2485,7 +2572,7 @@ export default function App() {
     [modes, buildSVGFor]
   );
 
-  // Adobe Illustrator Editable Vector SVG Export (Locks design into Zero-Duplicate Ledger on download!)
+  // Adobe Illustrator Editable Vector SVG Export (Hard-Locks design & blocks duplicate same-format re-export!)
   const exportSVG = useCallback(() => {
     const rep = expRep();
     const isPoster =
@@ -2506,6 +2593,13 @@ export default function App() {
       ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
       : { ...P, transp: omitBg };
     const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+    const artworkHash = computeSvgArtworkHash(cleanTileSvg);
+    if (hasExportedFormat(artworkHash, "svg")) {
+      setExportStatus(
+        "⛔ DUPLICATE EXPORT BLOCKED: THIS EXACT DESIGN WAS ALREADY EXPORTED AS .SVG — CLICK 🎲 UNIQUE GENERATE FOR A 100% NEW DESIGN!"
+      );
+      return;
+    }
     const vectorSvg = buildIllustratorSVG(cleanTileSvg, exportP, rep, outDims.w, outDims.h);
     const blob = new Blob([vectorSvg], { type: "image/svg+xml;charset=utf-8" });
     const seoMeta = buildMicrostockSeoIdentity({
@@ -2528,7 +2622,9 @@ export default function App() {
     downloadBlob(blob, fname);
     inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
     const h = computeDesignHash(P, MP[P.mode] || {});
-    const total = registerDesignHash(h);
+    const stH = computeStructuralSimilarityHash(P, MP[P.mode] || {});
+    const total = registerDesignHash(h, stH, artworkHash);
+    markExportedFormat(artworkHash, "svg");
     setUniqCount(total);
     setExportStatus(
       `EXPORTED & LOCKED SVG #${total} (${outDims.w}×${outDims.h} PX · ${
@@ -2539,7 +2635,7 @@ export default function App() {
           : omitBg
           ? "ZERO BACKGROUND · "
           : ""
-      }NEVER REPEATS AGAIN)`
+      }PERMANENTLY BURNED · NEVER REPEATS AGAIN)`
     );
   }, [expRep, buildSVGFor, P, MP, curMode, outDims]);
 
@@ -2564,6 +2660,13 @@ export default function App() {
       ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
       : { ...P, transp: omitBg };
     const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+    const artworkHash = computeSvgArtworkHash(cleanTileSvg);
+    if (hasExportedFormat(artworkHash, "eps")) {
+      setExportStatus(
+        "⛔ DUPLICATE EXPORT BLOCKED: THIS EXACT DESIGN WAS ALREADY EXPORTED AS .EPS — CLICK 🎲 UNIQUE GENERATE FOR A 100% NEW DESIGN!"
+      );
+      return;
+    }
     const eps10Content = buildIllustratorEPS10(
       cleanTileSvg,
       exportP,
@@ -2592,7 +2695,9 @@ export default function App() {
     downloadBlob(blob, fname);
     inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
     const h = computeDesignHash(P, MP[P.mode] || {});
-    const total = registerDesignHash(h);
+    const stH = computeStructuralSimilarityHash(P, MP[P.mode] || {});
+    const total = registerDesignHash(h, stH, artworkHash);
+    markExportedFormat(artworkHash, "eps");
     setUniqCount(total);
     setExportStatus(
       `EXPORTED & LOCKED EPS 10 #${total} (${outDims.w}×${outDims.h} PX · ${
@@ -2603,7 +2708,7 @@ export default function App() {
           : omitBg
           ? "ZERO BACKGROUND · "
           : ""
-      }MICROSTOCK READY)`
+      }PERMANENTLY BURNED · MICROSTOCK SAFE)`
     );
   }, [expRep, buildSVGFor, P, MP, curMode, outDims]);
 
@@ -2628,6 +2733,13 @@ export default function App() {
       ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
       : { ...P, transp: omitBg };
     const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+    const artworkHash = computeSvgArtworkHash(cleanTileSvg);
+    if (hasExportedFormat(artworkHash, "ai")) {
+      setExportStatus(
+        "⛔ DUPLICATE EXPORT BLOCKED: THIS EXACT DESIGN WAS ALREADY EXPORTED AS .AI — CLICK 🎲 UNIQUE GENERATE FOR A 100% NEW DESIGN!"
+      );
+      return;
+    }
     const aiContent = buildIllustratorAI(
       cleanTileSvg,
       exportP,
@@ -2656,10 +2768,12 @@ export default function App() {
     downloadBlob(blob, fname);
     inspectMicrostockFileBinary(blob, fname).then((v) => setLastVerifiedFile(v));
     const h = computeDesignHash(P, MP[P.mode] || {});
-    const total = registerDesignHash(h);
+    const stH = computeStructuralSimilarityHash(P, MP[P.mode] || {});
+    const total = registerDesignHash(h, stH, artworkHash);
+    markExportedFormat(artworkHash, "ai");
     setUniqCount(total);
     setExportStatus(
-      `EXPORTED & LOCKED ILLUSTRATOR .AI #${total} (${outDims.w}×${outDims.h} PX · 100% TRUE LIVE TRANSPARENT ALPHA · ZERO WHITE HALO)`
+      `EXPORTED & LOCKED ILLUSTRATOR .AI #${total} (${outDims.w}×${outDims.h} PX · 100% TRUE LIVE TRANSPARENT ALPHA · PERMANENTLY BURNED)`
     );
   }, [expRep, buildSVGFor, P, MP, curMode, outDims]);
 
@@ -2667,6 +2781,33 @@ export default function App() {
   const exportRaster = useCallback(
     async (fmt: "jpeg" | "png") => {
       if (busyRef.current) return;
+      const isPoster =
+        curMode.cat === "Poster" ||
+        curMode.cat === "Calendar" ||
+        curMode.cat === "Typography" ||
+        curMode.cat === "Torn Paper";
+      const isLighting = curMode.cat === "Lighting";
+      const isShadow = curMode.cat === "Shadow";
+      const shadowTransp =
+        isShadow && String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
+      const omitBg = isPoster
+        ? false
+        : isShadow
+        ? shadowTransp
+        : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+      const exportP = isPoster
+        ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
+        : { ...P, transp: omitBg };
+      const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+      const artworkHash = computeSvgArtworkHash(cleanTileSvg);
+      const fmtKey = fmt === "jpeg" ? "jpg" : "png";
+      if (hasExportedFormat(artworkHash, fmtKey)) {
+        setExportStatus(
+          `⛔ DUPLICATE EXPORT BLOCKED: THIS EXACT DESIGN WAS ALREADY EXPORTED AS .${fmtKey.toUpperCase()} — CLICK 🎲 UNIQUE GENERATE FOR A 100% NEW DESIGN!`
+        );
+        return;
+      }
+
       busyRef.current = true;
       setExportStatus(
         fmt === "jpeg"
@@ -2692,51 +2833,61 @@ export default function App() {
           style: P.style,
           idx: 0,
         });
-        const fname = `${seoMeta.fileSlug}.${fmt === "jpeg" ? "jpg" : "png"}`;
+        const fname = `${seoMeta.fileSlug}.${fmtKey}`;
         downloadBlob(finalBlob, fname);
         const verified = await inspectMicrostockFileBinary(finalBlob, fname);
         setLastVerifiedFile(verified);
         const h = computeDesignHash(P, MP[P.mode] || {});
-        const total = registerDesignHash(h);
+        const stH = computeStructuralSimilarityHash(P, MP[P.mode] || {});
+        const total = registerDesignHash(h, stH, artworkHash);
+        markExportedFormat(artworkHash, fmtKey);
         setUniqCount(total);
         setExportStatus(
-          `DOWNLOADED & VERIFIED ${fmt === "jpeg" ? "JPG" : "PNG"} #${total} · REAL SOF0: ${
+          `DOWNLOADED & LOCKED ${fmtKey.toUpperCase()} #${total} · REAL SOF0: ${
             verified.realW
-          }×${verified.realH} PX (${verified.megapixels} MP) · ${mb} MB · 300 DPI`
+          }×${verified.realH} PX (${verified.megapixels} MP) · ${mb} MB · 300 DPI · PERMANENTLY BURNED`
         );
       } finally {
         busyRef.current = false;
       }
     },
-    [P, MP, curMode, renderHighResRasterBlob]
+    [P, MP, curMode, buildSVGFor, renderHighResRasterBlob]
   );
 
-  // 1-Click Microstock ZIP Pack (JPG + EPS 10 inside .ZIP so ChatGPT / Freepik NEVER downscales the JPG to 2048x1152!)
+  // 1-Click Microstock ZIP Pack (JPG + EPS 10 inside .ZIP — Hard-Blocks Duplicate ZIP Export!)
   const exportSingleMicrostockZip = useCallback(async () => {
     if (busyRef.current) return;
+    const rep = expRep();
+    const isPoster =
+      curMode.cat === "Poster" ||
+      curMode.cat === "Calendar" ||
+      curMode.cat === "Typography" ||
+      curMode.cat === "Torn Paper";
+    const isLighting = curMode.cat === "Lighting";
+    const isShadow = curMode.cat === "Shadow";
+    const shadowTransp =
+      isShadow && String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
+    const omitBg = isPoster
+      ? false
+      : isShadow
+      ? shadowTransp
+      : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
+    const exportP = isPoster
+      ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
+      : { ...P, transp: omitBg };
+    const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
+    const artworkHash = computeSvgArtworkHash(cleanTileSvg);
+    if (hasExportedFormat(artworkHash, "zip")) {
+      setExportStatus(
+        "⛔ DUPLICATE EXPORT BLOCKED: THIS EXACT DESIGN WAS ALREADY EXPORTED AS .ZIP PACK — CLICK 🎲 UNIQUE GENERATE FOR A 100% NEW DESIGN!"
+      );
+      return;
+    }
+
     busyRef.current = true;
-    setExportStatus("PACKAGING 30+ MP JPG + EPS 10 INTO .ZIP (BYPASSES CHATGPT 2048PX RESIZER)...");
+    setExportStatus("PACKAGING 30+ MP JPG + EPS 10 INTO .ZIP (MICROSTOCK READY)...");
     try {
       const { blob: jpgBlob, w: W, h: H } = await renderHighResRasterBlob(P, MP, "jpeg");
-      const rep = expRep();
-      const isPoster =
-        curMode.cat === "Poster" ||
-        curMode.cat === "Calendar" ||
-        curMode.cat === "Typography" ||
-        curMode.cat === "Torn Paper";
-      const isLighting = curMode.cat === "Lighting";
-      const isShadow = curMode.cat === "Shadow";
-      const shadowTransp =
-        isShadow && String(MP[curMode.id]?.bgMode ?? "transparent") === "transparent";
-      const omitBg = isPoster
-        ? false
-        : isShadow
-        ? shadowTransp
-        : Boolean(P.transp || curMode.cat === "Brush" || isLighting);
-      const exportP = isPoster
-        ? { ...P, bg: P.bg || (curMode.cat === "Typography" ? "#ffffff" : "#000000"), transp: false }
-        : { ...P, transp: omitBg };
-      const cleanTileSvg = buildSVGFor(exportP, MP, omitBg, false);
       const flatSvg = buildIllustratorSVG(cleanTileSvg, exportP, rep, W, H);
       const eps10Content = buildIllustratorEPS10(cleanTileSvg, exportP, rep, W, H, flatSvg);
       const epsBlob = new Blob([eps10Content], { type: "application/postscript;charset=utf-8" });
@@ -2862,17 +3013,54 @@ export default function App() {
       const verified = await inspectMicrostockFileBinary(jpgBlob, jpgName);
       setLastVerifiedFile(verified);
       const h = computeDesignHash(P, MP[P.mode] || {});
-      const total = registerDesignHash(h);
+      const stH = computeStructuralSimilarityHash(P, MP[P.mode] || {});
+      const total = registerDesignHash(h, stH, artworkHash);
+      markExportedFormat(artworkHash, "zip");
+      markExportedFormat(artworkHash, "eps");
+      markExportedFormat(artworkHash, "jpg");
+      if (isShadow) {
+        markExportedFormat(artworkHash, "ai");
+        markExportedFormat(artworkHash, "svg");
+        markExportedFormat(artworkHash, "png");
+      }
       setUniqCount(total);
       setExportStatus(
         isShadow
-          ? `DOWNLOADED TRANSPARENT SHADOW ZIP PACK #${total} (${W}×${H} PX · LIVE-ALPHA .AI + .SVG + .PNG + .EPS + .JPG)`
-          : `DOWNLOADED ZIP PACK #${total} (${W}×${H} PX · ${verified.megapixels} MP · ${verified.sizeMb} MB JPG + EPS 10) — UPLOAD THIS .ZIP TO FREEPIK / MICROSTOCK!`
+          ? `DOWNLOADED & LOCKED TRANSPARENT SHADOW ZIP PACK #${total} (${W}×${H} PX · LIVE-ALPHA .AI + .SVG + .PNG + .EPS + .JPG)`
+          : `DOWNLOADED & LOCKED ZIP PACK #${total} (${W}×${H} PX · ${verified.megapixels} MP · ${verified.sizeMb} MB JPG + EPS 10) — PERMANENTLY BURNED!`
       );
     } finally {
       busyRef.current = false;
     }
   }, [P, MP, curMode, expRep, buildSVGFor, renderHighResRasterBlob]);
+
+  // Permanent Zero-Duplicate Burn Ledger .JSON Backup & Restore (Cross-Browser / Cross-PC Copyright Shield!)
+  const handleExportBurnLedger = useCallback(() => {
+    const json = exportBurnLedgerBackupJson();
+    const stats = getLedgerStats();
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadBlob(blob, `PATTERNVAULT_ZERO_DUPLICATE_LEDGER_${stamp}.json`);
+    setExportStatus(
+      `SAVED PERMANENT BURN LEDGER BACKUP (${stats.exactCount} PARAMS · ${stats.artworkCount} ARTWORK FINGERPRINTS · ${stats.exportedCount} LOCKED EXPORTS)`
+    );
+  }, []);
+
+  const handleImportBurnLedger = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const txt = await file.text();
+      const res = importBurnLedgerBackupJson(txt);
+      setUniqCount(Math.max(1, res.total));
+      setExportStatus(
+        `RESTORED & MERGED BURN LEDGER (+${res.added} NEW LOCKS · ${res.total} TOTAL PERMANENTLY BURNED DESIGNS PROTECTED!)`
+      );
+    } catch {
+      setExportStatus("⛔ FAILED TO IMPORT LEDGER FILE — PLEASE SELECT A VALID PATTERNVAULT LEDGER .JSON BACKUP");
+    }
+  }, []);
 
   // Verify any local .JPG / .PNG / .EPS / .SVG file's true binary SOF0 / IHDR header
   const handleVerifyLocalFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3169,7 +3357,19 @@ export default function App() {
           const workingP = candRes.testP;
           workingMP = candRes.testMP;
           lastBatchP = workingP;
-          lastLockedTotal = registerDesignHash(candRes.designHash, candRes.structHash);
+          lastLockedTotal = registerDesignHash(
+            candRes.designHash,
+            candRes.structHash,
+            candRes.artworkHash
+          );
+          if (candRes.artworkHash) {
+            if (needEps) markExportedFormat(candRes.artworkHash, "eps", false);
+            if (needSvg) markExportedFormat(candRes.artworkHash, "svg", false);
+            if (targetMode.cat === "Shadow" && (needEps || needSvg)) {
+              markExportedFormat(candRes.artworkHash, "ai", false);
+            }
+            if (needJpg) markExportedFormat(candRes.artworkHash, "jpg", false);
+          }
           // Do NOT call setP(workingP) / setMP(workingMP) on every single loop iteration!
           // Updating main canvas React state 200 times forces 200 full DOM/SVG preview re-renders + 200 undo history serializations.
           if (idx % 5 === 0 || idx === total - 1) {
@@ -6025,26 +6225,56 @@ export default function App() {
                     ⬇ DIRECT DOWNLOAD EPS 10 (.EPS · {outDims.w}×{outDims.h} PX)
                   </button>
                   {exportStatus && (
-                    <div className="note" style={{ marginTop: "10px", color: "var(--ac)" }}>
-                      ✓ {exportStatus}
+                    <div
+                      className="note"
+                      style={{
+                        marginTop: "10px",
+                        color: exportStatus.startsWith("⛔") ? "#f43f5e" : "var(--ac)",
+                        fontWeight: exportStatus.startsWith("⛔") ? 700 : 500,
+                      }}
+                    >
+                      {exportStatus.startsWith("⛔") ? exportStatus : `✓ ${exportStatus}`}
                     </div>
                   )}
                 </div>
 
                 <div className="sec">
                   <div className="sh">
-                    <span className="st">ILLUSTRATOR &amp; MICROSTOCK GUARANTEE</span>
+                    <span className="st">ZERO-DUPLICATE COPYRIGHT SHIELD</span>
                   </div>
                   <div className="stock-chk">
                     <div>
-                      <b>AUTO-ARTBOARD &amp; 100% SEPARABLE PARTS:</b> OPENING ANY SVG IN ADOBE ILLUSTRATOR AUTOMATICALLY SETS THE ARTBOARD TO {outDims.w} × {outDims.h} PX WITH EVERY VECTOR PART UNLOCKED, SEPARABLE &amp; RECOLORABLE
+                      <b>3-LAYER HARD BURN LOCK ({uniqCount.toLocaleString()} DESIGNS PERMANENTLY BURNED):</b> EVERY GENERATED OR EXPORTED DESIGN IS FINGERPRINTED BY PARAMETER HASH + STRUCTURAL SIMILARITY + ACTUAL RENDERED SVG VECTOR CONTENT AND STORED IN UNLIMITED INDEXEDDB SO IT CAN NEVER GENERATE OR RE-EXPORT A SECOND TIME.
                     </div>
                     <div>
-                      <b>ZERO SIDE-CUT GEOMETRY:</b> ALL MOTIFS &amp; TILES FIT EXACTLY INSIDE {outDims.w} × {outDims.h} PX WITH ZERO CLIPPED SHAPES
+                      <b>DUPLICATE EXPORT BLOCKER:</b> RE-DOWNLOADING THE EXACT SAME DESIGN IN THE SAME FORMAT IS AUTOMATICALLY BLOCKED TO PROTECT YOUR MICROSTOCK ACCOUNTS FROM COPYRIGHT / DUPLICATE STRIKES.
                     </div>
                     <div>
-                      <b>ZERO-DUPLICATE LEDGER:</b> EVERY GENERATED DESIGN IS FINGERPRINTED SO IT CAN NEVER BE GENERATED A SECOND TIME
+                      <b>AUTO-ARTBOARD &amp; ZERO SIDE-CUT GEOMETRY:</b> ALL VECTORS FIT EXACTLY INSIDE {outDims.w} × {outDims.h} PX WITH EVERY PART UNLOCKED &amp; EDITABLE IN ADOBE ILLUSTRATOR.
                     </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "10px" }}>
+                    <button
+                      className="btn-s"
+                      onClick={handleExportBurnLedger}
+                      title="DOWNLOAD YOUR PERMANENT BURN LEDGER BACKUP (.JSON) FOR CROSS-PC / CROSS-BROWSER COPYRIGHT PROTECTION"
+                    >
+                      ⬇ BACKUP LEDGER (.JSON)
+                    </button>
+                    <button
+                      className="btn-s"
+                      onClick={() => ledgerImportInputRef.current?.click()}
+                      title="RESTORE & MERGE A PREVIOUS BURN LEDGER (.JSON) SO OLD DESIGNS NEVER REPEAT ON A NEW PC OR BROWSER"
+                    >
+                      ⬆ RESTORE LEDGER (.JSON)
+                    </button>
+                    <input
+                      ref={ledgerImportInputRef}
+                      type="file"
+                      accept=".json,application/json"
+                      style={{ display: "none" }}
+                      onChange={handleImportBurnLedger}
+                    />
                   </div>
                 </div>
               </>
